@@ -5,6 +5,10 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
+	isDeepgramStreamConfigured,
+	mintDeepgramStreamToken,
+} from "../../lib/voice/deepgram-token";
+import {
 	buildLiveTranscriptSegmentInsert,
 	resolveTranscriptRoomOrg,
 } from "../../lib/voice/live-transcript";
@@ -18,6 +22,45 @@ export const voiceRouter = {
 	isConfigured: protectedProcedure.query(() => ({
 		configured: isVoiceConfigured(),
 	})),
+
+	/**
+	 * Whether in-app streaming STT is available (the server holds a Deepgram key
+	 * to mint short-lived tokens). Lets the renderer choose the low-latency live
+	 * source over the Groq-chunk fallback without exposing the key.
+	 */
+	isStreamConfigured: protectedProcedure.query(() => ({
+		configured: isDeepgramStreamConfigured(),
+	})),
+
+	/**
+	 * In-app streaming STT — mint a SHORT-LIVED Deepgram token for the desktop
+	 * renderer to stream the user's OWN microphone to Deepgram's realtime API
+	 * directly (sub-second words), feeding the SAME Phase-1 fan-out + panel as a
+	 * lower-latency source.
+	 *
+	 * SECURITY: the real `DEEPGRAM_API_KEY` stays SERVER-SIDE — the server grants
+	 * a temporary JWT (Deepgram `POST /v1/auth/grant`, `usage:write` scope, TTL
+	 * ~300s) and returns ONLY `{ token, expiresAt }`; the renderer authenticates
+	 * the websocket with `Bearer <token>` and never sees the key. The procedure
+	 * is org-membership gated (a participant must be an active member) and fails
+	 * closed with a clear error when the key is unset. The key is never returned
+	 * or logged. Clients re-call this to re-mint before `expiresAt`.
+	 */
+	deepgramStreamToken: protectedProcedure.mutation(async ({ ctx }) => {
+		// Gate: authenticated (protectedProcedure) AND an active-org member.
+		await requireActiveOrgMembership(ctx);
+
+		if (!isDeepgramStreamConfigured()) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message: "In-app streaming STT is not configured on the server.",
+			});
+		}
+
+		// Mint server-side; only the short-lived token crosses the wire.
+		const { token, expiresAt } = await mintDeepgramStreamToken();
+		return { token, expiresAt };
+	}),
 
 	/**
 	 * Transcribe a dictated audio clip with Groq Whisper (auto-language), then
@@ -136,6 +179,73 @@ export const voiceRouter = {
 				id: row?.id ?? "",
 				text: insert.text,
 				language: transcription.language,
+			};
+		}),
+
+	/**
+	 * In-App Streaming STT — persist ONE already-transcribed streaming FINAL to
+	 * `live_transcript_segments`. Unlike `transcribeChunk` (which re-runs Whisper on
+	 * audio bytes), the renderer already received the final TEXT from its own
+	 * Deepgram stream, so this only validates + persists it — no second STT pass and
+	 * no audio leaves the client. Reuses the SAME `buildLiveTranscriptSegmentInsert`
+	 * persist path + the SAME room→org security seam as the Phase-1 chunk mutation,
+	 * so streaming finals land in the same durable store the late-joiner backfill
+	 * (`listSegments`) and the panel already read. Silence is rejected by the input
+	 * schema (text is required); the row id is returned so fan-out dedupe holds.
+	 */
+	persistTranscriptSegment: protectedProcedure
+		.input(
+			z.object({
+				roomName: z.string().min(1).max(512),
+				text: z.string().min(1).max(10_000),
+				language: z.string().max(16).nullable().default(null),
+				speakerIdentity: z.string().min(1).max(256),
+				speakerName: z.string().max(256).default(""),
+				/** Epoch ms when the spoken words ended (Deepgram media time). */
+				capturedAt: z.number().int().nonnegative(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+
+			// Same security seam as `transcribeChunk`: never trust the client's room
+			// name — require it to encode the caller's verified active org.
+			const roomOrg = resolveTranscriptRoomOrg(input.roomName, organizationId);
+			if (!roomOrg) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Room name does not match your active organization.",
+				});
+			}
+
+			const insert = buildLiveTranscriptSegmentInsert(
+				input.text,
+				input.language,
+				{
+					organizationId,
+					createdBy: ctx.session.user.id,
+					roomName: input.roomName,
+					speakerIdentity: input.speakerIdentity,
+					speakerName: input.speakerName,
+					capturedAt: input.capturedAt,
+				},
+			);
+
+			// Empty text is already rejected by the input schema; this guards the
+			// trimmed-to-empty edge (e.g. all-whitespace) without persisting a blank.
+			if (!insert) {
+				return { id: "", text: "", language: input.language };
+			}
+
+			const [row] = await db
+				.insert(liveTranscriptSegments)
+				.values(insert)
+				.returning({ id: liveTranscriptSegments.id });
+
+			return {
+				id: row?.id ?? "",
+				text: insert.text,
+				language: input.language,
 			};
 		}),
 

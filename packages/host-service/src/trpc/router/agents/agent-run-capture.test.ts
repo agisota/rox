@@ -342,6 +342,59 @@ describe("runAgentAndCapture — host handler orchestration contract", () => {
 		});
 	});
 
+	test("ARC-17C: cold-boot null displayState is treated as not-yet-settled, not a crash", async () => {
+		// Regression guard for the lazy getSnapshot path: a cold session returns
+		// { displayState: null, boot: { status: "booting" } } while its runtime
+		// boots in the background. The capture loop must treat a null displayState
+		// as not-yet-settled and keep polling — NOT dereference it and throw.
+		let polls = 0;
+		const ctx = {
+			runtime: {
+				chat: {
+					getSnapshot: async () => {
+						polls += 1;
+						if (polls === 1) {
+							// First poll: runtime still cold-booting → null displayState.
+							return {
+								displayState: null,
+								messages: [],
+								boot: { status: "booting" as const },
+							};
+						}
+						// Later poll: runtime warm and the turn has settled.
+						return {
+							displayState: { isRunning: false, pendingQuestion: null },
+							messages: [
+								{
+									role: "user",
+									content: [{ type: "text", text: "do the thing" }],
+								},
+								{
+									role: "assistant",
+									content: [{ type: "text", text: "done after boot" }],
+								},
+							],
+						};
+					},
+				},
+			},
+		} as unknown as HostServiceContext;
+		const startAgent: StartAgentPort = async () => ({
+			kind: "chat",
+			sessionId: "sess-chat",
+			label: "Rox",
+		});
+
+		const result = await runAgentAndCapture(ctx, input, { startAgent });
+
+		expect(result).toEqual({
+			kind: "chat",
+			sessionId: "sess-chat",
+			message: "done after boot",
+		});
+		expect(polls).toBeGreaterThanOrEqual(2);
+	});
+
 	test("ARC-17B: runAndCapture passes a normalized hard maxTurns cap to the starter", async () => {
 		let seenMaxTurns = 0;
 		const startAgent: StartAgentPort = async (_ctx, startedInput) => {

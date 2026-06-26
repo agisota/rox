@@ -26,7 +26,13 @@ function readActivationDraft(): ActivationDraft {
 
 function writeActivationDraft(patch: ActivationDraft) {
 	try {
-		const next = { ...readActivationDraft(), ...patch };
+		const next = { ...readActivationDraft() };
+		if ("projectId" in patch && patch.projectId !== undefined) {
+			next.projectId = patch.projectId;
+		}
+		if ("workspaceId" in patch && patch.workspaceId !== undefined) {
+			next.workspaceId = patch.workspaceId;
+		}
 		localStorage.setItem(ACTIVATION_DRAFT_STORAGE_KEY, JSON.stringify(next));
 	} catch {}
 }

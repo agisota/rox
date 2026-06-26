@@ -8,8 +8,19 @@ import { Icon } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { repoLabel } from "@/screens/(authenticated)/(home)/workspaces/utils/projectMeta";
+import { useWorkspaceAccess } from "@/screens/(authenticated)/hooks/useWorkspaceAccess";
+import { WorkspaceRowSurface } from "./components/WorkspaceRowSurface";
 import { useProjectDetail } from "./hooks/useProjectDetail";
 import { useProjectWorkspaces } from "./hooks/useProjectWorkspaces";
+
+/** Centered message used for the auth/empty states. */
+function CenteredNotice({ children }: { children: string }) {
+	return (
+		<View className="items-center justify-center py-20">
+			<Text className="text-center text-muted-foreground">{children}</Text>
+		</View>
+	);
+}
 
 export function WorkspaceDetailScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +28,14 @@ export function WorkspaceDetailScreen() {
 	const insets = useSafeAreaInsets();
 	const { project, isReady } = useProjectDetail(id);
 	const { workspaces } = useProjectWorkspaces(id);
+
+	// FN-086: gate the screen on @rox/auth + project ownership. The project's
+	// org must match the active org; otherwise show a clear access state instead
+	// of an empty workspace.
+	const { access } = useWorkspaceAccess({
+		projectOrganizationId: project?.organizationId,
+		isProjectResolved: isReady,
+	});
 
 	const repo = project ? repoLabel(project) : null;
 
@@ -35,19 +54,22 @@ export function WorkspaceDetailScreen() {
 					</Text>
 				</View>
 
-				{!project ? (
-					isReady ? (
-						<View className="items-center justify-center py-20">
-							<Text className="text-center text-muted-foreground">
-								Project not found.
-							</Text>
-						</View>
-					) : (
-						<View className="gap-3">
-							<Skeleton className="h-24 w-full" />
-							<Skeleton className="h-24 w-full" />
-						</View>
-					)
+				{access === "signedOut" ? (
+					<CenteredNotice>Sign in to view this workspace.</CenteredNotice>
+				) : access === "noOrg" ? (
+					<CenteredNotice>
+						Select an organization to view its workspaces.
+					</CenteredNotice>
+				) : access === "noAccess" ? (
+					<CenteredNotice>
+						You don&apos;t have access to this workspace in the current
+						organization.
+					</CenteredNotice>
+				) : access === "loading" || !project ? (
+					<View className="gap-3">
+						<Skeleton className="h-24 w-full" />
+						<Skeleton className="h-24 w-full" />
+					</View>
 				) : (
 					<>
 						<Card>
@@ -83,55 +105,33 @@ export function WorkspaceDetailScreen() {
 									</Text>
 								) : (
 									workspaces.map((workspace) => (
-										<View
-											key={workspace.id}
-											className="flex-row items-center justify-between gap-2"
-										>
-											<View className="flex-1 gap-0.5">
-												<Text numberOfLines={1} className="font-medium">
-													{workspace.name}
-												</Text>
-												<View className="flex-row items-center gap-1.5">
-													<Icon
-														as={GitBranch}
-														className="size-3.5 text-muted-foreground"
-													/>
-													<Text
-														numberOfLines={1}
-														className="text-sm text-muted-foreground"
-													>
-														{workspace.branch}
+										<View key={workspace.id} className="gap-1">
+											<View className="flex-row items-center justify-between gap-2">
+												<View className="flex-1 gap-0.5">
+													<Text numberOfLines={1} className="font-medium">
+														{workspace.name}
 													</Text>
+													<View className="flex-row items-center gap-1.5">
+														<Icon
+															as={GitBranch}
+															className="size-3.5 text-muted-foreground"
+														/>
+														<Text
+															numberOfLines={1}
+															className="text-sm text-muted-foreground"
+														>
+															{workspace.branch}
+														</Text>
+													</View>
 												</View>
+												<Badge variant="outline">
+													<Text>{workspace.type}</Text>
+												</Badge>
 											</View>
-											<Badge variant="outline">
-												<Text>{workspace.type}</Text>
-											</Badge>
+											<WorkspaceRowSurface workspaceId={workspace.id} />
 										</View>
 									))
 								)}
-							</CardContent>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Claude Session</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<Badge variant="secondary">
-									<Text>Coming soon</Text>
-								</Badge>
-							</CardContent>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Terminal</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<Badge variant="secondary">
-									<Text>Coming soon</Text>
-								</Badge>
 							</CardContent>
 						</Card>
 					</>

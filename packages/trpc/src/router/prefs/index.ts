@@ -1,0 +1,1 @@
+export { prefsRouter } from "./prefs";

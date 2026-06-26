@@ -37,8 +37,13 @@ export const COMPANY = {
 	CAREERS_URL: "https://www.ycombinator.com/companies/rox/jobs",
 } as const;
 
-// Theme
+// Theme axis (System/Dark/Light — owned by next-themes on web).
 export const THEME_STORAGE_KEY = "rox-theme";
+
+// Skin axis (named Zed-derived palette — F08 Theme × Skin two-axis). Orthogonal
+// to THEME_STORAGE_KEY; read by the pre-hydration script to set `data-skin`
+// before first paint, and persisted by the web SkinProvider.
+export const SKIN_STORAGE_KEY = "rox-skin";
 
 // Download URLs — stable-named assets attached to the latest desktop release.
 export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-arm64.dmg`;

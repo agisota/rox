@@ -12,6 +12,7 @@ import {
 	MessagesSquare,
 	NotebookText,
 	Settings,
+	Users,
 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
@@ -55,6 +56,11 @@ const SUITE_ITEMS: SuiteItem[] = [
 		label: "Chat",
 		icon: MessagesSquare,
 		href: "/(authenticated)/(more)/chat",
+	},
+	{
+		label: "Участники",
+		icon: Users,
+		href: "/(authenticated)/(more)/members",
 	},
 ];
 

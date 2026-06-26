@@ -181,7 +181,7 @@ export function SlashCommandPreview({
 					<span className="font-mono text-foreground/90">
 						{parsedInput.commandName}
 					</span>
-					<span>{commandDescription || "Fill command parameters"}</span>
+					<span>{commandDescription || "Заполните параметры команды"}</span>
 				</div>
 
 				<div className="grid gap-2 sm:grid-cols-2">

@@ -1,10 +1,25 @@
 import { ROX_CHAT_PROVIDER } from "@rox/shared/chat-models";
+import {
+	buildCustomProviderModels as buildCustomProviderModelsShared,
+	CUSTOM_PROVIDER_DISPLAY_NAME as CUSTOM_PROVIDER_DISPLAY_NAME_SHARED,
+	CUSTOM_PROVIDER_WIRE_PREFIX as CUSTOM_PROVIDER_WIRE_PREFIX_SHARED,
+	isCustomProviderModel as isCustomProviderModelShared,
+	withCustomProviderModels as withCustomProviderModelsShared,
+} from "renderer/components/Chat/ChatInterface/components/ModelPicker/utils/customProvider";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import {
 	type AuthStatusLike,
 	deriveModelProviderStatus,
 	type ProviderId,
 } from "shared/ai/provider-status";
+
+// Re-export the canonical custom-provider helpers (single source of truth shared
+// with the legacy pane) under the names this module historically exposed.
+export const CUSTOM_PROVIDER_DISPLAY_NAME = CUSTOM_PROVIDER_DISPLAY_NAME_SHARED;
+export const CUSTOM_PROVIDER_WIRE_PREFIX = CUSTOM_PROVIDER_WIRE_PREFIX_SHARED;
+export const buildCustomProviderModels = buildCustomProviderModelsShared;
+export const isCustomProviderModel = isCustomProviderModelShared;
+export const withCustomProviderModels = withCustomProviderModelsShared;
 
 /**
  * Decides which models the picker is allowed to show.
@@ -20,9 +35,6 @@ import {
  *
  * All functions here are pure so they can be unit-tested without React/tRPC.
  */
-
-/** Display name for the synthetic custom-provider group (RU product UI). */
-export const CUSTOM_PROVIDER_DISPLAY_NAME = "Свой провайдер";
 
 /**
  * Map a model's provider display name (as carried on {@link ModelOption}) to a
@@ -77,42 +89,6 @@ export function getActivatedProviderIds(
 	return activated;
 }
 
-/** Wire-id prefix for custom-provider models (mirrors the server slug). */
-export const CUSTOM_PROVIDER_WIRE_PREFIX = "rox-custom/";
-
-/**
- * The models carried by the user's configured custom provider. Built from the
- * persisted custom-provider config's full `models` list so the picker can list
- * and select every one like a catalog model. Emits one {@link ModelOption} per
- * model, de-duplicated by bare id.
- */
-export function buildCustomProviderModels(
-	config: { models?: string[] } | null | undefined,
-): ModelOption[] {
-	const models = config?.models;
-	if (!Array.isArray(models)) return [];
-	const seen = new Set<string>();
-	const options: ModelOption[] = [];
-	for (const rawId of models) {
-		const modelId = rawId?.trim();
-		if (!modelId || seen.has(modelId)) continue;
-		seen.add(modelId);
-		options.push({
-			// Prefix mirrors how the runtime routes custom models through the
-			// registered mastracode custom provider; the bare id is the model name.
-			id: `${CUSTOM_PROVIDER_WIRE_PREFIX}${modelId}`,
-			name: modelId,
-			provider: CUSTOM_PROVIDER_DISPLAY_NAME,
-		});
-	}
-	return options;
-}
-
-/** True when a model belongs to the synthetic custom-provider group. */
-export function isCustomProviderModel(model: ModelOption): boolean {
-	return model.provider === CUSTOM_PROVIDER_DISPLAY_NAME;
-}
-
 /**
  * Filter the catalog down to selectable models for this user: the Rox house
  * model, any custom-provider model, and models whose provider is activated.
@@ -130,20 +106,4 @@ export function filterModelsByActivation(params: {
 		if (providerId === null) return false;
 		return activatedProviderIds.has(providerId);
 	});
-}
-
-/**
- * Merge the configured custom-provider models into the catalog list (appended,
- * de-duplicated by id) so downstream filtering/grouping treats them uniformly.
- */
-export function withCustomProviderModels(params: {
-	models: ModelOption[];
-	customModels: ModelOption[];
-}): ModelOption[] {
-	const { models, customModels } = params;
-	if (customModels.length === 0) return models;
-	const existingIds = new Set(models.map((model) => model.id));
-	const additions = customModels.filter((model) => !existingIds.has(model.id));
-	if (additions.length === 0) return models;
-	return [...models, ...additions];
 }

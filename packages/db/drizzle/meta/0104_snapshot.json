@@ -1,5 +1,5 @@
 {
-  "id": "76242e7b-d147-4c65-984a-3c34c83a0fd2",
+  "id": "d8b3d3bf-d0ac-40b3-90f1-703c2a9aeb1d",
   "prevId": "2b1043bb-2f51-46b9-9696-128519457a3a",
   "version": "7",
   "dialect": "postgresql",
@@ -2715,12 +2715,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "onboarding_progress": {
-          "name": "onboarding_progress",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4320,6 +4314,136 @@
           "value": "(\n\t\t\t\t(\"cal_reminders\".\"trigger_kind\" = 'relative' AND \"cal_reminders\".\"offset_minutes\" IS NOT NULL AND \"cal_reminders\".\"absolute_fire_at\" IS NULL)\n\t\t\t\tOR\n\t\t\t\t(\"cal_reminders\".\"trigger_kind\" = 'absolute' AND \"cal_reminders\".\"absolute_fire_at\" IS NOT NULL AND \"cal_reminders\".\"offset_minutes\" IS NULL)\n\t\t\t)"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.chat_labels": {
+      "name": "chat_labels",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "icon": {
+          "name": "icon",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "chat_labels_org_idx": {
+          "name": "chat_labels_org_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "chat_labels_org_name_unique": {
+          "name": "chat_labels_org_name_unique",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "chat_labels_organization_id_organizations_id_fk": {
+          "name": "chat_labels_organization_id_organizations_id_fk",
+          "tableFrom": "chat_labels",
+          "tableTo": "organizations",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "chat_labels_created_by_users_id_fk": {
+          "name": "chat_labels_created_by_users_id_fk",
+          "tableFrom": "chat_labels",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.chat_messages": {

@@ -99,3 +99,169 @@ export const motionShake = {
 	x: [0, -4, 4, -3, 3, -1, 0],
 	transition: { duration: 0.4, ease: ease.standard },
 };
+
+/**
+ * Focus / Zen mode chrome density — case 056 / PR-56 (#649). Shell-level zen
+ * collapses the side rails and dims the surrounding chrome so the canvas reads
+ * as the sole focus. These are the shared geometry/opacity tokens every host
+ * (desktop lead, web, mobile) animates toward; the on/off state itself lives in
+ * the platform-neutral `@rox/shared/zen-mode` store.
+ *
+ * `chromeDim` is the opacity the non-canvas chrome (top bar, rails, status)
+ * settles to while zen is active; `chromeRest` is its normal value. Drive a
+ * `motion` element's `animate={{ opacity }}` between them, gated on
+ * `useShouldAnimate('decorative')` — reduced-motion callers snap instantly by
+ * setting the target without a transition.
+ */
+export const zenDensity = {
+	/** Chrome opacity while zen mode is active. */
+	chromeDim: 0.4,
+	/** Chrome opacity at rest (zen inactive). */
+	chromeRest: 1,
+} as const;
+
+/**
+ * Shared collapse scene for the zen toggle — case 056 / PR-56 (#649). Reuses
+ * the `panel` spring (the same geometry language as the sidebar collapse in
+ * case 005) so the rail width morph and the chrome dim feel like one motion.
+ * Decorative tier: gate call sites on `useShouldAnimate('decorative')` and pass
+ * `false`/`undefined` for an instant reduced-motion fallback.
+ */
+export const zenSceneTransition: Transition = motionSpring.panel;
+
+/**
+ * View-transition panel scene tokens — case 054 / PR-54 (#648). A single,
+ * platform-neutral geometry language for the right-panel open/close/replace
+ * scenes consumed by F03/F30 (panel), F05 (region reflow) and F56 (zen). The
+ * scene descriptor itself lives in `PanelScene.ts`; these tokens are the
+ * concrete numbers each surface animates toward.
+ *
+ * `enterOffset`/`exitOffset` are the slide distance (px) the panel travels in
+ * from / out to its trailing edge — used for the framer-motion `AnimatePresence`
+ * fallback (web/desktop) and as the Reanimated slide-over translation (mobile).
+ * `replaceFade` is the brief cross-dim a replaced panel dips to before the next
+ * one settles. Reuses {@link motionSpring.panel} so the morph matches the
+ * sidebar collapse / zen scene geometry.
+ */
+export const panelSceneMotion = {
+	/** Slide distance (px) for the entering panel (from the trailing edge). */
+	enterOffset: 24,
+	/** Slide distance (px) for the exiting panel (toward the trailing edge). */
+	exitOffset: 24,
+	/** Opacity a replaced panel dips to mid-swap before the next settles. */
+	replaceFade: 0.6,
+	/** Spring driving the open/close/replace morph. */
+	spring: motionSpring.panel,
+} as const;
+
+/** CSS `view-transition-name` namespace for the right-panel VT scenes (case 054). */
+export const PANEL_SCENE_VT_NAME = "rox-panel-scene" as const;
+
+/**
+ * Shared gesture-grammar tokens — case 051 / PR-51 (#646). A single,
+ * platform-neutral grammar for the touch/pointer gestures every surface speaks:
+ * swipe-to-commit (archive/delete/quick-tag), pan-resize (drawers/panes),
+ * edge-swipe (open a drawer from the trailing/leading edge) and long-press
+ * (context menu). Web drawers (F05), desktop pane resize and RN list gestures
+ * all read these numbers so there are no per-platform magic constants.
+ *
+ * Distances are in px (CSS px on web/desktop, dp on RN — the host maps 1:1).
+ * Timings are in ms. The grammar descriptor lives in `GestureGrammar.ts`; these
+ * are the concrete thresholds each surface measures against. Every gesture
+ * routes through the motion governor (`useShouldAnimate` / `shouldAnimate`):
+ * under reduced / off energy the commit still fires (gestures are functional,
+ * not decorative) but the follow-through animation is simplified or removed.
+ */
+export const gestureGrammar = {
+	/**
+	 * Swipe-to-commit, the two-stage grammar (case 019 swipe tiers / quick-tag).
+	 * A horizontal pan past `previewThreshold` reveals the action affordance
+	 * (the swipe-tier background / quick-tag chip targets) without committing;
+	 * past `commitThreshold` releasing the pointer runs the primary action.
+	 * `velocityCommit` (px/s) is a fling shortcut: a fast flick commits even
+	 * before `commitThreshold` is reached.
+	 */
+	swipe: {
+		/** Pan distance (px) that reveals the action affordance / chip targets. */
+		previewThreshold: 56,
+		/** Pan distance (px) past which release commits the primary action. */
+		commitThreshold: 120,
+		/** Fling velocity (px/s) that commits regardless of distance. */
+		velocityCommit: 720,
+		/**
+		 * Width (px) of each quick-tag chip target exposed at stage two of a
+		 * two-stage swipe, so tagging happens without leaving the list.
+		 */
+		quickTagChipWidth: 64,
+	},
+	/**
+	 * Pan-resize for drawers (F05) and desktop panes. `minSize`/`maxSize` clamp
+	 * the dragged dimension (px); `snapThreshold` is how close to a rail the
+	 * drag must land to snap to it; `collapseThreshold` is the dimension below
+	 * which releasing collapses the surface entirely.
+	 */
+	panResize: {
+		/** Smallest allowed dimension (px) before the surface collapses. */
+		minSize: 200,
+		/** Largest allowed dimension (px). */
+		maxSize: 640,
+		/** Distance (px) from a snap rail within which the drag snaps to it. */
+		snapThreshold: 24,
+		/** Dimension (px) below which release collapses the surface. */
+		collapseThreshold: 120,
+	},
+	/**
+	 * Edge-swipe to open a drawer from a screen edge. `edgeWidth` is the px-wide
+	 * hot zone along the edge that starts capturing the gesture; `openThreshold`
+	 * is the pan distance past which release completes the open.
+	 */
+	edgeSwipe: {
+		/** Width (px) of the edge hot zone that starts the gesture. */
+		edgeWidth: 20,
+		/** Pan distance (px) past which release opens the drawer. */
+		openThreshold: 96,
+	},
+	/**
+	 * Long-press to open a context menu. `duration` (ms) is the press-and-hold
+	 * time before the menu fires; `moveTolerance` (px) is how far the pointer
+	 * may drift during the hold before it is treated as a pan/scroll instead.
+	 */
+	longPress: {
+		/** Press-and-hold time (ms) before the context menu fires. */
+		duration: 500,
+		/** Pointer drift (px) tolerated during the hold before it cancels. */
+		moveTolerance: 10,
+	},
+} as const;
+
+/**
+ * Right files panel 3-state geometry — case F03 / #616. The favourite ④ panel
+ * glides between `hidden` (width 0 + floating edge-pill), `peek` (narrow snap),
+ * and `expanded` (full). The width morph is a 240ms standard-eased glide rather
+ * than a spring so the three snaps read as one deliberate motion language across
+ * every host (desktop lead, web docked, mobile slide-over). Essential tier:
+ * gate call sites on `useShouldAnimate('essential')` and pass `{ duration: 0 }`
+ * for the instant reduced-motion fallback.
+ */
+export const rightPanelGlide: Transition = {
+	duration: 0.24,
+	ease: ease.standard,
+};
+
+/**
+ * Geometry of the right files panel 3-state machine — case F03 / #616. Shared
+ * so the panel width per state and the floating edge-pill size stay identical
+ * across hosts. `peekWidth`/`expandedWidth` are defaults; a host may persist a
+ * user-resized `expanded` width and fall back to `expandedWidth`.
+ */
+export const rightPanelGeometry = {
+	/** Width (px) in the `hidden` state — fully collapsed. */
+	hiddenWidth: 0,
+	/** Width (px) of the narrow `peek` snap. */
+	peekWidth: 200,
+	/** Default width (px) of the full `expanded` panel. */
+	expandedWidth: 340,
+	/** Floating edge-pill footprint (px) — the reopen affordance when hidden. */
+	edgePillWidth: 34,
+	edgePillHeight: 44,
+} as const;

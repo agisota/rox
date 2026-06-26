@@ -38,7 +38,9 @@ export function SlashCommandParamField({
 				id={inputId}
 				onChange={(event) => onChange(event.target.value)}
 				placeholder={
-					required ? `Set ${field.label}` : `Set ${field.label} (optional)`
+					required
+						? `Укажите ${field.label}`
+						: `Укажите ${field.label} (необязательно)`
 				}
 				value={value}
 			/>

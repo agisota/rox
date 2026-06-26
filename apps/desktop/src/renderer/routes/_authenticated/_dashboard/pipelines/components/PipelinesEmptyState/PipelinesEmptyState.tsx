@@ -19,7 +19,7 @@ export function PipelinesEmptyState({
 	isCreating = false,
 }: PipelinesEmptyStateProps) {
 	return (
-		<div className="mx-auto flex max-w-5xl flex-col gap-6">
+		<div className="flex w-full flex-col gap-6">
 			<div className="flex flex-col gap-1">
 				<h2 className="text-base font-semibold tracking-tight">
 					Начните с шаблона

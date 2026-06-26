@@ -106,7 +106,7 @@ function ContextMenuContent({
 	// Intercept pointerup, not mouseup — mouseup arrives too late. Reset per
 	// event so the guard re-arms for force-mounted content. Callback ref
 	// (not useEffect): Portal renders its child only when open, so useEffect
-	// on the wrapper would see a null ref. See agisota/set#4939.
+	// on the wrapper would see a null ref. See agisota/rox#4939.
 	const forwardedRef = React.useRef(ref);
 	forwardedRef.current = ref;
 	const cleanupRef = React.useRef<(() => void) | null>(null);

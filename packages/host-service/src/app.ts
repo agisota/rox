@@ -19,13 +19,15 @@ import { createServiceTokenClaimTransport } from "./runtime/agent-state/claim-cl
 import { startAgentStateRuntime } from "./runtime/agent-state/runtime";
 import { ChatRuntimeManager } from "./runtime/chat";
 import { WorkspaceFilesystemManager } from "./runtime/filesystem";
-import type { GitCredentialProvider } from "./runtime/git";
+import type { GitCredentialProvider, GitFactory } from "./runtime/git";
 import { createGitFactory } from "./runtime/git";
 import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
+import { OutboxSyncManager } from "./runtime/outbox-sync";
 import { PullRequestRuntimeManager } from "./runtime/pull-requests";
 import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
 import { TerminalAgentStore } from "./terminal-agents";
 import { appRouter } from "./trpc/router";
+import { seedLocalFirstCreateDefault } from "./trpc/router/settings/host-settings";
 import { defaultWorktreesRoot } from "./trpc/router/workspace-creation/shared/worktree-paths";
 import {
 	execGh as defaultExecGh,
@@ -57,6 +59,13 @@ export interface CreateAppOptions {
 	 */
 	db?: HostDb;
 	api?: ApiClient;
+	/**
+	 * Injectable git factory. Production omits it (built from the credential
+	 * provider). Tests override it to force a LOCAL git failure (e.g. assert the
+	 * local-first create still enqueues the project-create when the workspace
+	 * step throws).
+	 */
+	git?: GitFactory;
 	github?: () => Promise<Octokit>;
 	execGh?: ExecGh;
 	chatRuntime?: ChatRuntimeManager;
@@ -70,6 +79,15 @@ export interface CreateAppOptions {
 	 * leaks child processes — which is what hung the integration tests in CI.
 	 */
 	agentPreinstaller?: AgentPreinstaller;
+	/**
+	 * Run one-time first-launch setting seeds at startup (currently: enable
+	 * instant local-first create when the user has never chosen). Production
+	 * (`serve.ts`) sets this `true`. Defaults to false (omitted) so the test
+	 * harness boots with the schema/getter defaults untouched — keeping the
+	 * create-path regression tests on the OFF synchronous-cloud path. Each seed
+	 * is itself idempotent and never overrides an explicit user choice.
+	 */
+	seedDefaults?: boolean;
 }
 
 export interface CreateAppResult {
@@ -77,6 +95,13 @@ export interface CreateAppResult {
 	injectWebSocket: ReturnType<typeof createNodeWebSocket>["injectWebSocket"];
 	api: ApiClient;
 	db: HostDb;
+	/**
+	 * The local-first outbox sync worker. Exposed so a test harness can drive a
+	 * deterministic `drainOnce()` instead of racing the 15s poll interval; the
+	 * worker is already `start()`ed and `stop()`ped by `dispose()`. Production
+	 * callers don't need to touch it.
+	 */
+	outboxSync: OutboxSyncManager;
 	dispose: () => Promise<void>;
 }
 
@@ -87,7 +112,37 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		options.api ??
 		createApiClient(config.cloudApiUrl, providers.auth, config.organizationId);
 	const db = options.db ?? createDb(config.dbPath, config.migrationsFolder);
-	const git = createGitFactory(providers.credentials);
+
+	// One-time enablement seed for instant local-first create. Runs AFTER
+	// migrations (createDb migrates) and synchronously BEFORE the server starts
+	// serving create calls, so a fresh real install gets offline-first create on
+	// its very first project. Idempotent and kill-switch-safe: it only writes
+	// when the `local_first_create` column is null (never chosen), so an explicit
+	// user OFF (or a prior seed's ON) is never overridden and survives restarts.
+	// The schema/getter DEFAULT stays OFF — only the seeded row value changes
+	// runtime behavior.
+	//
+	// OPT-IN (`seedDefaults`): production (`serve.ts`) passes `true`. The test
+	// harness leaves it false so the create-path REGRESSION tests, which rely on
+	// the OFF getter default rather than setting the flag explicitly, keep
+	// exercising the synchronous-cloud path. Tests that want the seeded behavior
+	// call `seedLocalFirstCreateDefault(db)` themselves (see the seed suites).
+	if (options.seedDefaults) {
+		try {
+			const seeded = seedLocalFirstCreateDefault(db);
+			if (seeded) {
+				logger.info(
+					"[host-service] seeded localFirstCreate=ON (first launch, no prior user choice)",
+				);
+			}
+		} catch (err) {
+			// Never let a seed write brick startup; create simply stays on today's
+			// proven synchronous-cloud path (the OFF default) if this somehow throws.
+			logger.warn("[host-service] localFirstCreate seed failed:", err);
+		}
+	}
+
+	const git = options.git ?? createGitFactory(providers.credentials);
 	const github =
 		options.github ??
 		(async () => {
@@ -197,6 +252,18 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		logger.warn("[host-service] main-workspace sweep failed:", err);
 	});
 
+	// Local-first create background sync. Drains the `sync_outbox` (deferred
+	// cloud project/workspace creates) when the cloud is reachable and links the
+	// cloud id back. Inert when nothing is enqueued — the `localFirstCreate`
+	// host setting governs whether create ever enqueues — so it's always safe to
+	// run. Stopped in `dispose()` before the db closes.
+	const outboxSync = new OutboxSyncManager({
+		api,
+		db,
+		organizationId: config.organizationId,
+	});
+	outboxSync.start();
+
 	// Preinstall bundled agents/harnesses and ensure the default worktrees
 	// root exists. Idempotent and fire-and-forget so it never blocks startup;
 	// the renderer polls `settings.agentPreinstall.status` for progress.
@@ -265,6 +332,14 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		// The sweep is short and also touches `db`; await just that one so the
 		// close below can't race its final write. (Already self-catching.)
 		await mainWorkspaceSweepTask;
+		// Stop the outbox poller before closing the db, so a scheduled drain
+		// can't fire against a closed handle. `stop()` clears the interval and
+		// flips a guard the in-flight drain checks between rows.
+		try {
+			outboxSync.stop();
+		} catch (err) {
+			logger.warn("[host-service] outboxSync.stop failed:", err);
+		}
 		// Each step is best-effort and isolated: a throw in one cleanup must
 		// not skip the others, otherwise a flaky `.stop()` could leak the
 		// open SQLite handle for the rest of the process lifetime.
@@ -302,5 +377,5 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		}
 	};
 
-	return { app, injectWebSocket, api, db, dispose };
+	return { app, injectWebSocket, api, db, outboxSync, dispose };
 }

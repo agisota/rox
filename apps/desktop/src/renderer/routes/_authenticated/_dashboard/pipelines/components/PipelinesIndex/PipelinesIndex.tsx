@@ -96,7 +96,7 @@ export function PipelinesIndex() {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-5xl px-4 py-6">
+		<div className="w-full px-4 py-6">
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0">
 					<h1 className="flex min-w-0 items-center gap-2 text-xl font-medium">
@@ -132,14 +132,16 @@ export function PipelinesIndex() {
 							</div>
 							<div className="flex flex-col gap-2">
 								<Label>Шаблон</Label>
-								<div
-									data-onboarding-anchor="pipeline-template"
-									className="grid gap-2"
-								>
+								<div className="grid gap-2">
 									{PIPELINE_TEMPLATES.map((template) => (
 										<button
 											key={template.id}
 											type="button"
+											data-onboarding-anchor={
+												template.id === PIPELINE_TEMPLATES[0]?.id
+													? "pipeline-template"
+													: undefined
+											}
 											aria-pressed={template.id === templateId}
 											aria-label={`Выбрать шаблон: ${template.name}`}
 											onClick={() => setTemplateId(template.id)}

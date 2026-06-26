@@ -58,11 +58,16 @@ const HOME_PATH = "/";
  * `$` filter below (zero maintenance); a future *static* route trips the
  * compile-time exhaustiveness check and must be registered here.
  */
-// `/spectre` is the standalone Spectre overlay-assistant surface. It is rendered
-// only in the dedicated, transparent Spectre window (loaded at `#/spectre`) and
-// is never navigated to in the main window, so it must NOT participate in the
-// main-window cold-restore allow-list / exhaustiveness guard below.
-type RestorableRouteCandidate = Exclude<FileRouteTypes["to"], "/spectre">;
+// `/spectre` is the standalone Spectre overlay-assistant surface. `/popout` is a
+// tear-off pane window (F52). Both are rendered only in dedicated secondary
+// windows (loaded at `#/spectre` / `#/popout`), opened on demand with their own
+// payload, and are never navigated to or cold-restored in the main window — so
+// they must NOT participate in the main-window cold-restore allow-list /
+// exhaustiveness guard below.
+type RestorableRouteCandidate = Exclude<
+	FileRouteTypes["to"],
+	"/spectre" | "/popout"
+>;
 type StaticRoutePath = {
 	[K in RestorableRouteCandidate]: K extends `${string}$${string}` ? never : K;
 }[RestorableRouteCandidate];
@@ -72,9 +77,7 @@ const RESTORABLE_STATIC_ROUTES = [
 	"/create-organization",
 	"/sign-in",
 	"/onboarding",
-	"/onboarding/first-agent-action",
 	"/onboarding/project",
-	"/onboarding/workspace",
 	"/settings",
 	"/automations",
 	"/calendar",
@@ -87,7 +90,6 @@ const RESTORABLE_STATIC_ROUTES = [
 	"/memory",
 	"/notes",
 	"/pipelines",
-	"/quick-chat",
 	"/saved-prompts",
 	"/skills-library",
 	"/tasks",
@@ -117,6 +119,7 @@ const RESTORABLE_STATIC_ROUTES = [
 	"/settings/ringtones",
 	"/settings/security",
 	"/settings/shares",
+	"/settings/surfaces",
 	"/settings/teams",
 	"/settings/terminal",
 	"/settings/voice",

@@ -12,6 +12,7 @@ import {
 	CollapsibleTrigger,
 } from "../ui/collapsible";
 import { ShimmerLabel } from "./shimmer-label";
+import { useToolGroupItem } from "./tool-group";
 
 type ReasoningContextValue = {
 	isStreaming: boolean;
@@ -41,6 +42,22 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
 const AUTO_CLOSE_DELAY = 1000;
 const MS_IN_S = 1000;
 
+/**
+ * FN-051: RU-localized reasoning/thinking labels. The streaming "thinking"
+ * stream header was English ("Thinking…", "Thought for N seconds"); the product
+ * is Russian-first, so the defaults ship in RU. Centralized here so every chat
+ * surface (web/mobile/desktop) reads the same strings, and exported so a host
+ * surface can override per-locale without forking the component.
+ */
+export const reasoningLabels = {
+	/** Shown while the model is actively streaming its reasoning. */
+	thinking: "Размышляю…",
+	/** Fallback when the elapsed time is unknown. */
+	thoughtForAWhile: "Размышление заняло несколько секунд",
+	/** Elapsed-time line; `seconds` is the rounded duration. */
+	thoughtForSeconds: (seconds: number) => `Размышление · ${seconds} сек.`,
+} as const;
+
 export const Reasoning = memo(
 	({
 		className,
@@ -52,10 +69,23 @@ export const Reasoning = memo(
 		children,
 		...props
 	}: ReasoningProps) => {
+		// When the caller doesn't control `open`, follow the surrounding ToolGroup
+		// so expand-all / collapse-all drives this card. Standalone (no group) the
+		// hook is plain local state and behaves exactly as before. The group's
+		// open value feeds the controllable `prop`, and its setter is chained into
+		// `onChange` so the streaming auto-open/close keeps reporting to the group.
+		const groupItem = useToolGroupItem({ defaultOpen });
+		const isCallerControlled = open !== undefined;
+		const handleControlledChange = (next: boolean) => {
+			if (!isCallerControlled) {
+				groupItem.onOpenChange(next);
+			}
+			onOpenChange?.(next);
+		};
 		const [isOpen, setIsOpen] = useControllableState({
-			prop: open,
+			prop: isCallerControlled ? open : groupItem.open,
 			defaultProp: defaultOpen,
-			onChange: onOpenChange,
+			onChange: handleControlledChange,
 		});
 		const [duration, setDuration] = useControllableState({
 			prop: durationProp,
@@ -121,14 +151,14 @@ const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
 	if (isStreaming || duration === 0) {
 		return (
 			<ShimmerLabel className="text-xs text-muted-foreground">
-				Thinking...
+				{reasoningLabels.thinking}
 			</ShimmerLabel>
 		);
 	}
 	if (duration === undefined) {
-		return <p>Thought for a few seconds</p>;
+		return <p>{reasoningLabels.thoughtForAWhile}</p>;
 	}
-	return <p>Thought for {duration} seconds</p>;
+	return <p>{reasoningLabels.thoughtForSeconds(duration)}</p>;
 };
 
 export const ReasoningTrigger = memo(

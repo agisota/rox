@@ -15,13 +15,13 @@ interface PendingApprovalMessageProps {
 
 function stringifyArgs(value: unknown): string {
 	try {
-		if (value === undefined) return "No arguments";
+		if (value === undefined) return "Без аргументов";
 		if (typeof value === "string" && value.trim().length > 0) return value;
-		if (typeof value === "string") return "No arguments";
+		if (typeof value === "string") return "Без аргументов";
 		const serialized = JSON.stringify(value, null, 2);
-		return serialized && serialized !== "{}" ? serialized : "No arguments";
+		return serialized && serialized !== "{}" ? serialized : "Без аргументов";
 	} catch {
-		return "Unable to render tool arguments";
+		return "Не удалось отобразить аргументы инструмента";
 	}
 }
 
@@ -46,7 +46,7 @@ export function PendingApprovalMessage({
 
 	const toolCallId = approval.toolCallId?.trim() ?? "";
 	const toolName =
-		approval.toolName?.trim().replaceAll("_", " ") || "tool execution";
+		approval.toolName?.trim().replaceAll("_", " ") || "выполнение инструмента";
 	const renderedArgs = stringifyArgs(approval.args);
 	const canRespond = toolCallId.length > 0;
 
@@ -75,11 +75,11 @@ export function PendingApprovalMessage({
 			<MessageContent>
 				<div className="w-full max-w-none space-y-3 rounded-xl border bg-card/95 p-3">
 					<div className="text-sm text-foreground">
-						The agent requested permission to run {toolName}.
+						Агент запрашивает разрешение на «{toolName}».
 					</div>
 					<div className="rounded-md border bg-muted/20 p-3">
 						<div className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-							Arguments
+							Аргументы
 						</div>
 						<pre className="max-h-64 overflow-auto text-xs whitespace-pre-wrap break-words">
 							{renderedArgs}
@@ -95,7 +95,7 @@ export function PendingApprovalMessage({
 								void handleRespond("always_allow_category");
 							}}
 						>
-							Always allow category
+							Всегда разрешать
 						</Button>
 						<div className="flex items-center gap-2">
 							<Button
@@ -107,7 +107,7 @@ export function PendingApprovalMessage({
 									void handleRespond("decline");
 								}}
 							>
-								Decline
+								Отклонить
 							</Button>
 							<Button
 								type="button"
@@ -117,7 +117,7 @@ export function PendingApprovalMessage({
 									void handleRespond("approve");
 								}}
 							>
-								Approve
+								Разрешить
 							</Button>
 						</div>
 					</div>

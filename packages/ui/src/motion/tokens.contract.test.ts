@@ -2,9 +2,14 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	ease,
+	gestureGrammar,
 	motionDuration,
 	motionShake,
 	motionSpring,
+	PANEL_SCENE_VT_NAME,
+	panelSceneMotion,
+	rightPanelGeometry,
+	rightPanelGlide,
 	shakeVariants,
 	shellBootVariants,
 } from "./tokens";
@@ -53,5 +58,45 @@ describe("motion token contract (append-only lane)", () => {
 		expect(shakeVariants.rest).toBeDefined();
 		expect(shakeVariants.shake).toBeDefined();
 		expect(Array.isArray(motionShake.x)).toBe(true);
+	});
+
+	it("keeps the panel-scene tokens (case 054)", () => {
+		expect(panelSceneMotion.enterOffset).toBeGreaterThan(0);
+		expect(panelSceneMotion.exitOffset).toBeGreaterThan(0);
+		expect(panelSceneMotion.replaceFade).toBeGreaterThan(0);
+		expect(panelSceneMotion.replaceFade).toBeLessThan(1);
+		// Reuses the panel spring so the morph matches sidebar/zen geometry.
+		expect(panelSceneMotion.spring).toBe(motionSpring.panel);
+		expect(PANEL_SCENE_VT_NAME).toBe("rox-panel-scene");
+	});
+
+	it("keeps the gesture-grammar thresholds (case 051)", () => {
+		// Swipe-to-commit: preview reveals before commit fires.
+		expect(gestureGrammar.swipe.previewThreshold).toBeLessThan(
+			gestureGrammar.swipe.commitThreshold,
+		);
+		expect(gestureGrammar.swipe.velocityCommit).toBeGreaterThan(0);
+		expect(gestureGrammar.swipe.quickTagChipWidth).toBeGreaterThan(0);
+		// Pan-resize: collapse below min, min below max, snap window positive.
+		expect(gestureGrammar.panResize.minSize).toBeLessThan(
+			gestureGrammar.panResize.maxSize,
+		);
+		expect(gestureGrammar.panResize.collapseThreshold).toBeGreaterThan(0);
+		expect(gestureGrammar.panResize.snapThreshold).toBeGreaterThan(0);
+		// Edge-swipe + long-press timings.
+		expect(gestureGrammar.edgeSwipe.edgeWidth).toBeGreaterThan(0);
+		expect(gestureGrammar.edgeSwipe.openThreshold).toBeGreaterThan(0);
+		expect(gestureGrammar.longPress.duration).toBeGreaterThan(0);
+		expect(gestureGrammar.longPress.moveTolerance).toBeGreaterThan(0);
+	});
+
+	it("keeps the right-panel 3-state geometry + glide (F03 / #616)", () => {
+		expect(rightPanelGlide.duration).toBe(0.24);
+		expect(rightPanelGlide.ease).toEqual(ease.standard);
+		expect(rightPanelGeometry.hiddenWidth).toBe(0);
+		expect(rightPanelGeometry.peekWidth).toBe(200);
+		expect(rightPanelGeometry.expandedWidth).toBe(340);
+		expect(rightPanelGeometry.edgePillWidth).toBe(34);
+		expect(rightPanelGeometry.edgePillHeight).toBe(44);
 	});
 });

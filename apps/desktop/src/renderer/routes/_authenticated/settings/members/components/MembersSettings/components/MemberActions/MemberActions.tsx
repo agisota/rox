@@ -14,6 +14,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { formatOrganizationRole } from "@rox/ui/org-management";
 import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -21,16 +22,6 @@ import { HiEllipsisVertical, HiOutlineTrash } from "react-icons/hi2";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import type { TeamMember } from "../../../../types";
-
-const ROLE_LABELS: Record<OrganizationRole, string> = {
-	owner: "Владелец",
-	admin: "Администратор",
-	member: "Участник",
-};
-
-function getRoleLabel(role: OrganizationRole): string {
-	return ROLE_LABELS[role];
-}
 
 export function MemberActions({
 	member,
@@ -116,7 +107,7 @@ export function MemberActions({
 				memberId: member.memberId,
 				role: newRole,
 			});
-			toast.success(`Роль изменена на «${getRoleLabel(newRole)}»`);
+			toast.success(`Роль изменена на «${formatOrganizationRole(newRole)}»`);
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : "Не удалось изменить роль",
@@ -133,7 +124,7 @@ export function MemberActions({
 		if (isSelfDemotion) {
 			alert({
 				title: "Понизить свою роль?",
-				description: `Вы собираетесь изменить свою роль с «${getRoleLabel(member.role)}» на «${getRoleLabel(newRole)}». Восстановить ваши права сможет только другой владелец. Продолжить?`,
+				description: `Вы собираетесь изменить свою роль с «${formatOrganizationRole(member.role)}» на «${formatOrganizationRole(newRole)}». Восстановить ваши права сможет только другой владелец. Продолжить?`,
 				actions: [
 					{ label: "Отмена", variant: "outline", onClick: () => {} },
 					{
@@ -168,7 +159,7 @@ export function MemberActions({
 									onSelect={() => handleRoleSelection(role)}
 									disabled={isChangingRole}
 								>
-									Изменить на «{getRoleLabel(role)}»
+									Изменить на «{formatOrganizationRole(role)}»
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuSubContent>

@@ -1,9 +1,10 @@
 export {
+	applyPermissionMode,
 	destroyRuntime,
 	generateAndSetTitle,
 	type LifecycleEvent,
 	onUserPromptSubmit,
-	type RuntimeHarness,
+	type RuntimeEngine,
 	type RuntimeHookManager,
 	type RuntimeMcpManager,
 	type RuntimeMcpServerStatus,

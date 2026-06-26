@@ -1,4 +1,5 @@
-import { basename, resolve as resolvePath } from "node:path";
+import { mkdirSync } from "node:fs";
+import { basename, join, resolve as resolvePath } from "node:path";
 import {
 	type ParsedGitHubRemote,
 	parseGitHubRemote,
@@ -10,8 +11,13 @@ import { z } from "zod";
 import { projects, workspaces } from "../../../db/schema";
 import { logger } from "../../../lib/logger";
 import { createUserSimpleGit } from "../../../runtime/git/simple-git";
+import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
-import { normalizeWorktreeBaseDir } from "../workspace-creation/shared/worktree-paths";
+import { getHostProjectsBaseDir } from "../settings/host-settings";
+import {
+	defaultProjectsRoot,
+	normalizeWorktreeBaseDir,
+} from "../workspace-creation/shared/worktree-paths";
 import {
 	createFromClone,
 	createFromEmpty,
@@ -31,6 +37,28 @@ import {
 	validateDirectoryPath,
 } from "./utils/resolve-repo";
 
+/**
+ * Resolve the parent dir new projects are created under. An explicit
+ * caller-provided `parentDir` wins (back-compat: the renderer still sends one);
+ * otherwise the host `projectsBaseDir` setting (or its `~/rox` default) is the
+ * source of truth, with `projects` appended — replacing the renderer's old
+ * hardcoded `~/rox/projects`.
+ */
+function resolveCreateParentDir(
+	ctx: Pick<HostServiceContext, "db">,
+	explicitParentDir: string | undefined,
+): string {
+	// Explicit caller value is used verbatim — the renderer already mkdir's the
+	// dirs it sends, and `initEmptyRepo`/`cloneInto` validate it exists.
+	if (explicitParentDir) return explicitParentDir;
+	// Host-derived path: the host now owns deriving the parent, so it also owns
+	// making it exist (mirrors `createApp`'s `mkdir(defaultWorktreesRoot())`).
+	const base = getHostProjectsBaseDir(ctx.db) ?? defaultProjectsRoot();
+	const parentDir = join(base, "projects");
+	mkdirSync(parentDir, { recursive: true });
+	return parentDir;
+}
+
 export const projectRouter = router({
 	list: protectedProcedure.query(({ ctx }) => {
 		return ctx.db
@@ -41,6 +69,12 @@ export const projectRouter = router({
 				repoName: projects.repoName,
 				repoUrl: projects.repoUrl,
 				worktreeBaseDir: projects.worktreeBaseDir,
+				// #537: surface the local-first sync state so the renderer can show a
+				// per-project "syncing…/synced/retrying" indicator. `cloudId` is null
+				// until the outbox worker links the cloud row; on the synchronous-cloud
+				// path `syncState` is `synced`-by-construction.
+				cloudId: projects.cloudId,
+				syncState: projects.syncState,
 			})
 			.from(projects)
 			.all();
@@ -60,6 +94,9 @@ export const projectRouter = router({
 						worktreeBaseDir: projects.worktreeBaseDir,
 						branchPrefixMode: projects.branchPrefixMode,
 						branchPrefixCustom: projects.branchPrefixCustom,
+						// #537: same local-first sync fields as `list`, for a detail view.
+						cloudId: projects.cloudId,
+						syncState: projects.syncState,
 					})
 					.from(projects)
 					.where(eq(projects.id, input.projectId))
@@ -401,11 +438,14 @@ export const projectRouter = router({
 				mode: z.discriminatedUnion("kind", [
 					z.object({
 						kind: z.literal("empty"),
-						parentDir: z.string().min(1),
+						// Optional: when omitted, the host `projectsBaseDir` setting
+						// (default `~/rox`) decides the parent dir. The renderer still
+						// sends one for back-compat.
+						parentDir: z.string().min(1).optional(),
 					}),
 					z.object({
 						kind: z.literal("clone"),
-						parentDir: z.string().min(1),
+						parentDir: z.string().min(1).optional(),
 						url: z.string().min(1),
 					}),
 					z.object({
@@ -418,7 +458,7 @@ export const projectRouter = router({
 					}),
 					z.object({
 						kind: z.literal("template"),
-						parentDir: z.string().min(1),
+						parentDir: z.string().min(1).optional(),
 						url: z
 							.string()
 							.min(1)
@@ -434,20 +474,20 @@ export const projectRouter = router({
 				case "empty":
 					return createFromEmpty(ctx, {
 						name: input.name,
-						parentDir: input.mode.parentDir,
+						parentDir: resolveCreateParentDir(ctx, input.mode.parentDir),
 						starterPresetIds: input.starterPresetIds,
 					});
 				case "template":
 					return createFromTemplate(ctx, {
 						name: input.name,
-						parentDir: input.mode.parentDir,
+						parentDir: resolveCreateParentDir(ctx, input.mode.parentDir),
 						url: input.mode.url,
 						starterPresetIds: input.starterPresetIds,
 					});
 				case "clone":
 					return createFromClone(ctx, {
 						name: input.name,
-						parentDir: input.mode.parentDir,
+						parentDir: resolveCreateParentDir(ctx, input.mode.parentDir),
 						url: input.mode.url,
 						starterPresetIds: input.starterPresetIds,
 					});

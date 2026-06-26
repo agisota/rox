@@ -15,7 +15,7 @@ export function AttachmentChip({
 	onClick,
 }: AttachmentChipProps) {
 	const isImage = mediaType.startsWith("image/");
-	const label = filename || (isImage ? "Image" : "Attachment");
+	const label = filename || (isImage ? "Изображение" : "Вложение");
 
 	const className =
 		"flex h-8 items-center gap-1.5 rounded-md border border-foreground/20 bg-background/50 px-1.5 text-sm font-medium transition-colors hover:bg-background";

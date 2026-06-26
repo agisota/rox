@@ -16,9 +16,12 @@ Bun + Turbo monorepo with:
   - `apps/marketing` - Marketing site (rox.one)
   - `apps/admin` - Admin dashboard
   - `apps/api` - API backend
-  - `apps/desktop` - Electron desktop application
+  - `apps/desktop` - Electron desktop application ("The last developer tool you'll ever need")
   - `apps/docs` - Documentation site
   - `apps/mobile` - React Native mobile app (Expo)
+  - `apps/electric-proxy` - Electric live-sync proxy
+  - `apps/relay` - Relay service
+  - `apps/streams` - Stream processing
 - **Packages**:
   - `packages/ui` - Shared UI components (shadcn/ui + TailwindCSS v4).
     - Add components: `npx shadcn@latest add <component>` (run in `packages/ui/`)
@@ -28,9 +31,32 @@ Bun + Turbo monorepo with:
   - `packages/shared` - Shared utilities
   - `packages/mcp` - MCP integration
   - `packages/local-db` - Local SQLite database
-  - `packages/durable-session` - Durable session management
   - `packages/email` - Email templates/sending
   - `packages/scripts` - CLI tooling
+  - `packages/agent-bridge` - Agent bridge
+  - `packages/agent-state` - Agent state
+  - `packages/analytics` - Analytics
+  - `packages/chat` - Chat + slash commands
+  - `packages/cli` - CLI
+  - `packages/cli-framework` - CLI framework
+  - `packages/collab` - Collaboration
+  - `packages/comms-core` - Comms core
+  - `packages/host-provisioner` - Host provisioner
+  - `packages/host-service` - Host service (git/worktree)
+  - `packages/macos-process-metrics` - macOS process metrics
+  - `packages/mcp-v2` - MCP v2
+  - `packages/panes` - Panes
+  - `packages/port-scanner` - Port scanner
+  - `packages/pty-daemon` - PTY daemon
+  - `packages/rtc` - RTC
+  - `packages/runtime-clients` - Runtime clients
+  - `packages/sdk` - TypeScript SDK for the Rox API
+  - `packages/storage` - Storage
+  - `packages/workflow-core` - Workflow core
+  - `packages/workflow-runtime` - Workflow runtime
+  - `packages/workflow-sim-adapter` - Workflow sim adapter
+  - `packages/workspace-client` - Workspace client
+  - `packages/workspace-fs` - Workspace FS
 - **Tooling**:
   - `tooling/typescript` - Shared TypeScript configs
 

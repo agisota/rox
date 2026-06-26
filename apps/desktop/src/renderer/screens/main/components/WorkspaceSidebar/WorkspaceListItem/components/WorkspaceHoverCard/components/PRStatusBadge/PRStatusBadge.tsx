@@ -11,10 +11,10 @@ export function PRStatusBadge({ state }: PRStatusBadgeProps) {
 	};
 
 	const labels = {
-		open: "Open",
-		draft: "Draft",
-		merged: "Merged",
-		closed: "Closed",
+		open: "Открыт",
+		draft: "Черновик",
+		merged: "Влит",
+		closed: "Закрыт",
 	};
 
 	return (

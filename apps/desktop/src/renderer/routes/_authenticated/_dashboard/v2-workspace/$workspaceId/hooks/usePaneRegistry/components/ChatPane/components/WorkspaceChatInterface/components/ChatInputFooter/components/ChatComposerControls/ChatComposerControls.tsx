@@ -1,3 +1,4 @@
+import { ComposerContextRing } from "@rox/ui/ai-elements/composer-context-ring";
 import {
 	PromptInputFooter,
 	PromptInputSubmit,
@@ -23,14 +24,23 @@ interface ChatComposerControlsProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	/** Persisted selection id that failed to resolve; surfaces in the pill. */
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	// Value-only setter: the underlying PermissionModePicker.onSelectMode only
+	// ever calls it with a concrete mode, so this accepts both the store-backed
+	// `usePermissionModePreference` setter and a plain `useState` dispatcher.
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	canAbort: boolean;
 	submitStatus?: ChatStatus;
 	submitDisabled?: boolean;
 	onStop: (event: React.MouseEvent) => void;
+	/** Estimated tokens currently in the conversation context window (F42 ring). */
+	usedTokens?: number;
+	/** Selected model's context window in tokens (F42 ring). */
+	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -39,6 +49,7 @@ export function ChatComposerControls({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -47,6 +58,8 @@ export function ChatComposerControls({
 	submitStatus,
 	submitDisabled,
 	onStop,
+	usedTokens,
+	maxTokens,
 }: ChatComposerControlsProps) {
 	return (
 		<PromptInputFooter>
@@ -61,12 +74,21 @@ export function ChatComposerControls({
 					onSelectModel={setSelectedModel}
 					open={modelSelectorOpen}
 					onOpenChange={setModelSelectorOpen}
+					unresolvedModelId={unresolvedModelId}
 				/>
 				<ReasoningLevelSlider
 					level={thinkingLevel}
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}
 				/>
+				{maxTokens && maxTokens > 0 ? (
+					<ComposerContextRing
+						className={PILL_BUTTON_CLASS}
+						maxTokens={maxTokens}
+						modelId={selectedModel?.id}
+						usedTokens={usedTokens ?? 0}
+					/>
+				) : null}
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />

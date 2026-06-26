@@ -33,7 +33,7 @@ function createRuntimeForTest(): {
 } {
 	let listener: ((event: unknown) => void) | null = null;
 
-	const harness = {
+	const engine = {
 		subscribe: (cb: (event: unknown) => void) => {
 			listener = cb;
 			return () => {};
@@ -45,11 +45,11 @@ function createRuntimeForTest(): {
 			},
 		}),
 		getFullModelId: () => "anthropic/claude-opus-4-6",
-	} as RuntimeSession["harness"];
+	} as RuntimeSession["engine"];
 
 	const runtime: RuntimeSession = {
 		sessionId: "11111111-1111-1111-1111-111111111111",
-		harness,
+		engine,
 		mcpManager: null as RuntimeSession["mcpManager"],
 		hookManager: null as RuntimeSession["hookManager"],
 		mcpManualStatuses: new Map(),
@@ -90,7 +90,7 @@ function createRuntimeForTitleTest(options?: {
 
 	const runtime: RuntimeSession = {
 		sessionId: "11111111-1111-1111-1111-111111111111",
-		harness: {
+		engine: {
 			subscribe: () => () => {},
 			listMessages: async () => messages,
 			getCurrentMode: () => ({
@@ -99,7 +99,7 @@ function createRuntimeForTitleTest(options?: {
 				},
 			}),
 			getFullModelId: () => "anthropic/claude-opus-4-6",
-		} as RuntimeSession["harness"],
+		} as RuntimeSession["engine"],
 		mcpManager: null as RuntimeSession["mcpManager"],
 		hookManager: null as RuntimeSession["hookManager"],
 		mcpManualStatuses: new Map(),
@@ -320,7 +320,7 @@ describe("runtime message restart", () => {
 
 		const runtime: RuntimeSession = {
 			sessionId: "11111111-1111-1111-1111-111111111111",
-			harness: {
+			engine: {
 				getCurrentThreadId: () => "thread-1",
 				abort: () => {},
 				switchThread: async (input: Record<string, unknown>) => {
@@ -332,12 +332,8 @@ describe("runtime message restart", () => {
 				sendMessage: async (input: Record<string, unknown>) => {
 					sendMessageInputs.push(input);
 				},
-				config: {
-					storage: {
-						getStore: async () => memoryStore,
-					},
-				},
-			} as unknown as RuntimeSession["harness"],
+				getMemoryStore: async () => memoryStore,
+			} as unknown as RuntimeSession["engine"],
 			mcpManager: null as RuntimeSession["mcpManager"],
 			hookManager: null as RuntimeSession["hookManager"],
 			mcpManualStatuses: new Map(),

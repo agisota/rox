@@ -1,8 +1,13 @@
+import { useCascadeRules } from "@rox/ui/hooks/use-breakpoint";
+import { useZenMode } from "@rox/ui/hooks/use-zen-mode";
 import {
 	RouteTransition,
 	shellBootVariants,
 	useShouldAnimate,
+	zenDensity,
+	zenSceneTransition,
 } from "@rox/ui/motion";
+import { ShellSidebarRegion } from "@rox/ui/shell-sidebar-region";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import {
@@ -65,6 +70,21 @@ function DashboardLayout() {
 	useDevSeedV2Sidebar();
 	// Case 002 / PR-02: one-shot first-mount entrance for the shell columns.
 	const shouldAnimate = useShouldAnimate("decorative");
+	// Case 056 / PR-56 (#649): shell-level Focus / Zen mode. The on/off state
+	// lives in the platform-neutral `@rox/shared/zen-mode` store; while active we
+	// collapse the side rails, expand the canvas, and dim the surrounding chrome.
+	const { isZen, toggleZen } = useZenMode();
+	const chromeOpacity = isZen ? zenDensity.chromeDim : zenDensity.chromeRest;
+	// Case 005 / PR-05 (#639): shell-level responsive cascade. The viewport tier
+	// (wide / tablet / phone) and its per-region collapse rules come from the
+	// shared `@rox/shared/breakpoints` core via `useCascadeRules`; the same
+	// contract drives web and mobile. On the phone tier the left sidebar collapses
+	// from an in-flow rail to a hamburger + slide-in drawer, and the right context
+	// slot switches from docked to a slide-over — the right-panel consumer reads
+	// the tier off the slot's `data-right-panel`. The center column reflows in
+	// place: same DOM tree, no separate mobile render.
+	const cascade = useCascadeRules();
+	const sidebarAsDrawer = cascade.sidebar === "drawer";
 	// Case 003 / PR-03: key the route transition on the TOP-LEVEL path segment
 	// only (e.g. `/v2-workspace`), never the full pathname — keying by params
 	// would remount the entire panes subtree on every workspace switch.
@@ -131,6 +151,7 @@ function DashboardLayout() {
 	useHotkey("NEW_WORKSPACE", () =>
 		openNewWorkspaceModal(currentWorkspace?.projectId),
 	);
+	useHotkey("TOGGLE_ZEN_MODE", () => toggleZen());
 
 	const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
@@ -169,7 +190,27 @@ function DashboardLayout() {
 		},
 	);
 
-	const sidebarPanel = isWorkspaceSidebarOpen && (
+	// The logical sidebar body, shared verbatim between the docked rail and the
+	// phone drawer so the two presentations can never diverge (#639). On the
+	// drawer tier we never collapse the body — the drawer is already a compact
+	// overlay — so it always renders expanded there.
+	const sidebarContent = isV2CloudEnabled ? (
+		<DashboardSidebar
+			isCollapsed={!sidebarAsDrawer && isWorkspaceSidebarCollapsed()}
+		/>
+	) : (
+		<WorkspaceSidebar
+			isCollapsed={!sidebarAsDrawer && isWorkspaceSidebarCollapsed()}
+			activeProjectId={currentWorkspace?.projectId ?? null}
+			activeProjectName={currentWorkspace?.project?.name ?? null}
+		/>
+	);
+
+	// Zen mode collapses the side rail entirely so the canvas takes the full
+	// width; toggling back restores the prior sidebar state untouched. The docked
+	// rail is the wide/tablet presentation; on phone the same content moves into
+	// `ShellSidebarRegion`'s slide-in drawer (rail → hamburger).
+	const dockedSidebar = (
 		<motion.div
 			className="flex h-full shrink-0"
 			variants={shouldAnimate ? shellBootVariants.sidebar : undefined}
@@ -187,25 +228,37 @@ function DashboardLayout() {
 					setWorkspaceSidebarWidth(DEFAULT_WORKSPACE_SIDEBAR_WIDTH)
 				}
 			>
-				{isV2CloudEnabled ? (
-					<DashboardSidebar isCollapsed={isWorkspaceSidebarCollapsed()} />
-				) : (
-					<WorkspaceSidebar
-						isCollapsed={isWorkspaceSidebarCollapsed()}
-						activeProjectId={currentWorkspace?.projectId ?? null}
-						activeProjectName={currentWorkspace?.project?.name ?? null}
-					/>
-				)}
+				{sidebarContent}
 			</ResizablePanel>
 		</motion.div>
 	);
 
+	// Wide/tablet: docked rail, gated on the open + non-zen state as before.
+	// Phone: the hamburger + drawer always mount (so the user can summon nav even
+	// when the rail would be "closed"), but zen still suppresses the region.
+	const sidebarPanel = !isZen &&
+		(sidebarAsDrawer || isWorkspaceSidebarOpen) && (
+			<ShellSidebarRegion
+				asDrawer={sidebarAsDrawer}
+				dockedSidebar={isWorkspaceSidebarOpen ? dockedSidebar : null}
+				drawerOpen={isWorkspaceSidebarOpen}
+				onDrawerOpenChange={setWorkspaceSidebarOpen}
+			>
+				{sidebarContent}
+			</ShellSidebarRegion>
+		);
+
 	// Only lift the sidebar out of the TopBar column when v2 + expanded.
 	// Collapsed/closed sidebars stay inside so the TopBar runs full-width.
+	// On the phone tier the sidebar is a portaled drawer, never an in-flow
+	// column, so it can never be "outside the column" — keep the TopBar
+	// full-width there.
 	const sidebarOutsideColumn =
+		!sidebarAsDrawer &&
 		isV2CloudEnabled &&
 		isWorkspaceSidebarOpen &&
-		!isWorkspaceSidebarCollapsed();
+		!isWorkspaceSidebarCollapsed() &&
+		!isZen;
 
 	return (
 		<motion.div
@@ -220,7 +273,15 @@ function DashboardLayout() {
 				className="flex flex-1 flex-col min-w-0 min-h-0"
 				variants={shouldAnimate ? shellBootVariants.column : undefined}
 			>
-				<TopBar />
+				{/* Zen mode dims the chrome (top bar) toward the canvas. Animate
+				    when motion is allowed; otherwise snap to the target opacity. */}
+				<motion.div
+					animate={{ opacity: chromeOpacity }}
+					initial={false}
+					transition={shouldAnimate ? zenSceneTransition : { duration: 0 }}
+				>
+					<TopBar />
+				</motion.div>
 				<div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 					{!sidebarOutsideColumn && sidebarPanel}
 					<RouteTransition
@@ -230,7 +291,16 @@ function DashboardLayout() {
 					</RouteTransition>
 				</div>
 			</motion.div>
-			<div id="workspace-right-sidebar-slot" className="flex h-full shrink-0" />
+			{/* Right context region of the cascade (#639). The slot stays in the
+			    DOM at every tier; the right-panel consumer reflows its docking by
+			    reading `data-right-panel` — `docked` (wide), `overlay` (tablet),
+			    `slide-over` (phone) — off the shared cascade rules. */}
+			<div
+				id="workspace-right-sidebar-slot"
+				data-tier={cascade.tier}
+				data-right-panel={cascade.rightPanel}
+				className="flex h-full shrink-0"
+			/>
 			<AddRepositoryModals />
 			<GithubConnectBanner />
 			{deleteTarget?.version === "v1" && (

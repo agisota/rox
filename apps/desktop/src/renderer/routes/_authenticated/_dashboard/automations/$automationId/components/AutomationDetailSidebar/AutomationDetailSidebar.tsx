@@ -1,13 +1,22 @@
-import type { SelectAutomation, SelectAutomationRun } from "@rox/db/schema";
+import type {
+	SelectAutomation,
+	SelectAutomationRun,
+	SelectV2Host,
+} from "@rox/db/schema";
 import { formatDateTimeInTimezone } from "@rox/shared/rrule";
 import { StatusPulse } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
+import { useLiveQuery } from "@tanstack/react-db";
 import { useMutation } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { LuArrowRight } from "react-icons/lu";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
 import { useWorkspaceHostOptions } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker/hooks/useWorkspaceHostOptions/useWorkspaceHostOptions";
+import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { AgentPicker } from "../../../components/AgentPicker";
 import { ProjectPicker } from "../../../components/ProjectPicker";
+import { RunDrawer } from "../../../components/RunDrawer";
 import { SchedulePicker } from "../../../components/SchedulePicker";
 import { TimezonePicker } from "../../../components/TimezonePicker";
 import { WorkspacePicker } from "../../../components/WorkspacePicker";
@@ -15,7 +24,6 @@ import { useRecentProjects } from "../../../hooks/useRecentProjects";
 import { PreviousRunsList } from "../PreviousRunsList";
 import { Row } from "./components/Row";
 import { Section } from "./components/Section";
-import { SectionTitle } from "./components/SectionTitle";
 
 interface AutomationDetailSidebarProps {
 	automation: SelectAutomation;
@@ -27,9 +35,29 @@ export function AutomationDetailSidebar({
 	recentRuns,
 }: AutomationDetailSidebarProps) {
 	const recentProjects = useRecentProjects();
+	const collections = useCollections();
 	const { localHostId } = useWorkspaceHostOptions();
+	const [runDrawerOpen, setRunDrawerOpen] = useState(false);
 	const selectedProject = recentProjects.find(
 		(p) => p.id === automation.v2ProjectId,
+	);
+
+	const { data: hostRows = [] } = useLiveQuery(
+		(q) =>
+			q
+				.from({ h: collections.v2Hosts })
+				.select(({ h }) => ({ machineId: h.machineId, name: h.name })),
+		[collections.v2Hosts],
+	);
+	// Live queries can briefly surface nullish rows while syncing (see #4519).
+	const hostNames = useMemo(
+		() =>
+			new Map(
+				(hostRows as Pick<SelectV2Host, "machineId" | "name">[])
+					.filter((h) => h != null)
+					.map((h) => [h.machineId, h.name]),
+			),
+		[hostRows],
 	);
 
 	const hostId = automation.targetHostId ?? localHostId ?? null;
@@ -141,6 +169,7 @@ export function AutomationDetailSidebar({
 							<SchedulePicker
 								className="-mr-4"
 								rrule={automation.rrule}
+								timezone={automation.timezone}
 								onRruleChange={(rrule) => updateMutation.mutate({ rrule })}
 							/>
 						}
@@ -182,11 +211,30 @@ export function AutomationDetailSidebar({
 			</div>
 
 			<div className="mt-6 flex min-h-0 flex-1 flex-col gap-2 pl-5 pr-3 pb-5">
-				<SectionTitle>Предыдущие запуски</SectionTitle>
+				<div className="flex items-center justify-between pr-2">
+					<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+						Предыдущие запуски
+					</span>
+					<button
+						type="button"
+						onClick={() => setRunDrawerOpen(true)}
+						className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+					>
+						Все запуски
+						<LuArrowRight className="size-3.5" />
+					</button>
+				</div>
 				<div className="min-h-0 flex-1 overflow-y-auto">
 					<PreviousRunsList runs={recentRuns} />
 				</div>
 			</div>
+
+			<RunDrawer
+				automation={automation}
+				hostNames={hostNames}
+				open={runDrawerOpen}
+				onOpenChange={setRunDrawerOpen}
+			/>
 		</aside>
 	);
 }

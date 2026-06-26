@@ -22,11 +22,11 @@ interface PendingReveal {
 
 export function useWorkspaceFileNavigation({
 	store,
-	setRightSidebarOpen,
+	setRightSidebarState,
 	setRightSidebarTab,
 }: {
 	store: StoreApi<WorkspaceStore<PaneViewerData>>;
-	setRightSidebarOpen: V2UserPreferencesApi["setRightSidebarOpen"];
+	setRightSidebarState: V2UserPreferencesApi["setRightSidebarState"];
 	setRightSidebarTab: V2UserPreferencesApi["setRightSidebarTab"];
 }): {
 	openFilePane: (filePath: string, openInNewTab?: boolean) => void;
@@ -179,12 +179,15 @@ export function useWorkspaceFileNavigation({
 
 	const revealPath = useCallback(
 		(path: string, options?: { isDirectory?: boolean }) => {
-			setRightSidebarOpen(true);
+			// Open-file → expanded (F03 / #616 ↔ F33): revealing a file always
+			// surfaces the full Files panel, not the narrow peek snap, so the
+			// reveal (expand + highlight + scroll) is actually visible.
+			setRightSidebarState("expanded");
 			setRightSidebarTab("files");
 			setSelectedFilePath(path);
 			setPendingReveal({ path, isDirectory: options?.isDirectory === true });
 		},
-		[setRightSidebarOpen, setRightSidebarTab],
+		[setRightSidebarState, setRightSidebarTab],
 	);
 
 	return {

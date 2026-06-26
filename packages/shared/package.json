@@ -8,6 +8,10 @@
 			"types": "./src/async.ts",
 			"default": "./src/async.ts"
 		},
+		"./mcp-catalog": {
+			"types": "./src/mcp-catalog.ts",
+			"default": "./src/mcp-catalog.ts"
+		},
 		"./error": {
 			"types": "./src/error.ts",
 			"default": "./src/error.ts"
@@ -24,9 +28,37 @@
 			"types": "./src/unified-search-results.ts",
 			"default": "./src/unified-search-results.ts"
 		},
+		"./search": {
+			"types": "./src/search/index.ts",
+			"default": "./src/search/index.ts"
+		},
 		"./session-object-link": {
 			"types": "./src/session-object-link.ts",
 			"default": "./src/session-object-link.ts"
+		},
+		"./crm-contacts": {
+			"types": "./src/crm-contacts.ts",
+			"default": "./src/crm-contacts.ts"
+		},
+		"./object-comments": {
+			"types": "./src/object-comments.ts",
+			"default": "./src/object-comments.ts"
+		},
+		"./project-templates": {
+			"types": "./src/project-templates.ts",
+			"default": "./src/project-templates.ts"
+		},
+		"./calendar-share": {
+			"types": "./src/calendar-share.ts",
+			"default": "./src/calendar-share.ts"
+		},
+		"./chat-token-budget": {
+			"types": "./src/chat-token-budget.ts",
+			"default": "./src/chat-token-budget.ts"
+		},
+		"./issue-board": {
+			"types": "./src/issue-board.ts",
+			"default": "./src/issue-board.ts"
 		},
 		"./attribution": {
 			"types": "./src/attribution.ts",
@@ -63,6 +95,10 @@
 		"./chat-models": {
 			"types": "./src/chat-models.ts",
 			"default": "./src/chat-models.ts"
+		},
+		"./chat-permission-mode": {
+			"types": "./src/chat-permission-mode.ts",
+			"default": "./src/chat-permission-mode.ts"
 		},
 		"./rox-ledger": {
 			"types": "./src/rox-ledger.ts",
@@ -112,6 +148,18 @@
 			"types": "./src/appearance/index.ts",
 			"default": "./src/appearance/index.ts"
 		},
+		"./tts": {
+			"types": "./src/tts/index.ts",
+			"default": "./src/tts/index.ts"
+		},
+		"./prefs": {
+			"types": "./src/prefs.ts",
+			"default": "./src/prefs.ts"
+		},
+		"./offline-queue": {
+			"types": "./src/offline-queue.ts",
+			"default": "./src/offline-queue.ts"
+		},
 		"./canvas": {
 			"types": "./src/canvas/index.ts",
 			"default": "./src/canvas/index.ts"
@@ -139,6 +187,14 @@
 		"./agent-catalog": {
 			"types": "./src/agent-catalog.ts",
 			"default": "./src/agent-catalog.ts"
+		},
+		"./agent-roles": {
+			"types": "./src/agent-roles.ts",
+			"default": "./src/agent-roles.ts"
+		},
+		"./git-binary": {
+			"types": "./src/git-binary.ts",
+			"default": "./src/git-binary.ts"
 		},
 		"./agent-identity": {
 			"types": "./src/agent-identity.ts",
@@ -211,6 +267,10 @@
 		"./host-info": {
 			"types": "./src/host-info.ts",
 			"default": "./src/host-info.ts"
+		},
+		"./skills/curated-default-skills": {
+			"types": "./src/skills/curated-default-skills.ts",
+			"default": "./src/skills/curated-default-skills.ts"
 		},
 		"./host-routing": {
 			"types": "./src/host-routing.ts",
@@ -287,6 +347,42 @@
 		"./comms-events": {
 			"types": "./src/comms-events.ts",
 			"default": "./src/comms-events.ts"
+		},
+		"./identity-glyph": {
+			"types": "./src/identity-glyph.ts",
+			"default": "./src/identity-glyph.ts"
+		},
+		"./label-style": {
+			"types": "./src/label-style.ts",
+			"default": "./src/label-style.ts"
+		},
+		"./context-usage": {
+			"types": "./src/context-usage.ts",
+			"default": "./src/context-usage.ts"
+		},
+		"./command-palette": {
+			"types": "./src/command-palette/index.ts",
+			"default": "./src/command-palette/index.ts"
+		},
+		"./zen-mode": {
+			"types": "./src/zen-mode.ts",
+			"default": "./src/zen-mode.ts"
+		},
+		"./right-panel-state": {
+			"types": "./src/right-panel-state.ts",
+			"default": "./src/right-panel-state.ts"
+		},
+		"./breakpoints": {
+			"types": "./src/breakpoints.ts",
+			"default": "./src/breakpoints.ts"
+		},
+		"./memory-context": {
+			"types": "./src/memory-context.ts",
+			"default": "./src/memory-context.ts"
+		},
+		"./workspace-status": {
+			"types": "./src/workspace-status.ts",
+			"default": "./src/workspace-status.ts"
 		}
 	},
 	"scripts": {
@@ -299,6 +395,7 @@
 		"@zap-studio/retry": "0.3.0",
 		"friendly-words": "1.3.1",
 		"jose": "6.2.2",
+		"perfect-freehand": "1.2.2",
 		"rrule": "2.8.1",
 		"zod": "4.3.6"
 	},

@@ -1,11 +1,14 @@
-import type { createMastraCode } from "mastracode";
+import type { Engine } from "@rox/chat/server/engine";
+import { permissionModeSchema } from "@rox/shared/chat-permission-mode";
 import { z } from "zod";
 
-type Harness = Awaited<ReturnType<typeof createMastraCode>>["harness"];
-type SendMessagePayload = Parameters<Harness["sendMessage"]>[0];
-type ApprovalPayload = Parameters<Harness["respondToToolApproval"]>[0];
-type QuestionPayload = Parameters<Harness["respondToQuestion"]>[0];
-type PlanPayload = Parameters<Harness["respondToPlanApproval"]>[0];
+// Derive the tRPC input payload types from the agent Engine surface so the zod
+// schemas below stay in lockstep with the engine's accepted shapes. The schemas
+// themselves are unchanged — `Engine`'s method params mirror the harness 1:1.
+type SendMessagePayload = Parameters<Engine["sendMessage"]>[0];
+type ApprovalPayload = Parameters<Engine["respondToToolApproval"]>[0];
+type QuestionPayload = Parameters<Engine["respondToQuestion"]>[0];
+type PlanPayload = Parameters<Engine["respondToPlanApproval"]>[0];
 
 export const searchFilesInput = z.object({
 	rootPath: z.string(),
@@ -86,6 +89,9 @@ export const sendMessageInput = z.object({
 		.object({
 			model: z.string().optional(),
 			thinkingLevel: thinkingLevelSchema.optional(),
+			// Per-turn desktop-agent permission lever; the runtime maps it to the
+			// harness yolo/permissionRules so the chosen mode is enforced.
+			permissionMode: permissionModeSchema.optional(),
 		})
 		.optional(),
 });
@@ -99,6 +105,7 @@ export const restartFromMessageInput = z.object({
 		.object({
 			model: z.string().optional(),
 			thinkingLevel: thinkingLevelSchema.optional(),
+			permissionMode: permissionModeSchema.optional(),
 		})
 		.optional(),
 });

@@ -59,6 +59,12 @@ export const setAutomationPromptSchema = z.object({
 	prompt: z.string().min(1).max(100_000),
 });
 
+export const editAutomationPromptSchema = z.object({
+	id: z.string().uuid(),
+	currentPrompt: z.string().max(100_000),
+	instruction: z.string().trim().min(1).max(4_000),
+});
+
 export const listRunsSchema = z.object({
 	automationId: z.string().uuid(),
 	limit: z.number().int().min(1).max(100).default(20),

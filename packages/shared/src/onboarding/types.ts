@@ -12,7 +12,6 @@ export type ActivationStep = (typeof ACTIVATION_STEPS)[number];
 export const REQUIRED_SURFACE_TOURS = [
 	"workspaces",
 	"workspace",
-	"quick_chat",
 	"tasks_pr",
 	"automations",
 	"pipelines",

@@ -168,6 +168,13 @@ const config: NextConfig = {
 	skipTrailingSlashRedirect: true,
 };
 
+// PWA service worker (F50 #645): the SW is built by `@serwist/cli` in
+// configurator mode (`serwist.config.ts`) as a post-`next build` step — see the
+// `build:sw` script. This repo builds with Turbopack, which the legacy
+// `@serwist/next` webpack plugin does not support, so the CLI compiles
+// `src/app/sw.ts` → `public/sw.js` independently. Registration happens client
+// side via `<SerwistProvider swUrl="/sw.js">` in `layout.tsx`.
+
 export default withSentryConfig(config, {
 	org: "agisota",
 	project: "web",

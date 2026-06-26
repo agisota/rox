@@ -183,9 +183,9 @@ export function TasksTopBar({
 					{showTaskOnlyControls && (
 						<>
 							<Button
-								data-onboarding-anchor="tasks-create"
 								variant="outline"
 								size="sm"
+								data-onboarding-anchor="tasks-create"
 								className="h-8 gap-1.5 px-3"
 								onClick={() => setIsCreateTaskOpen(true)}
 							>

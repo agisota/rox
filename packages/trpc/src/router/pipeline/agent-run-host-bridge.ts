@@ -52,6 +52,18 @@ export interface RunAgentOnHostArgs {
 	prompt: string;
 	/** Bounded max-turn budget handed to the host agent runtime. */
 	maxTurns: number;
+	/**
+	 * Effective model id (node `modelOverride` → role preset `model`), when the
+	 * resolved config selected one. Transported to the host so a chat agent's
+	 * runtime switches to it for the run (`metadata.model` → `engine.switchModel`).
+	 */
+	model?: string;
+	/**
+	 * Effective sampling temperature (node override → preset), when set. Carried to
+	 * the host alongside the model so the runtime can apply it where a temperature
+	 * knob exists; validated + forwarded end-to-end (no longer dropped at the relay).
+	 */
+	temperature?: number;
 	/** Human-readable label for the created workspace / branch slug. */
 	label: string;
 }
@@ -141,6 +153,8 @@ export async function runAgentOnHostAndCapture(
 			agent: string;
 			prompt: string;
 			maxTurns: number;
+			model?: string;
+			temperature?: number;
 		},
 		{
 			kind: HostBridgeAgentKind;
@@ -163,6 +177,11 @@ export async function runAgentOnHostAndCapture(
 			agent: args.agentId,
 			prompt: args.prompt,
 			maxTurns: args.maxTurns,
+			// Per-node model/temperature (NodeInspector #407), now transported to the
+			// host runtime instead of being resolved-then-dropped. Additive: omitted
+			// when the resolved config selected none, preserving the prior payload.
+			...(args.model != null ? { model: args.model } : {}),
+			...(args.temperature != null ? { temperature: args.temperature } : {}),
 		},
 	);
 

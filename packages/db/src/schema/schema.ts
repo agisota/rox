@@ -15,6 +15,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { entitySearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 import {
 	accessGranteeTypeValues,
@@ -26,9 +27,11 @@ import {
 	chatSessionStatusValues,
 	commandStatusValues,
 	deviceTypeValues,
+	durableSessionStatusValues,
 	integrationProviderValues,
 	taskPriorityValues,
 	taskStatusEnumValues,
+	terminalStatusValues,
 	v2ClientTypeValues,
 	v2HostKindValues,
 	v2HostProviderValues,
@@ -59,6 +62,11 @@ export const v2WorkspaceType = pgEnum(
 );
 export const v2HostKind = pgEnum("v2_host_kind", v2HostKindValues);
 export const v2HostProvider = pgEnum("v2_host_provider", v2HostProviderValues);
+export const durableSessionStatus = pgEnum(
+	"durable_session_status",
+	durableSessionStatusValues,
+);
+export const terminalStatus = pgEnum("terminal_status", terminalStatusValues);
 export const accessResourceType = pgEnum(
 	"access_resource_type",
 	accessResourceTypeValues,
@@ -184,6 +192,14 @@ export const tasks = pgTable(
 			table.externalId,
 		),
 		unique("tasks_org_slug_unique").on(table.organizationId, table.slug),
+		// Expression GIN index backing the F16 cross-entity search (Tool calls /
+		// tasks facet). Built from the SAME `entitySearchVectorSql` the search
+		// router uses so the indexed and queried expressions cannot drift. Covers
+		// the title plus the nullable description.
+		index("tasks_fts_idx").using(
+			"gin",
+			entitySearchVectorSql([table.title, table.description]),
+		),
 	],
 );
 
@@ -695,6 +711,90 @@ export const v2Workspaces = pgTable(
 export type InsertV2Workspace = typeof v2Workspaces.$inferInsert;
 export type SelectV2Workspace = typeof v2Workspaces.$inferSelect;
 
+// Mobile workspace surface cards (FN-016/FN-087). Durable Claude sessions and
+// terminals belonging to a v2 workspace, synced org-scoped (like v2_workspaces)
+// so mobile/web/desktop can show a live status badge. Status maps 1:1 onto
+// `@rox/shared/workspace-status` `SurfaceLifecycle`. The host is referenced by
+// (organization_id, host_id) -> v2_hosts(organization_id, machine_id) so an
+// offline host can be detected and the surface read `unavailable`.
+export const durableSessions = pgTable(
+	"durable_sessions",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => v2Workspaces.id, { onDelete: "cascade" }),
+		hostId: text("host_id").notNull(),
+		// Agent driving the session (e.g. "claude"); kept open for future agents.
+		agent: text().notNull().default("claude"),
+		status: durableSessionStatus("status").notNull().default("idle"),
+		title: text(),
+		lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		foreignKey({
+			columns: [table.organizationId, table.hostId],
+			foreignColumns: [v2Hosts.organizationId, v2Hosts.machineId],
+			name: "durable_sessions_host_fk",
+		}).onDelete("cascade"),
+		index("durable_sessions_organization_id_idx").on(table.organizationId),
+		index("durable_sessions_workspace_id_idx").on(table.workspaceId),
+		index("durable_sessions_host_id_idx").on(table.hostId),
+	],
+);
+
+export type InsertDurableSession = typeof durableSessions.$inferInsert;
+export type SelectDurableSession = typeof durableSessions.$inferSelect;
+
+export const terminals = pgTable(
+	"terminals",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => v2Workspaces.id, { onDelete: "cascade" }),
+		hostId: text("host_id").notNull(),
+		title: text(),
+		status: terminalStatus("status").notNull().default("idle"),
+		// Process exit code once the pty ends; null while running / unknown.
+		exitCode: integer("exit_code"),
+		lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		foreignKey({
+			columns: [table.organizationId, table.hostId],
+			foreignColumns: [v2Hosts.organizationId, v2Hosts.machineId],
+			name: "terminals_host_fk",
+		}).onDelete("cascade"),
+		index("terminals_organization_id_idx").on(table.organizationId),
+		index("terminals_workspace_id_idx").on(table.workspaceId),
+		index("terminals_host_id_idx").on(table.hostId),
+	],
+);
+
+export type InsertTerminal = typeof terminals.$inferInsert;
+export type SelectTerminal = typeof terminals.$inferSelect;
+
 export const secrets = pgTable(
 	"secrets",
 	{
@@ -806,6 +906,12 @@ export const chatSessions = pgTable(
 		title: text(),
 		status: chatSessionStatus().notNull().default("active"),
 		labels: jsonb().$type<string[]>().default([]),
+		// Pin/favorite (F19): pinned sessions render as a sticky-top group ahead of
+		// the time-grouped list. `pinnedAt` records when the pin was set so the
+		// pinned group can be ordered most-recently-pinned-first. Distinct from
+		// `status` (active|archived lifecycle) — a session can be pinned and active.
+		pinned: boolean().notNull().default(false),
+		pinnedAt: timestamp("pinned_at"),
 		lastActiveAt: timestamp("last_active_at").notNull().defaultNow(),
 		// Per-session skill-learning marker (journal-memory epic, phase 2). NULL
 		// until the */5 reconcile (`/api/memory/learn`) has extracted durable
@@ -826,6 +932,13 @@ export const chatSessions = pgTable(
 		index("chat_sessions_org_status_idx").on(
 			table.organizationId,
 			table.status,
+		),
+		// Drives the sticky-top pinned group: scan a user's pinned sessions within
+		// an org, ordered by pin recency (`organization_id, pinned, pinned_at`).
+		index("chat_sessions_org_pinned_idx").on(
+			table.organizationId,
+			table.pinned,
+			table.pinnedAt,
 		),
 		// Drives the per-session-learning reconcile: scan unlearned sessions that
 		// recently went idle (`learned_at IS NULL AND last_active_at BETWEEN ...`).

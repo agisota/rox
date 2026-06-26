@@ -244,7 +244,7 @@ export function MessageList({
 								<MessageContent>
 									{showThinking ? (
 										<ShimmerLabel className="text-sm text-muted-foreground">
-											Thinking...
+											Думаю…
 										</ShimmerLabel>
 									) : (
 										<MessagePartsRenderer
@@ -293,7 +293,7 @@ export function MessageList({
 						</div>
 						<MessageContent>
 							<ShimmerLabel className="text-sm text-muted-foreground">
-								Thinking...
+								Думаю…
 							</ShimmerLabel>
 						</MessageContent>
 					</Message>

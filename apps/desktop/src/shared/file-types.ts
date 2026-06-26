@@ -43,6 +43,15 @@ const IMAGE_MIME_TYPE_EXTENSIONS: Record<string, string> = {
 /** Markdown extensions */
 const MARKDOWN_EXTENSIONS = new Set(["md", "markdown", "mdx"]);
 
+/** PDF extensions (read as bytes, rendered with pdf.js) */
+const PDF_EXTENSIONS = new Set(["pdf"]);
+
+/** CSV / TSV extensions (read as text, rendered as a table) */
+const CSV_EXTENSIONS = new Set(["csv", "tsv"]);
+
+/** HTML extensions (read as text, rendered sanitized) */
+const HTML_EXTENSIONS = new Set(["html", "htm", "xhtml"]);
+
 /**
  * Gets the file extension from a path (lowercase, without dot)
  */
@@ -106,8 +115,52 @@ export function isMarkdownFile(filePath: string): boolean {
 }
 
 /**
- * Checks if a file supports rendered preview (markdown or image)
+ * Checks if a file is a PDF based on extension
+ */
+export function isPdfFile(filePath: string): boolean {
+	return PDF_EXTENSIONS.has(getExtension(filePath));
+}
+
+/**
+ * Checks if a file is a CSV / TSV based on extension
+ */
+export function isCsvFile(filePath: string): boolean {
+	return CSV_EXTENSIONS.has(getExtension(filePath));
+}
+
+/**
+ * Returns the delimiter to use when parsing a tabular file.
+ * TSV files are tab-delimited; everything else is treated as comma-delimited.
+ */
+export function getCsvDelimiter(filePath: string): string {
+	return getExtension(filePath) === "tsv" ? "\t" : ",";
+}
+
+/**
+ * Checks if a file is HTML based on extension
+ */
+export function isHtmlFile(filePath: string): boolean {
+	return HTML_EXTENSIONS.has(getExtension(filePath));
+}
+
+/**
+ * Files that must be read as raw bytes (not utf-8 text) by the document store.
+ * Images and PDFs are binary container formats consumed by byte-oriented views.
+ */
+export function isBinaryReadableFile(filePath: string): boolean {
+	return isImageFile(filePath) || isPdfFile(filePath);
+}
+
+/**
+ * Checks if a file supports a rendered preview view
+ * (markdown, image, pdf, csv, or html).
  */
 export function hasRenderedPreview(filePath: string): boolean {
-	return isMarkdownFile(filePath) || isImageFile(filePath);
+	return (
+		isMarkdownFile(filePath) ||
+		isImageFile(filePath) ||
+		isPdfFile(filePath) ||
+		isCsvFile(filePath) ||
+		isHtmlFile(filePath)
+	);
 }

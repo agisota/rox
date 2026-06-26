@@ -66,6 +66,7 @@ function AuthenticatedLayout() {
 	const utils = electronTrpc.useUtils();
 	const shownWorkspaceInitWarningsRef = useRef(new Set<string>());
 	const isV2CloudEnabled = useIsV2CloudEnabled();
+	const isOnboardingRoute = location.pathname.startsWith("/onboarding");
 
 	const isSignedIn = env.SKIP_ENV_VALIDATION || !!session?.user;
 	const activeOrganizationId = env.SKIP_ENV_VALIDATION
@@ -221,26 +222,30 @@ function AuthenticatedLayout() {
 							poolOptions={{ workerFactory: createPierreWorker, poolSize: 8 }}
 							highlighterOptions={{ preferredHighlighter: "shiki-wasm" }}
 						>
-							<OnboardingTourProvider>
-								<WallpaperBackground />
-								<AgentHooks />
-								<FileMenuListener />
-								<V2NotificationController />
-								<DaemonAutoUpdateFailureDialog />
-								<FirstLaunchPermissionsGate />
+							<WallpaperBackground />
+							<AgentHooks />
+							<FileMenuListener />
+							<V2NotificationController />
+							<DaemonAutoUpdateFailureDialog />
+							<FirstLaunchPermissionsGate />
+							{isOnboardingRoute ? (
 								<Outlet />
-								<QuoteLoader />
-								<FocusMode />
-								<V1ImportModal />
-								<WorkspaceInitEffects />
-								{isV2CloudEnabled ? (
-									<DashboardNewWorkspaceModal />
-								) : (
-									<NewWorkspaceModal />
-								)}
-								<InitGitDialog />
-								<TeardownLogsDialog />
-							</OnboardingTourProvider>
+							) : (
+								<OnboardingTourProvider>
+									<Outlet />
+								</OnboardingTourProvider>
+							)}
+							<QuoteLoader />
+							<FocusMode />
+							<V1ImportModal />
+							<WorkspaceInitEffects />
+							{isV2CloudEnabled ? (
+								<DashboardNewWorkspaceModal />
+							) : (
+								<NewWorkspaceModal />
+							)}
+							<InitGitDialog />
+							<TeardownLogsDialog />
 						</WorkerPoolContextProvider>
 					</DeletingWorkspacesProvider>
 				</LocalHostServiceProvider>

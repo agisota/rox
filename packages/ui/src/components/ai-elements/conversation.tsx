@@ -57,6 +57,11 @@ export type ConversationEmptyStateProps = ComponentProps<"div"> & {
 	title?: string;
 	description?: string;
 	icon?: React.ReactNode;
+	/**
+	 * Optional slot rendered below the title/description — e.g. F57 (#650)
+	 * AI-seeded starter chips. Ignored when `children` overrides the body.
+	 */
+	footer?: React.ReactNode;
 };
 
 type ConversationStateContainerProps = ComponentProps<"div">;
@@ -82,6 +87,7 @@ export const ConversationEmptyState = ({
 	title = "No messages yet",
 	description = "Start a conversation to see messages here",
 	icon,
+	footer,
 	children,
 	...props
 }: ConversationEmptyStateProps) => (
@@ -95,6 +101,7 @@ export const ConversationEmptyState = ({
 						<p className="text-muted-foreground text-sm">{description}</p>
 					)}
 				</div>
+				{footer}
 			</>
 		)}
 	</ConversationStateContainer>

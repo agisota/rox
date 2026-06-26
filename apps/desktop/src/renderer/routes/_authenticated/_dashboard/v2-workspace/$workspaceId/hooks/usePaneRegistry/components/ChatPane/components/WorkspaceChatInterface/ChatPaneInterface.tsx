@@ -3,7 +3,6 @@ import type { AppRouter } from "@rox/host-service";
 import {
 	PromptInputAttachment,
 	type PromptInputMessage,
-	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
 import {
@@ -15,48 +14,43 @@ import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
-import type { ChatStatus } from "ai";
 import { motion } from "framer-motion";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
-	ModelOption,
-	PermissionMode,
-} from "renderer/components/Chat/ChatInterface/types";
+	ChatFooterFrame,
+	ChatMessageFrame,
+	ChatSendMessageInput,
+} from "renderer/components/Chat/ChatInterface/ChatPaneShell";
+import { ChatPaneShell } from "renderer/components/Chat/ChatInterface/ChatPaneShell";
+import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import {
 	getDesktopChatModelOptions,
 	isDesktopChatDevMode,
 } from "renderer/lib/dev-chat";
-import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
+import { usePermissionModePreference } from "../../hooks/usePermissionModePreference";
 import {
 	type UseChatDisplayReturn,
 	useChatDisplay,
 } from "../../hooks/useWorkspaceChatDisplay";
 import { ChatInputFooter } from "./components/ChatInputFooter";
 import { ChatMessageList } from "./components/ChatMessageList";
-import type { UserMessageRestartRequest } from "./components/ChatMessageList/ChatMessageList.types";
+import type { ChatPendingApproval } from "./components/ChatMessageList/ChatMessageList.types";
 import { PendingApprovalMessage } from "./components/ChatMessageList/components/PendingApprovalMessage/PendingApprovalMessage";
 import { McpControls } from "./components/McpControls";
+import {
+	resolveActiveModel,
+	unresolvedModelMessage,
+} from "./components/ModelPicker/utils/activeModelResolution";
 import { resolveSelectableModels } from "./components/ModelPicker/utils/selectableModels";
 import { useMcpUi } from "./hooks/useMcpUi";
 import { useOptimisticUpload } from "./hooks/useOptimisticUpload";
 import { useSlashCommandExecutor } from "./hooks/useSlashCommandExecutor";
 import type { ChatPaneInterfaceProps } from "./types";
-import { toOptimisticUserMessage } from "./utils/optimisticUserMessage";
-import {
-	type ChatSendMessageInput,
-	toSendFailureMessage,
-} from "./utils/sendMessage";
-import {
-	getVisibleMessagesWithPendingUserTurn,
-	type PendingUserTurn,
-	shouldClearPendingUserTurn,
-} from "./utils/transientUserTurn";
-import { uploadFiles } from "./utils/uploadFiles";
 
 type HarnessFilePayload = {
 	data: string;
@@ -159,11 +153,8 @@ function toErrorMessage(error: unknown): string | null {
 	if (!error) return null;
 	if (typeof error === "string") return error;
 	if (error instanceof Error) return error.message;
-	return "Unknown chat error";
+	return "Неизвестная ошибка чата";
 }
-
-const AUTO_LAUNCH_MAX_RETRIES = 3;
-const AUTO_LAUNCH_RETRY_DELAY_MS = 1500;
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 
@@ -173,14 +164,6 @@ type ChatShareMessage = {
 	content: unknown[];
 	createdAt?: string;
 };
-
-type InterruptedMessage = {
-	id: string;
-	sourceMessageId: string;
-	content: ChatMessage["content"];
-};
-
-type ChatAnalyticsProperties = Record<string, unknown>;
 
 function cloneMessageContent(
 	content: ChatMessage["content"],
@@ -270,17 +253,6 @@ function getChatShareTitle(messages: ChatMessage[]): string | undefined {
 	return preview.length > 80 ? `${preview.slice(0, 77)}...` : preview;
 }
 
-function getLaunchConfigKey(
-	config: NonNullable<ChatPaneInterfaceProps["initialLaunchConfig"]>,
-): string {
-	return JSON.stringify({
-		initialPrompt: config.initialPrompt ?? null,
-		initialFiles: config.initialFiles ?? null,
-		model: config.metadata?.model ?? null,
-		retryCount: config.retryCount ?? null,
-	});
-}
-
 export function ChatPaneInterface({
 	sessionId,
 	initialLaunchConfig,
@@ -322,7 +294,15 @@ export function ChatPaneInterface({
 				setLiveCustomModelIds(result.models.map((model) => model.id));
 			})
 			.catch(() => {
-				// Discovery is best-effort; keep the persisted list on failure.
+				if (cancelled) return;
+				// Discovery is best-effort for the *list* (we keep the persisted
+				// entries), but the failure is no longer swallowed silently: signal
+				// it so the user knows their custom provider's `/v1/models` is
+				// unreachable and a freshly-added model may be missing.
+				setLiveCustomModelIds([]);
+				toast.error(
+					"Не удалось получить модели custom-провайдера — проверьте, что /v1/models доступен",
+				);
 			});
 		return () => {
 			cancelled = true;
@@ -352,42 +332,47 @@ export function ChatPaneInterface({
 	const setSelectedModelId = useChatPreferencesStore(
 		(state) => state.setSelectedModelId,
 	);
-	const selectedModel =
-		availableModels.find((model) => model.id === selectedModelId) ?? null;
-	const activeModel = selectedModel ?? defaultModel;
+	// Resolve the active model WITHOUT the historical silent fallback: when a
+	// persisted custom-provider id can't be found (discovery failed / provider
+	// reconfigured) we get an explicit `unresolvedModelId` instead of quietly
+	// pretending the house model was the user's choice.
+	const { activeModel, selectedModel, unresolvedModelId } = useMemo(
+		() =>
+			resolveActiveModel({
+				selectedModelId,
+				availableModels,
+				defaultModel,
+			}),
+		[selectedModelId, availableModels, defaultModel],
+	);
+	// Surface the unresolved selection once per distinct id so the user isn't
+	// silently downgraded to ROX R1 while believing they're on their custom model.
+	const signaledUnresolvedRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!unresolvedModelId) {
+			signaledUnresolvedRef.current = null;
+			return;
+		}
+		if (signaledUnresolvedRef.current === unresolvedModelId) return;
+		signaledUnresolvedRef.current = unresolvedModelId;
+		toast.error(unresolvedModelMessage(unresolvedModelId));
+	}, [unresolvedModelId]);
 	const thinkingLevel = useChatPreferencesStore((state) => state.thinkingLevel);
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
 	);
-	const [permissionMode, setPermissionMode] =
-		useState<PermissionMode>("bypassPermissions");
-	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
-		undefined,
-	);
+	// Permission mode is persisted (and defaults to the safer "default" /
+	// manual-confirm) instead of being hardwired to "bypassPermissions" — closing
+	// the desktop-agent security gap noted in the surfaces spec (it previously
+	// reset every session). The selected mode is now also threaded into each
+	// turn's metadata below so the host-service runtime applies it to the harness
+	// (default → every tool asks; acceptEdits → edits auto-apply; bypass → yolo).
+	const [permissionMode, setPermissionMode] = usePermissionModePreference();
 	const [runtimeError, setRuntimeError] = useState<string | null>(null);
-	const [interruptedMessage, setInterruptedMessage] =
-		useState<InterruptedMessage | null>(null);
-	const [approvalResponsePending, setApprovalResponsePending] = useState(false);
-	const [planResponsePending, setPlanResponsePending] = useState(false);
-	const [questionResponsePending, setQuestionResponsePending] = useState(false);
 	const [footerScrollTrigger, setFooterScrollTrigger] = useState(0);
 	const bumpFooterScroll = useCallback(
 		() => setFooterScrollTrigger((n) => n + 1),
 		[],
-	);
-	const [editingUserMessageId, setEditingUserMessageId] = useState<
-		string | null
-	>(null);
-	const [pendingUserTurn, setPendingUserTurn] =
-		useState<PendingUserTurn | null>(null);
-	const currentMcpScopeRef = useRef<string | null>(null);
-	const consumedLaunchConfigRef = useRef<string | null>(null);
-	const autoLaunchInFlightRef = useRef<string | null>(null);
-	const autoLaunchAttemptsRef = useRef<Record<string, number>>({});
-	const autoLaunchSessionLockRef = useRef<Record<string, string | null>>({});
-	const messagesLengthRef = useRef(0);
-	const autoLaunchRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
 	);
 	const workspaceTrpcUtils = workspaceTrpc.useUtils();
 	const { copyToClipboard } = useCopyToClipboard();
@@ -398,8 +383,17 @@ export function ChatPaneInterface({
 	const sendMessageMutation = workspaceTrpc.chat.sendMessage.useMutation();
 	const restartFromMessageMutation =
 		workspaceTrpc.chat.restartFromMessage.useMutation();
+
+	const clearRuntimeError = useCallback(() => {
+		setRuntimeError(null);
+	}, []);
+
+	const setRuntimeErrorMessage = useCallback((message: string) => {
+		setRuntimeError(message);
+	}, []);
+
 	const captureChatEvent = useCallback(
-		(event: string, properties?: ChatAnalyticsProperties) => {
+		(event: string, properties?: Record<string, unknown>) => {
 			posthog.capture(event, {
 				workspace_id: workspaceId,
 				session_id: sessionId,
@@ -408,6 +402,24 @@ export function ChatPaneInterface({
 			});
 		},
 		[organizationId, sessionId, workspaceId],
+	);
+
+	const handleSelectModel = useCallback(
+		(model: React.SetStateAction<ModelOption | null>) => {
+			const nextSelectedModel =
+				typeof model === "function" ? model(selectedModel) : model;
+			if (!nextSelectedModel) {
+				setSelectedModelId(null);
+				return;
+			}
+			captureChatEvent("chat_model_changed", {
+				model_id: nextSelectedModel.id,
+				model_name: nextSelectedModel.name,
+				trigger: "picker",
+			});
+			setSelectedModelId(nextSelectedModel.id);
+		},
+		[captureChatEvent, selectedModel, setSelectedModelId],
 	);
 
 	// Memoize the select mapper so React Query can preserve the result's
@@ -445,68 +457,14 @@ export function ChatPaneInterface({
 		workspaceId,
 		enabled: Boolean(sessionId),
 	});
-	const {
-		commands,
-		messages,
-		currentMessage,
-		isRunning = false,
-		isConversationLoading = false,
-		error = null,
-		activeTools,
-		toolInputBuffers,
-		activeSubagents,
-		pendingApproval = null,
-		pendingPlanApproval = null,
-		pendingQuestion = null,
-	} = chat;
-	const isAwaitingAssistant =
-		isRunning || submitStatus === "submitted" || submitStatus === "streaming";
+	const { commands, messages, currentMessage } = chat;
+	const visibleMessages = messages;
 
-	const clearRuntimeError = useCallback(() => {
-		setRuntimeError(null);
-	}, []);
-
-	const setRuntimeErrorMessage = useCallback((message: string) => {
-		setRuntimeError(message);
-	}, []);
-
-	const handleSelectModel = useCallback(
-		(model: React.SetStateAction<ModelOption | null>) => {
-			const nextSelectedModel =
-				typeof model === "function" ? model(selectedModel) : model;
-			if (!nextSelectedModel) {
-				setSelectedModelId(null);
-				return;
-			}
-			captureChatEvent("chat_model_changed", {
-				model_id: nextSelectedModel.id,
-				model_name: nextSelectedModel.name,
-				trigger: "picker",
-			});
-			setSelectedModelId(nextSelectedModel.id);
-		},
-		[captureChatEvent, selectedModel, setSelectedModelId],
+	const isRunning = Boolean(
+		(chat as unknown as { isRunning?: boolean }).isRunning,
 	);
+	const canAbort = isRunning;
 
-	const sendMessageToSession = useCallback(
-		async (targetSessionId: string, input: ChatSendMessageInput) => {
-			// Optimistic state for this path lives in `pendingUserTurn` (set by
-			// the caller in handleSend), NOT in the snapshot cache. Writing to
-			// the cache here was racing with the 4fps snapshot polls — a poll
-			// could resolve mid-mutation with the harness's pre-message state
-			// and clobber the optimistic write, making the user message vanish
-			// briefly. The pendingUserTurn local state is merged in via
-			// getVisibleMessagesWithPendingUserTurn so it survives stale polls.
-			await sendMessageMutation.mutateAsync({
-				sessionId: targetSessionId,
-				workspaceId,
-				...input,
-			});
-		},
-		[sendMessageMutation, workspaceId],
-	);
-
-	const canAbort = Boolean(isRunning);
 	const loadMcpOverview = useCallback(
 		async (_rootCwd: string) => {
 			if (!sessionId) {
@@ -530,44 +488,10 @@ export function ChatPaneInterface({
 	const resetMcpUi = mcpUi.resetUi;
 	const refreshMcpOverview = mcpUi.refreshOverview;
 
-	const captureInterruptedMessage =
-		useCallback((): InterruptedMessage | null => {
-			if (!isRunning) return null;
-			if (!currentMessage || currentMessage.role !== "assistant") return null;
-			if (currentMessage.content.length === 0) return null;
-			return {
-				id: `interrupted:${currentMessage.id}`,
-				sourceMessageId: currentMessage.id,
-				content: cloneMessageContent(currentMessage.content),
-			};
-		}, [currentMessage, isRunning]);
-
 	const stopActiveResponse = useCallback(async () => {
 		clearRuntimeError();
-		const snapshot = captureInterruptedMessage();
-		try {
-			await commands.stop();
-		} catch (error) {
-			setInterruptedMessage(null);
-			setRuntimeErrorMessage(
-				toErrorMessage(error) ?? "Failed to stop response",
-			);
-			return;
-		}
-		if (snapshot) {
-			setInterruptedMessage(snapshot);
-		}
-		captureChatEvent("chat_turn_aborted", {
-			model_id: activeModel?.id ?? null,
-		});
-	}, [
-		activeModel?.id,
-		captureChatEvent,
-		captureInterruptedMessage,
-		clearRuntimeError,
-		commands,
-		setRuntimeErrorMessage,
-	]);
+		await commands.stop();
+	}, [clearRuntimeError, commands]);
 
 	const { resolveSlashCommandInput } = useSlashCommandExecutor({
 		sessionId,
@@ -588,46 +512,15 @@ export function ChatPaneInterface({
 		onTrackEvent: captureChatEvent,
 	});
 
+	// MCP overview refresh on session/cwd scope change. The shell owns the
+	// orchestration-body scope reset; here we only refresh the v2-specific MCP
+	// overview the wrapper renders.
 	useEffect(() => {
-		const scopeKey = `${sessionId ?? "no-session"}::${cwd || "no-cwd"}`;
-		if (currentMcpScopeRef.current === scopeKey) return;
-		currentMcpScopeRef.current = scopeKey;
-		setSubmitStatus(undefined);
-		setRuntimeError(null);
-		setInterruptedMessage(null);
-		setPendingUserTurn(null);
-		setEditingUserMessageId(null);
 		resetMcpUi();
 		if (sessionId) {
 			void refreshMcpOverview();
 		}
-	}, [cwd, refreshMcpOverview, resetMcpUi, sessionId]);
-
-	useEffect(() => {
-		if (
-			shouldClearPendingUserTurn({
-				messages,
-				pendingUserTurn,
-				isAwaitingAssistant,
-			})
-		) {
-			setPendingUserTurn(null);
-		}
-	}, [isAwaitingAssistant, messages, pendingUserTurn]);
-
-	useEffect(() => {
-		if (!editingUserMessageId) return;
-		if (messages.some((message) => message.id === editingUserMessageId)) return;
-		setEditingUserMessageId(null);
-	}, [editingUserMessageId, messages]);
-
-	const visibleMessages = useMemo(() => {
-		return getVisibleMessagesWithPendingUserTurn({
-			messages,
-			pendingUserTurn,
-			isAwaitingAssistant,
-		});
-	}, [isAwaitingAssistant, messages, pendingUserTurn]);
+	}, [refreshMcpOverview, resetMcpUi, sessionId]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: sessionId resets the copied share state between sessions
 	useEffect(() => {
@@ -637,7 +530,7 @@ export function ChatPaneInterface({
 
 	const handleShareConversation = useCallback(async () => {
 		if (!sessionId) {
-			toast.error("Chat session is still starting.");
+			toast.error("Сессия чата ещё запускается.");
 			return;
 		}
 
@@ -646,7 +539,7 @@ export function ChatPaneInterface({
 			: visibleMessages;
 		const shareMessages = getShareMessages(sourceMessages);
 		if (shareMessages.length === 0) {
-			toast.error("There are no messages to share.");
+			toast.error("Нечего публиковать.");
 			return;
 		}
 
@@ -660,12 +553,12 @@ export function ChatPaneInterface({
 			});
 			await copyToClipboard(result.url);
 			setLastSharedConversationUrl(result.url);
-			toast.success("Share link copied");
+			toast.success("Ссылка скопирована");
 			captureChatEvent("chat_session_shared", {
 				message_count: shareMessages.length,
 			});
 		} catch (error) {
-			const message = toErrorMessage(error) ?? "Failed to share chat";
+			const message = toErrorMessage(error) ?? "Не удалось поделиться диалогом";
 			setRuntimeErrorMessage(message);
 			toast.error(message);
 		} finally {
@@ -681,498 +574,72 @@ export function ChatPaneInterface({
 		visibleMessages,
 	]);
 
-	useEffect(() => {
-		setLastSharedConversationUrl(null);
-		setIsSharingConversation(false);
-	}, []);
-
-	useEffect(() => {
-		if (isRunning) {
-			setSubmitStatus((previousStatus) =>
-				previousStatus === "submitted" || previousStatus === "streaming"
-					? "streaming"
-					: previousStatus,
-			);
-			return;
-		}
-		setSubmitStatus(undefined);
-	}, [isRunning]);
-
-	// Scroll chat to bottom whenever the footer question overlay appears, changes, or disappears
-	// biome-ignore lint/correctness/useExhaustiveDependencies: pendingQuestion is an intentional re-run trigger
-	useEffect(() => {
-		bumpFooterScroll();
-	}, [bumpFooterScroll, pendingQuestion]);
-
 	const shouldAnimate = useShouldAnimate("essential");
 
-	// Scroll chat to bottom whenever the approval band appears or changes
-	// biome-ignore lint/correctness/useExhaustiveDependencies: pendingApproval?.toolCallId is an intentional re-run trigger
-	useEffect(() => {
-		bumpFooterScroll();
-	}, [bumpFooterScroll, pendingApproval?.toolCallId]);
-
-	useEffect(() => {
-		messagesLengthRef.current = messages?.length ?? 0;
-	}, [messages]);
-
-	const handleSend = useCallback(
-		async (payload: { content: string; files?: HarnessFilePayload[] }) => {
-			let content = payload.content.trim();
-
-			const isSlashCommand = content.startsWith("/");
-			const slashCommandResult = await resolveSlashCommandInput(content);
-			if (slashCommandResult.handled) {
-				setSubmitStatus(undefined);
-				return;
-			}
-			content = slashCommandResult.nextText.trim();
-
-			if (!content && (!payload.files || payload.files.length === 0)) {
-				setSubmitStatus(undefined);
-				return;
-			}
-			setInterruptedMessage(null);
-			setSubmitStatus("submitted");
-			clearRuntimeError();
-
-			let preparedFiles = payload.files;
-			let effectiveSessionId = sessionId;
-
-			if (preparedFiles?.some((file) => file.uploaded === false)) {
-				if (!effectiveSessionId) {
-					effectiveSessionId = await getOrCreateSession();
-				}
-
-				const uploadedFiles = await uploadFiles(
-					effectiveSessionId,
-					preparedFiles.map((file) => ({
-						type: "file",
-						url: file.data,
-						mediaType: file.mediaType,
-						filename: file.filename,
-					})),
-				);
-				preparedFiles = uploadedFiles.map((file) => ({
-					data: file.url,
-					mediaType: file.mediaType,
-					filename: file.filename,
-					uploaded: true,
-				}));
-			}
-
-			const sendInput: ChatSendMessageInput = {
-				payload: {
-					content,
-					...(preparedFiles?.length
-						? {
-								files: preparedFiles.map(({ data, filename, mediaType }) => ({
-									data,
-									mediaType,
-									filename,
-								})),
-							}
-						: {}),
-				},
-				metadata: {
-					model: activeModel?.id,
-					thinkingLevel,
-				},
-			};
-
-			let targetSessionId = effectiveSessionId;
-			try {
-				if (!targetSessionId) {
-					targetSessionId = await getOrCreateSession();
-				}
-
-				if (sessionId && targetSessionId === sessionId) {
-					await commands.sendMessage(sendInput);
-				} else {
-					// New-session path: the existing-session path's optimistic
-					// state lives inside useChatDisplay, but we don't have a
-					// session subscribed there yet. Hold the user message in
-					// pendingUserTurn so getVisibleMessagesWithPendingUserTurn
-					// keeps it visible across stale snapshot polls until the
-					// harness's response includes it.
-					const optimisticMessage = toOptimisticUserMessage(sendInput);
-					if (optimisticMessage) {
-						setPendingUserTurn({
-							kind: "append",
-							message: optimisticMessage,
-						});
-					}
-					try {
-						await sendMessageToSession(targetSessionId, sendInput);
-					} catch (error) {
-						setPendingUserTurn(null);
-						throw error;
-					}
-				}
-				if (content) {
-					onUserMessageSubmitted?.(content);
-				}
-			} catch (error) {
-				const sendErrorMessage = toSendFailureMessage(error);
-				setSubmitStatus(undefined);
-				setRuntimeErrorMessage(sendErrorMessage);
-				if (error instanceof Error) throw error;
-				throw new Error(sendErrorMessage);
-			}
-
-			captureChatEvent("chat_message_sent", {
-				session_id: targetSessionId,
-				model_id: activeModel?.id ?? null,
-				mention_count: 0,
-				attachment_count: payload.files?.length ?? 0,
-				is_slash_command: isSlashCommand,
-				message_length: content.length,
-				turn_number: (messages?.length ?? 0) + 1,
-			});
-		},
-		[
-			activeModel?.id,
-			captureChatEvent,
-			clearRuntimeError,
-			commands,
-			getOrCreateSession,
-			messages?.length,
-			resolveSlashCommandInput,
-			sessionId,
-			sendMessageToSession,
-			setRuntimeErrorMessage,
-			onUserMessageSubmitted,
-			thinkingLevel,
-		],
+	const session = useMemo(
+		() => ({
+			isSessionReady: true,
+			resolveSessionForSend: async (currentSessionId: string | null) =>
+				currentSessionId ?? (await getOrCreateSession()),
+			resetSession: onResetSession,
+		}),
+		[getOrCreateSession, onResetSession],
 	);
 
-	useEffect(() => {
-		if (!initialLaunchConfig) return;
-
-		const launchConfigKey = getLaunchConfigKey(initialLaunchConfig);
-		const attemptAutoLaunch = async (): Promise<void> => {
-			if (consumedLaunchConfigRef.current === launchConfigKey) return;
-			if (autoLaunchInFlightRef.current === launchConfigKey) return;
-
-			const prompt = initialLaunchConfig.initialPrompt?.trim();
-			const launchFiles = initialLaunchConfig.initialFiles;
-			if (!prompt && !launchFiles?.length) {
-				consumedLaunchConfigRef.current = launchConfigKey;
-				delete autoLaunchAttemptsRef.current[launchConfigKey];
-				delete autoLaunchSessionLockRef.current[launchConfigKey];
-				return;
-			}
-
-			const currentSessionKey = sessionId ?? null;
-			const lockedSession = autoLaunchSessionLockRef.current[launchConfigKey];
-			if (lockedSession === undefined) {
-				autoLaunchSessionLockRef.current[launchConfigKey] = currentSessionKey;
-			} else if (lockedSession !== currentSessionKey) {
-				// Don't send launch retries into a different user-selected session.
-				return;
-			}
-
-			const previousAttempts =
-				autoLaunchAttemptsRef.current[launchConfigKey] ?? 0;
-			const retryLimit =
-				initialLaunchConfig.retryCount ?? AUTO_LAUNCH_MAX_RETRIES;
-			if (previousAttempts >= retryLimit) return;
-
-			autoLaunchAttemptsRef.current[launchConfigKey] = previousAttempts + 1;
-			autoLaunchInFlightRef.current = launchConfigKey;
-			if (autoLaunchRetryTimerRef.current) {
-				clearTimeout(autoLaunchRetryTimerRef.current);
-				autoLaunchRetryTimerRef.current = null;
-			}
-
-			clearRuntimeError();
-			setSubmitStatus("submitted");
-
-			const modelId = initialLaunchConfig.metadata?.model ?? activeModel?.id;
-			const sendInput: ChatSendMessageInput = {
-				payload: {
-					content: prompt ?? "",
-					files: launchFiles,
-				},
-				metadata: {
-					model: modelId,
-					thinkingLevel,
-				},
-			};
-
-			try {
-				let targetSessionId = autoLaunchSessionLockRef.current[launchConfigKey];
-				if (!targetSessionId) {
-					targetSessionId = await getOrCreateSession();
-					autoLaunchSessionLockRef.current[launchConfigKey] = targetSessionId;
-				}
-				if (sessionId && targetSessionId === sessionId) {
-					await commands.sendMessage(sendInput);
-				} else {
-					await sendMessageToSession(targetSessionId, sendInput);
-				}
-				if (prompt) {
-					onUserMessageSubmitted?.(prompt);
-				}
-
-				autoLaunchInFlightRef.current = null;
-				consumedLaunchConfigRef.current = launchConfigKey;
-				delete autoLaunchAttemptsRef.current[launchConfigKey];
-				delete autoLaunchSessionLockRef.current[launchConfigKey];
-				onConsumeLaunchConfig?.();
-
-				captureChatEvent("chat_message_sent", {
-					session_id: targetSessionId,
-					model_id: modelId ?? null,
-					mention_count: 0,
-					attachment_count: launchFiles?.length ?? 0,
-					is_slash_command: false,
-					message_length: prompt?.length ?? 0,
-					turn_number: messagesLengthRef.current + 1,
-					send_trigger: "launch-config",
-				});
-			} catch (error) {
-				autoLaunchInFlightRef.current = null;
-
-				const sendErrorMessage = toSendFailureMessage(error);
-				setSubmitStatus(undefined);
-				setRuntimeErrorMessage(sendErrorMessage);
-				logger.debug("[chat] auto launch send failed", error);
-
-				const currentAttempts =
-					autoLaunchAttemptsRef.current[launchConfigKey] ??
-					previousAttempts + 1;
-				if (currentAttempts < retryLimit) {
-					autoLaunchRetryTimerRef.current = setTimeout(() => {
-						void attemptAutoLaunch();
-					}, AUTO_LAUNCH_RETRY_DELAY_MS);
-				}
-			}
-		};
-		void attemptAutoLaunch();
-
-		return () => {
-			if (autoLaunchRetryTimerRef.current) {
-				clearTimeout(autoLaunchRetryTimerRef.current);
-				autoLaunchRetryTimerRef.current = null;
-			}
-		};
-	}, [
-		activeModel?.id,
-		captureChatEvent,
-		clearRuntimeError,
-		commands,
-		getOrCreateSession,
-		initialLaunchConfig,
-		sendMessageToSession,
-		sessionId,
-		setRuntimeErrorMessage,
-		onUserMessageSubmitted,
-		thinkingLevel,
-		onConsumeLaunchConfig,
-	]);
-
-	const handleStop = useCallback(
-		async (event: React.MouseEvent) => {
-			event.preventDefault();
-			await stopActiveResponse();
-		},
-		[stopActiveResponse],
-	);
-
-	const restartFromUserMessage = useCallback(
-		async (
-			request: UserMessageRestartRequest,
-			options?: { trigger?: "edit" | "resend" },
-		) => {
-			if (!sessionId) {
-				throw new Error("Chat session is still starting. Please retry.");
-			}
-
-			setInterruptedMessage(null);
-			setPendingUserTurn(null);
-			setSubmitStatus("submitted");
-			clearRuntimeError();
-
-			const optimisticMessage = toOptimisticUserMessage({
-				payload: request.payload,
-				metadata: {
-					model: activeModel?.id,
-					thinkingLevel,
-				},
-			});
-			if (optimisticMessage) {
-				setPendingUserTurn({
-					kind: "restart",
-					prefixMessages: request.prefixMessages,
-					message: optimisticMessage,
-				});
-			}
-
-			try {
-				await restartFromMessageMutation.mutateAsync({
-					sessionId,
+	const turn = useMemo(
+		() => ({
+			sendToSession: async (
+				targetSessionId: string,
+				input: ChatSendMessageInput,
+			) => {
+				// Optimistic state for this path lives in the shell's
+				// `pendingUserTurn`, NOT in the snapshot cache. Writing to the cache
+				// here was racing with the snapshot polls — a poll could resolve
+				// mid-mutation with the harness's pre-message state and clobber the
+				// optimistic write, making the user message vanish briefly.
+				await sendMessageMutation.mutateAsync({
+					sessionId: targetSessionId,
 					workspaceId,
-					messageId: request.messageId,
-					payload: request.payload,
-					metadata: {
-						model: activeModel?.id,
-						thinkingLevel,
-					},
+					...input,
 				});
-				setEditingUserMessageId(null);
-				if (request.payload.content) {
-					onUserMessageSubmitted?.(request.payload.content);
-				}
-				captureChatEvent("chat_message_sent", {
-					session_id: sessionId,
-					model_id: activeModel?.id ?? null,
-					mention_count: 0,
-					attachment_count: request.payload.files?.length ?? 0,
-					is_slash_command: false,
-					message_length: request.payload.content.length,
-					turn_number: (messages?.length ?? 0) + 1,
-					send_trigger: options?.trigger ?? "resend",
-					restarted_from_message_id: request.messageId,
+			},
+			restartFromMessage: async (args: {
+				sessionId: string;
+				messageId: string;
+				payload: ChatSendMessageInput["payload"];
+				metadata: ChatSendMessageInput["metadata"];
+			}) => {
+				await restartFromMessageMutation.mutateAsync({
+					sessionId: args.sessionId,
+					workspaceId,
+					messageId: args.messageId,
+					payload: args.payload,
+					metadata: args.metadata,
 				});
-			} catch (error) {
-				setPendingUserTurn(null);
-				const sendErrorMessage = toSendFailureMessage(error);
-				setSubmitStatus(undefined);
-				setRuntimeErrorMessage(sendErrorMessage);
-				if (error instanceof Error) throw error;
-				throw new Error(sendErrorMessage);
-			}
-		},
-		[
-			activeModel?.id,
-			captureChatEvent,
-			clearRuntimeError,
-			messages,
-			onUserMessageSubmitted,
-			restartFromMessageMutation,
-			sessionId,
-			setRuntimeErrorMessage,
-			thinkingLevel,
-			workspaceId,
-		],
-	);
-	const handleResendUserMessage = useCallback(
-		async (request: UserMessageRestartRequest) => {
-			await restartFromUserMessage(request, { trigger: "resend" });
-		},
-		[restartFromUserMessage],
-	);
-	const handleSubmitEditedUserMessage = useCallback(
-		async (request: UserMessageRestartRequest) => {
-			await restartFromUserMessage(request, { trigger: "edit" });
-		},
-		[restartFromUserMessage],
-	);
-	const handleApprovalResponse = useCallback(
-		async (decision: "approve" | "decline" | "always_allow_category") => {
-			if (!pendingApproval?.toolCallId) return;
-			clearRuntimeError();
-			setApprovalResponsePending(true);
-			try {
-				await commands.respondToApproval({
-					payload: { decision },
-				});
-			} finally {
-				setApprovalResponsePending(false);
-			}
-		},
-		[clearRuntimeError, commands, pendingApproval?.toolCallId],
-	);
-	const handlePlanResponse = useCallback(
-		async (response: {
-			action: "approved" | "rejected";
-			feedback?: string;
-		}) => {
-			if (!pendingPlanApproval?.planId) return;
-			clearRuntimeError();
-			setPlanResponsePending(true);
-			try {
-				const feedback = response.feedback?.trim();
-				await commands.respondToPlan({
-					payload: {
-						planId: pendingPlanApproval.planId,
-						response: {
-							action: response.action,
-							...(feedback ? { feedback } : {}),
-						},
-					},
-				});
-			} finally {
-				setPlanResponsePending(false);
-			}
-		},
-		[clearRuntimeError, commands, pendingPlanApproval?.planId],
-	);
-	const handleQuestionResponse = useCallback(
-		async (questionId: string, answer: string) => {
-			const trimmedQuestionId = questionId.trim();
-			const trimmedAnswer = answer.trim();
-			if (!trimmedQuestionId || !trimmedAnswer) return;
-			clearRuntimeError();
-			bumpFooterScroll();
-			setQuestionResponsePending(true);
-			try {
-				await commands.respondToQuestion({
-					payload: {
-						questionId: trimmedQuestionId,
-						answer: trimmedAnswer,
-					},
-				});
-			} finally {
-				setQuestionResponsePending(false);
-			}
-		},
-		[bumpFooterScroll, clearRuntimeError, commands],
+			},
+		}),
+		[restartFromMessageMutation, sendMessageMutation, workspaceId],
 	);
 
-	const errorMessage = runtimeError ?? toErrorMessage(error);
-
-	return (
-		<PromptInputProvider initialInput={initialLaunchConfig?.draftInput}>
-			<div className="flex h-full w-full flex-col bg-background">
-				<ChatMessageList
-					messages={visibleMessages}
-					isFocused={isFocused}
-					isRunning={canAbort}
-					isConversationLoading={isConversationLoading}
-					isAwaitingAssistant={isAwaitingAssistant}
-					currentMessage={currentMessage ?? null}
-					interruptedMessage={interruptedMessage}
-					workspaceId={workspaceId}
-					sessionId={sessionId}
-					organizationId={organizationId}
-					workspaceCwd={cwd}
-					activeTools={activeTools}
-					toolInputBuffers={toolInputBuffers}
-					activeSubagents={activeSubagents}
-					pendingApproval={pendingApproval}
-					isApprovalSubmitting={approvalResponsePending}
-					onApprovalRespond={handleApprovalResponse}
-					pendingPlanApproval={pendingPlanApproval}
-					isPlanSubmitting={planResponsePending}
-					onPlanRespond={handlePlanResponse}
-					editingUserMessageId={editingUserMessageId}
-					isEditSubmitting={isAwaitingAssistant}
-					onStartEditUserMessage={setEditingUserMessageId}
-					onCancelEditUserMessage={() => setEditingUserMessageId(null)}
-					onSubmitEditedUserMessage={handleSubmitEditedUserMessage}
-					onRestartUserMessage={handleResendUserMessage}
-					onShareConversation={handleShareConversation}
-					isSharingConversation={isSharingConversation}
-					lastSharedConversationUrl={lastSharedConversationUrl}
-					footerScrollTrigger={footerScrollTrigger}
-				/>
-				<McpControls mcpUi={mcpUi} />
+	// The standalone v2 approval band reuses the SAME submit state + respond
+	// handler the shell threads into the message frame; the shell passes them in
+	// explicitly so the overlay never has to reach into sibling render state.
+	const renderApprovalOverlay = useCallback(
+		(
+			pendingApproval: unknown,
+			controls: {
+				isSubmitting: boolean;
+				onRespond: (
+					decision: "approve" | "decline" | "always_allow_category",
+				) => Promise<void>;
+			},
+		) => {
+			const approval = pendingApproval as ChatPendingApproval;
+			return (
 				<AnimatedPresence initial={false}>
-					{pendingApproval ? (
+					{approval ? (
 						<motion.div
-							key={pendingApproval.toolCallId}
+							key={approval.toolCallId}
 							layout
 							initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
 							animate={{ opacity: 1, y: 0 }}
@@ -1181,44 +648,168 @@ export function ChatPaneInterface({
 							className="mx-auto w-full max-w-[680px] px-4"
 						>
 							<PendingApprovalMessage
-								approval={pendingApproval}
-								isSubmitting={approvalResponsePending}
-								onRespond={handleApprovalResponse}
+								approval={approval}
+								isSubmitting={controls.isSubmitting}
+								onRespond={controls.onRespond}
 							/>
 						</motion.div>
 					) : null}
 				</AnimatedPresence>
-				<ChatUploadFooter
-					cwd={cwd}
-					isFocused={isFocused}
-					error={errorMessage}
-					canAbort={canAbort}
-					submitStatus={submitStatus}
-					availableModels={availableModels}
-					selectedModel={activeModel}
-					setSelectedModel={handleSelectModel}
-					modelSelectorOpen={modelSelectorOpen}
-					setModelSelectorOpen={setModelSelectorOpen}
-					permissionMode={permissionMode}
-					setPermissionMode={setPermissionMode}
-					thinkingLevel={thinkingLevel}
-					setThinkingLevel={setThinkingLevel}
-					slashCommands={slashCommands}
-					sessionId={sessionId}
-					workspaceId={workspaceId}
-					onError={setRuntimeErrorMessage}
-					onSend={handleSend}
-					onSubmitStart={() => setSubmitStatus("submitted")}
-					onStop={handleStop}
-					pendingQuestion={pendingQuestion}
-					isQuestionSubmitting={questionResponsePending}
-					onQuestionRespond={handleQuestionResponse}
-					onQuestionCancel={() => {
-						bumpFooterScroll();
-						void stopActiveResponse();
-					}}
+			);
+		},
+		[shouldAnimate],
+	);
+
+	const features = useMemo(
+		() => ({
+			footerScrollTrigger,
+			onBumpFooterScroll: bumpFooterScroll,
+			renderApprovalOverlay,
+		}),
+		[bumpFooterScroll, footerScrollTrigger, renderApprovalOverlay],
+	);
+
+	const renderMessages = useCallback(
+		(frame: ChatMessageFrame<ChatMessage>) => {
+			return (
+				<ChatMessageList
+					messages={frame.messages}
+					isFocused={frame.isFocused}
+					isRunning={frame.isRunning}
+					isConversationLoading={frame.isConversationLoading}
+					isAwaitingAssistant={frame.isAwaitingAssistant}
+					currentMessage={frame.currentMessage}
+					interruptedMessage={frame.interruptedMessage}
+					workspaceId={frame.workspaceId}
+					sessionId={frame.sessionId}
+					organizationId={frame.organizationId}
+					workspaceCwd={frame.workspaceCwd}
+					activeTools={
+						frame.activeTools as React.ComponentProps<
+							typeof ChatMessageList
+						>["activeTools"]
+					}
+					toolInputBuffers={
+						frame.toolInputBuffers as React.ComponentProps<
+							typeof ChatMessageList
+						>["toolInputBuffers"]
+					}
+					activeSubagents={
+						frame.activeSubagents as React.ComponentProps<
+							typeof ChatMessageList
+						>["activeSubagents"]
+					}
+					pendingApproval={frame.pendingApproval as ChatPendingApproval}
+					isApprovalSubmitting={frame.isApprovalSubmitting}
+					onApprovalRespond={frame.onApprovalRespond}
+					pendingPlanApproval={
+						frame.pendingPlanApproval as React.ComponentProps<
+							typeof ChatMessageList
+						>["pendingPlanApproval"]
+					}
+					isPlanSubmitting={frame.isPlanSubmitting}
+					onPlanRespond={frame.onPlanRespond}
+					editingUserMessageId={frame.editingUserMessageId}
+					isEditSubmitting={frame.isEditSubmitting}
+					onStartEditUserMessage={frame.onStartEditUserMessage}
+					onCancelEditUserMessage={frame.onCancelEditUserMessage}
+					onSubmitEditedUserMessage={frame.onSubmitEditedUserMessage}
+					onRestartUserMessage={frame.onRestartUserMessage}
+					onShareConversation={handleShareConversation}
+					isSharingConversation={isSharingConversation}
+					lastSharedConversationUrl={lastSharedConversationUrl}
+					footerScrollTrigger={footerScrollTrigger}
 				/>
-			</div>
-		</PromptInputProvider>
+			);
+		},
+		[
+			footerScrollTrigger,
+			handleShareConversation,
+			isSharingConversation,
+			lastSharedConversationUrl,
+		],
+	);
+
+	const renderFooter = useCallback(
+		(frame: ChatFooterFrame) => (
+			<ChatUploadFooter
+				cwd={frame.cwd}
+				isFocused={frame.isFocused}
+				error={runtimeError ?? frame.error}
+				canAbort={frame.canAbort}
+				submitStatus={frame.submitStatus}
+				availableModels={frame.availableModels}
+				selectedModel={frame.selectedModel}
+				setSelectedModel={frame.setSelectedModel}
+				modelSelectorOpen={frame.modelSelectorOpen}
+				setModelSelectorOpen={setModelSelectorOpen}
+				unresolvedModelId={frame.unresolvedModelId}
+				permissionMode={frame.permissionMode}
+				setPermissionMode={frame.setPermissionMode}
+				thinkingLevel={frame.thinkingLevel}
+				setThinkingLevel={frame.setThinkingLevel}
+				slashCommands={
+					frame.slashCommands as React.ComponentProps<
+						typeof ChatUploadFooter
+					>["slashCommands"]
+				}
+				usedTokens={frame.usedTokens}
+				maxTokens={frame.maxTokens}
+				sessionId={frame.sessionId}
+				workspaceId={workspaceId}
+				onError={frame.onError}
+				onSend={frame.onSend}
+				onSubmitStart={frame.onSubmitStart}
+				onStop={frame.onStop}
+				pendingQuestion={
+					frame.pendingQuestion as React.ComponentProps<
+						typeof ChatUploadFooter
+					>["pendingQuestion"]
+				}
+				isQuestionSubmitting={frame.isQuestionSubmitting}
+				onQuestionRespond={frame.onQuestionRespond}
+				onQuestionCancel={frame.onQuestionCancel}
+			/>
+		),
+		[runtimeError, workspaceId],
+	);
+
+	const renderMcpControls = useCallback(
+		() => <McpControls mcpUi={mcpUi} />,
+		[mcpUi],
+	);
+
+	return (
+		<ChatPaneShell<ChatMessage>
+			chat={chat}
+			sessionId={sessionId}
+			workspaceId={workspaceId}
+			organizationId={organizationId}
+			cwd={cwd}
+			isFocused={isFocused}
+			initialLaunchConfig={initialLaunchConfig}
+			onConsumeLaunchConfig={onConsumeLaunchConfig}
+			onUserMessageSubmitted={onUserMessageSubmitted}
+			onClearExternalError={clearRuntimeError}
+			availableModels={availableModels}
+			activeModel={activeModel}
+			selectedModel={selectedModel}
+			unresolvedModelId={unresolvedModelId}
+			onSelectModel={handleSelectModel}
+			modelSelectorOpen={modelSelectorOpen}
+			setModelSelectorOpen={setModelSelectorOpen}
+			permissionMode={permissionMode}
+			setPermissionMode={setPermissionMode}
+			thinkingLevel={thinkingLevel}
+			setThinkingLevel={setThinkingLevel}
+			slashCommands={slashCommands}
+			resolveSlashCommandInput={resolveSlashCommandInput}
+			session={session}
+			turn={turn}
+			features={features}
+			renderMessages={renderMessages}
+			renderFooter={renderFooter}
+			renderMcpControls={renderMcpControls}
+		/>
 	);
 }

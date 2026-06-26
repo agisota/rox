@@ -138,7 +138,6 @@ export type ActivationStep = (typeof ACTIVATION_STEPS)[number];
 export const REQUIRED_SURFACE_TOURS = [
 	"workspaces",
 	"workspace",
-	"quick_chat",
 	"tasks_pr",
 	"automations",
 	"pipelines",
@@ -883,21 +882,6 @@ export const ONBOARDING_TOURS: Record<SurfaceTourId, OnboardingTourDefinition> =
 			},
 		],
 	},
-	quick_chat: {
-		id: "quick_chat",
-		surfaceName: "Быстрый чат",
-		required: true,
-		steps: [
-			{
-				id: "quick-chat-input",
-				anchor: "nav-quick-chat",
-				title: "Быстрый вопрос без workspace",
-				body: "Используйте быстрый чат для коротких вопросов, когда не нужна отдельная рабочая сессия.",
-				action: "Откройте быстрый чат и задайте один вопрос.",
-				route: "/quick-chat",
-			},
-		],
-	},
 	tasks_pr: {
 		id: "tasks_pr",
 		surfaceName: "Задачи и PR",
@@ -1004,7 +988,6 @@ data-onboarding-anchor="nav-workspaces"
 data-onboarding-anchor="nav-automations"
 data-onboarding-anchor="nav-pipelines"
 data-onboarding-anchor="nav-tasks-pr"
-data-onboarding-anchor="nav-quick-chat"
 data-onboarding-anchor="nav-skills-library"
 data-onboarding-anchor="nav-memory"
 data-onboarding-anchor="nav-settings"
@@ -1016,7 +999,6 @@ Add them to both collapsed and expanded controls when both variants exist.
 
 Add anchors to existing controls without changing layout:
 
-- `quick-chat-input` on the quick chat composer.
 - `workspace-chat` on the workspace chat pane or composer.
 - `tasks-create` on the task creation control if present.
 - `automation-create` on automation creation control if present.

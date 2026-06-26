@@ -233,6 +233,10 @@ Key anchors:
 
 Goal: understand that quick chat is for fast questions outside a dedicated workspace.
 
+Current implementation note: this tour is not shipped in the current PR because
+`origin/main` no longer includes the `/quick-chat` desktop route. Restore it as a
+required surface tour when the product surface returns.
+
 Action:
 
 - Ask a question about the active project or app state.
@@ -348,7 +352,6 @@ type ActivationStep =
 type SurfaceTourId =
 	| "workspaces"
 	| "workspace"
-	| "quick_chat"
 	| "tasks_pr"
 	| "automations"
 	| "pipelines"

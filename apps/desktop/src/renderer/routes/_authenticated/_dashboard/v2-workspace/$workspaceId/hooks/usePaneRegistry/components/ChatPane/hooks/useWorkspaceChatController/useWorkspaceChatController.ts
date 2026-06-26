@@ -17,6 +17,8 @@ interface SessionSelectorItem {
 	sessionId: string;
 	title: string;
 	updatedAt: Date;
+	pinned: boolean;
+	pinnedAt: Date | null;
 }
 
 function toSessionSelectorItem(session: {
@@ -24,10 +26,19 @@ function toSessionSelectorItem(session: {
 	title: string | null;
 	lastActiveAt: Date | string | null;
 	createdAt: Date | string;
+	pinned?: boolean | null;
+	pinnedAt?: Date | string | null;
 }): SessionSelectorItem {
 	return {
 		sessionId: session.id,
 		title: session.title ?? "",
+		pinned: session.pinned ?? false,
+		pinnedAt:
+			session.pinnedAt instanceof Date
+				? session.pinnedAt
+				: session.pinnedAt
+					? new Date(session.pinnedAt)
+					: null,
 		updatedAt:
 			session.lastActiveAt instanceof Date
 				? session.lastActiveAt
@@ -145,9 +156,27 @@ export function useWorkspaceChatController({
 		],
 	);
 
+	const handleSetPinned = useCallback(
+		async (sessionIdToPin: string, pinned: boolean) => {
+			const transaction = chatSessionActions.setPinned(sessionIdToPin, pinned);
+			if (!transaction && !isDesktopChatDevMode()) {
+				throw new Error("Failed to update chat session pin");
+			}
+			posthog.capture(
+				pinned ? "chat_session_pinned" : "chat_session_unpinned",
+				{
+					workspace_id: workspaceId,
+					session_id: sessionIdToPin,
+					organization_id: organizationId,
+				},
+			);
+		},
+		[chatSessionActions, organizationId, workspaceId],
+	);
+
 	const getOrCreateSession = useCallback(async (): Promise<string> => {
 		if (!organizationId) {
-			throw new Error("No active organization selected");
+			throw new Error("Нет активной организации");
 		}
 
 		if (sessionId) {
@@ -197,6 +226,8 @@ export function useWorkspaceChatController({
 				sessionId: record.sessionId,
 				title: record.title,
 				updatedAt: new Date(record.lastActiveAt),
+				pinned: false,
+				pinnedAt: null,
 			});
 		}
 		if (sessionId && !byId.has(sessionId)) {
@@ -204,6 +235,8 @@ export function useWorkspaceChatController({
 				sessionId,
 				title: "",
 				updatedAt: new Date(),
+				pinned: false,
+				pinnedAt: null,
 			});
 		}
 		return [...byId.values()].sort(
@@ -219,6 +252,7 @@ export function useWorkspaceChatController({
 		handleSelectSession,
 		handleNewChat,
 		handleDeleteSession,
+		handleSetPinned,
 		getOrCreateSession,
 	};
 }

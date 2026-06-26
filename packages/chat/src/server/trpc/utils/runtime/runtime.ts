@@ -1,6 +1,10 @@
+import type { Engine, EngineBundle } from "@rox/chat/server/engine";
+import {
+	type PermissionMode,
+	permissionModeToHarnessState,
+} from "@rox/shared/chat-permission-mode";
 import type { AppRouter } from "@rox/trpc";
 import type { createTRPCClient } from "@trpc/client";
-import type { createMastraCode } from "mastracode";
 import { generateTitleFromMessage } from "../../../desktop";
 import type { ThinkingLevel } from "../../zod";
 import {
@@ -8,17 +12,12 @@ import {
 	withCustomProviderRuntimeEnv,
 } from "./custom-provider-runtime-env";
 
-export type RuntimeHarness = Awaited<
-	ReturnType<typeof createMastraCode>
->["harness"];
-export type RuntimeMcpManager = Awaited<
-	ReturnType<typeof createMastraCode>
->["mcpManager"];
-export type RuntimeHookManager = Awaited<
-	ReturnType<typeof createMastraCode>
->["hookManager"];
-export type RuntimeQuestionResponse = Awaited<
-	ReturnType<RuntimeHarness["respondToQuestion"]>
+/** The active agent engine for a session (see `@rox/chat/server/engine`). */
+export type RuntimeEngine = Engine;
+export type RuntimeMcpManager = EngineBundle["mcpManager"];
+export type RuntimeHookManager = EngineBundle["hookManager"];
+export type RuntimeQuestionResponse = ReturnType<
+	RuntimeEngine["respondToQuestion"]
 >;
 
 export interface RuntimeMcpServerStatus {
@@ -29,7 +28,7 @@ export interface RuntimeMcpServerStatus {
 
 export interface RuntimeSession {
 	sessionId: string;
-	harness: RuntimeHarness;
+	engine: RuntimeEngine;
 	mcpManager: RuntimeMcpManager;
 	hookManager: RuntimeHookManager;
 	mcpManualStatuses: Map<string, RuntimeMcpServerStatus>;
@@ -72,64 +71,27 @@ interface RuntimeRestartPayload {
 	metadata?: {
 		model?: string;
 		thinkingLevel?: ThinkingLevel;
+		permissionMode?: PermissionMode;
 	};
 }
 
-interface RuntimeStoredMessage {
-	id: string;
-	role: string;
-}
-
-interface RuntimeStoredThread {
-	id: string;
-	resourceId: string;
-	title?: string;
-}
-
-interface RuntimeMemoryStore {
-	getThreadById(args: {
-		threadId: string;
-	}): Promise<RuntimeStoredThread | null>;
-	listMessages(args: {
-		threadId: string;
-		perPage: false;
-		orderBy: { field: "createdAt"; direction: "ASC" };
-	}): Promise<{ messages: RuntimeStoredMessage[] }>;
-	cloneThread(args: {
-		sourceThreadId: string;
-		resourceId?: string;
-		title?: string;
-		options?: {
-			messageFilter?: {
-				messageIds?: string[];
-			};
-		};
-	}): Promise<{ thread: RuntimeStoredThread }>;
-}
-
-interface HarnessWithConfig {
-	config?: {
-		storage?: {
-			getStore: (domain: "memory") => Promise<RuntimeMemoryStore | null>;
-		};
-	};
-}
-
-async function getRuntimeMemoryStore(
+/**
+ * Apply the turn's permission mode to the runtime before the message runs.
+ *
+ * The mode is the desktop-agent safety lever: it decides whether edit/execute
+ * tool calls auto-run or stop at an approval gate. We translate it to the
+ * harness state slice (`yolo` + per-category `permissionRules`) via the shared
+ * mapping and push it through `setState` — same seam thinkingLevel uses. Applied
+ * every turn (idempotently) so switching modes mid-session takes effect
+ * immediately and never leaves an earlier mode's grants in place. When no mode
+ * is supplied we leave the runtime untouched.
+ */
+export async function applyPermissionMode(
 	runtime: RuntimeSession,
-): Promise<RuntimeMemoryStore> {
-	const harness = runtime.harness as unknown as HarnessWithConfig;
-	const storage = harness.config?.storage;
-	if (!storage) {
-		throw new Error("Mastra storage is not configured for this session");
-	}
-
-	const memoryStore = await storage.getStore("memory");
-	if (!memoryStore) {
-		throw new Error("Mastra memory storage is unavailable for this session");
-	}
-
-	return memoryStore;
+	mode: PermissionMode | undefined,
+): Promise<void> {
+	if (!mode) return;
+	await runtime.engine.setState(permissionModeToHarnessState(mode));
 }
 
 /**
@@ -170,16 +132,13 @@ export function reloadHookConfig(runtime: RuntimeSession): void {
 }
 
 /**
- * Destroy a runtime: fire SessionEnd hook and tear down the harness.
+ * Destroy a runtime: fire SessionEnd hook and tear down the engine.
  */
 export async function destroyRuntime(runtime: RuntimeSession): Promise<void> {
 	if (runtime.hookManager) {
 		await runtime.hookManager.runSessionEnd().catch(() => {});
 	}
-	const harnessWithDestroy = runtime.harness as RuntimeHarness & {
-		destroy?: () => Promise<void>;
-	};
-	await harnessWithDestroy.destroy?.().catch(() => {});
+	await runtime.engine.destroy?.().catch(() => {});
 }
 
 export interface LifecycleEvent {
@@ -199,7 +158,7 @@ export function subscribeToSessionEvents(
 	runtime: RuntimeSession,
 	onLifecycleEvent?: (event: LifecycleEvent) => void,
 ): void {
-	runtime.harness.subscribe((event: unknown) => {
+	runtime.engine.subscribe((event: unknown) => {
 		if (
 			isHarnessThreadChangedEvent(event) ||
 			isHarnessThreadCreatedEvent(event)
@@ -402,12 +361,12 @@ export async function restartRuntimeFromUserMessage(
 	 */
 	beforeSend?: () => Promise<void>,
 ): Promise<void> {
-	const threadId = runtime.harness.getCurrentThreadId();
+	const threadId = runtime.engine.getCurrentThreadId();
 	if (!threadId) {
 		throw new Error("No active Mastra thread is available for editing");
 	}
 
-	const memoryStore = await getRuntimeMemoryStore(runtime);
+	const memoryStore = await runtime.engine.getMemoryStore();
 	const sourceThread = await memoryStore.getThreadById({ threadId });
 	if (!sourceThread) {
 		throw new Error(`Mastra thread not found: ${threadId}`);
@@ -443,15 +402,15 @@ export async function restartRuntimeFromUserMessage(
 		},
 	});
 
-	runtime.harness.abort();
-	await runtime.harness.switchThread({ threadId: clonedThread.thread.id });
+	runtime.engine.abort();
+	await runtime.engine.switchThread({ threadId: clonedThread.thread.id });
 
 	const selectedModel = input.metadata?.model?.trim();
 	if (selectedModel) {
 		await withCustomProviderRuntimeEnv(selectedModel, async (prepared) => {
 			const runtimeModelId =
 				prepared.modelId ?? resolveCustomProviderRuntimeModelId(selectedModel);
-			await runtime.harness.switchModel({
+			await runtime.engine.switchModel({
 				modelId: runtimeModelId ?? selectedModel,
 				scope: "thread",
 			});
@@ -460,12 +419,14 @@ export async function restartRuntimeFromUserMessage(
 
 	const thinkingLevel = input.metadata?.thinkingLevel;
 	if (thinkingLevel) {
-		await runtime.harness.setState({ thinkingLevel });
+		await runtime.engine.setState({ thinkingLevel });
 	}
+
+	await applyPermissionMode(runtime, input.metadata?.permissionMode);
 
 	runtime.lastErrorMessage = null;
 	if (beforeSend) await beforeSend();
-	await runtime.harness.sendMessage(input.payload);
+	await runtime.engine.sendMessage(input.payload);
 }
 
 function extractTextContent(parts: MessageLike["content"]): string {
@@ -486,7 +447,7 @@ export async function generateAndSetTitle(
 	},
 ): Promise<void> {
 	try {
-		const messages: MessageLike[] = await runtime.harness.listMessages();
+		const messages: MessageLike[] = await runtime.engine.listMessages();
 		const submittedUserMessage = options?.submittedUserMessage?.trim();
 		const latestPersistedUserMessage = [...messages]
 			.reverse()
@@ -527,18 +488,18 @@ export async function generateAndSetTitle(
 		}
 		if (!text.trim()) return;
 
-		const mode = runtime.harness.getCurrentMode();
+		const mode = runtime.engine.getCurrentMode();
 		const agent =
 			typeof mode.agent === "function"
 				? // Upstream types the agent factory against the schema type, but the
 					// runtime implementation receives the current state values.
-					mode.agent(runtime.harness.getState() as never)
+					mode.agent(runtime.engine.getState() as never)
 				: mode.agent;
 
 		const title = await generateTitleFromMessage({
 			agent,
 			message: text,
-			modelId: runtime.harness.getFullModelId(),
+			modelId: runtime.engine.getFullModelId(),
 		});
 		if (!title?.trim()) return;
 

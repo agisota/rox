@@ -62,9 +62,9 @@ export function PendingPlanApprovalMessage({
 
 	const planId = planApproval.planId?.trim() ?? "";
 	if (resolvedPlanId && resolvedPlanId === planId) return null;
-	const title = planApproval.title?.trim() || "Implementation plan";
+	const title = planApproval.title?.trim() || "План реализации";
 	const planBody =
-		planApproval.plan?.trim() || "No plan details were provided.";
+		planApproval.plan?.trim() || "Детали плана не предоставлены.";
 	const canRespond = planId.length > 0;
 	const getLatestFeedback = (): string => {
 		const textareaValue = feedbackTextareaRef.current?.value;
@@ -110,7 +110,7 @@ export function PendingPlanApprovalMessage({
 						onCheckedChange={setRenderMarkdown}
 						disabled={isSubmitting}
 					/>
-					Render markdown
+					Показывать markdown
 				</label>
 			</div>
 			<div className="rounded-md border bg-muted/20 p-3">
@@ -136,18 +136,18 @@ export function PendingPlanApprovalMessage({
 			</div>
 			<div className="space-y-2">
 				<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-					Feedback (optional)
+					Комментарий (необязательно)
 				</div>
 				<Textarea
 					ref={feedbackTextareaRef}
 					value={feedback}
 					onChange={(event) => setFeedback(event.target.value)}
-					placeholder="Add feedback for revisions..."
+					placeholder="Добавьте замечания для доработки…"
 					disabled={isSubmitting || !canRespond}
 					rows={4}
 				/>
 				<div className="text-xs text-muted-foreground">
-					Feedback is included with your response.
+					Комментарий будет отправлен вместе с ответом.
 				</div>
 			</div>
 			<div className="flex flex-wrap items-center justify-end gap-2">
@@ -175,7 +175,7 @@ export function PendingPlanApprovalMessage({
 							void handleRespond("rejected");
 						}}
 					>
-						Request changes
+						Запросить правки
 					</Button>
 				</motion.span>
 				<motion.span
@@ -201,7 +201,7 @@ export function PendingPlanApprovalMessage({
 							void handleRespond("approved");
 						}}
 					>
-						Approve plan
+						Принять план
 					</Button>
 				</motion.span>
 			</div>

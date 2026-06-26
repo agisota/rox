@@ -20,6 +20,7 @@ import { createMenuRouter } from "./menu";
 import { createMigrationRouter } from "./migration";
 import { createNotificationsRouter } from "./notifications";
 import { createPermissionsRouter } from "./permissions";
+import { createPopoutRouter } from "./popout";
 import { createPortsRouter } from "./ports";
 import { createProjectsRouter } from "./projects";
 import { createPushToTalkRouter } from "./push-to-talk";
@@ -31,6 +32,7 @@ import { createSkillsLibraryRouter } from "./skills-library";
 import { createSpectreRouter } from "./spectre";
 import { createSystemRouter } from "./system";
 import { createTerminalRouter } from "./terminal";
+import { createTtsRouter } from "./tts";
 import { createUiStateRouter } from "./ui-state";
 import { createWindowRouter } from "./window";
 import { createWorkspacesRouter } from "./workspaces";
@@ -54,12 +56,14 @@ export const createAppRouter = (getWindow: () => BrowserWindow | null) => {
 		filesystem: createFilesystemRouter(),
 		notifications: createNotificationsRouter(getWindow),
 		permissions: createPermissionsRouter(),
+		popout: createPopoutRouter(),
 		ports: createPortsRouter(),
 		pushToTalk: createPushToTalkRouter(),
 		resourceMetrics: createResourceMetricsRouter(),
 		menu: createMenuRouter(),
 		external: createExternalRouter(),
 		settings: createSettingsRouter(),
+		tts: createTtsRouter(),
 		system: createSystemRouter(),
 		config: createConfigRouter(),
 		device: createDeviceRouter(),

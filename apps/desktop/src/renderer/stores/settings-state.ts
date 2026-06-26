@@ -21,6 +21,7 @@ export type SettingsSection =
 	| "apikeys"
 	| "permissions"
 	| "security"
+	| "surfaces"
 	| "project"
 	| "hosts";
 

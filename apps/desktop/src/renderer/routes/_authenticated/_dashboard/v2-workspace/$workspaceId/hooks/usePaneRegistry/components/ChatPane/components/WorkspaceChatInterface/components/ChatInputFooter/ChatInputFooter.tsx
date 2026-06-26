@@ -20,6 +20,7 @@ import type {
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { useComposerInsertTarget } from "renderer/routes/_authenticated/_dashboard/saved-prompts/lib/use-insert-prompt";
 import { ChatComposerControls } from "./components/ChatComposerControls";
 import { ChatInputDropZone } from "./components/ChatInputDropZone";
 import { ChatShortcuts } from "./components/ChatShortcuts";
@@ -41,11 +42,23 @@ interface ChatInputFooterProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	/** Persisted selection id that failed to resolve; surfaces in the pill. */
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	// Value-only setter so the store-backed `usePermissionModePreference` setter
+	// (and a plain `useState` dispatcher) both satisfy this prop. The composer
+	// only ever sets a concrete mode, never a functional updater.
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	slashCommands: SlashCommand[];
+	/**
+	 * Estimated tokens consumed by the current thread; drives the context-budget
+	 * HUD in the composer controls. Also feeds the F42 context-usage ring.
+	 */
+	usedTokens: number;
+	/** Selected model's context window in tokens (F42 ring). */
+	maxTokens?: number;
 	submitDisabled?: boolean;
 	renderAttachment?: (file: FileUIPart & { id: string }) => ReactNode;
 	onSubmitStart?: () => void;
@@ -74,11 +87,14 @@ export function ChatInputFooter({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
 	setThinkingLevel,
 	slashCommands,
+	usedTokens,
+	maxTokens,
 	submitDisabled,
 	renderAttachment,
 	onSubmitStart,
@@ -91,6 +107,11 @@ export function ChatInputFooter({
 	onQuestionCancel,
 }: ChatInputFooterProps) {
 	useFocusPromptOnPane(isFocused);
+
+	// Subscribe to the saved-prompts insert seam so "Сохранённые промпты" can
+	// deliver a prompt straight into this live composer (and so the inserter
+	// knows an in-place target exists while this pane is mounted).
+	useComposerInsertTarget();
 
 	// Re-focus the editor when the question overlay dismisses.
 	const { textInput } = usePromptInputController();
@@ -180,7 +201,7 @@ export function ChatInputFooter({
 						>
 							{showFocusHint && (
 								<span className="pointer-events-none absolute top-3 right-3 z-10 text-xs text-muted-foreground/50 [:focus-within>&]:hidden">
-									{focusShortcutText} to focus
+									{focusShortcutText} — фокус
 								</span>
 							)}
 							<PromptInput
@@ -220,6 +241,7 @@ export function ChatInputFooter({
 									setSelectedModel={setSelectedModel}
 									modelSelectorOpen={modelSelectorOpen}
 									setModelSelectorOpen={setModelSelectorOpen}
+									unresolvedModelId={unresolvedModelId}
 									permissionMode={permissionMode}
 									setPermissionMode={setPermissionMode}
 									thinkingLevel={thinkingLevel}
@@ -228,6 +250,8 @@ export function ChatInputFooter({
 									submitStatus={submitStatus}
 									submitDisabled={submitDisabled}
 									onStop={onStop}
+									usedTokens={usedTokens}
+									maxTokens={maxTokens}
 								/>
 							</PromptInput>
 						</div>

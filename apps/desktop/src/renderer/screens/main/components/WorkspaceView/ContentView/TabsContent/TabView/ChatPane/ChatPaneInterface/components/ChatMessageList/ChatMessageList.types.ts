@@ -1,4 +1,5 @@
 import type { UseChatDisplayReturn } from "@rox/chat/client";
+import type { ScrollbackRecent } from "@rox/ui/ai-elements/message-scrollback-rail";
 
 export type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 
@@ -90,4 +91,8 @@ export interface ChatMessageListProps {
 		request: UserMessageRestartRequest,
 	) => Promise<void>;
 	onRestartUserMessage: (request: UserMessageRestartRequest) => Promise<void>;
+	/** Cross-session recents (~10) for the scrollback rail's Recents-flyout (F49). */
+	recents?: ScrollbackRecent[];
+	/** Jump to a recent session from the rail's Recents-flyout (F49). */
+	onSelectRecent?: (sessionId: string) => void;
 }

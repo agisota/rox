@@ -41,6 +41,21 @@ import { getWorkspaceRuntimeRegistry } from "../lib/workspace-runtime";
 // Singleton IPC handler to prevent duplicate handlers on window reopen (macOS)
 let ipcHandler: ReturnType<typeof createIPCHandler> | null = null;
 
+/**
+ * Attach a secondary window (e.g. a tear-off popout, F52) to the singleton
+ * trpc-electron handler so its renderer can call the same router as the main
+ * window — making the popout a live view onto the one core-state. No-op until
+ * the main window has constructed the handler.
+ */
+export function attachWindowToIpc(win: BrowserWindow): void {
+	ipcHandler?.attachWindow(win);
+}
+
+/** Detach a secondary window from the singleton handler on close. */
+export function detachWindowFromIpc(win: BrowserWindow): void {
+	ipcHandler?.detachWindow(win);
+}
+
 function getWorkspaceNameFromDb(workspaceId: string | undefined): string {
 	if (!workspaceId) return "Workspace";
 	try {

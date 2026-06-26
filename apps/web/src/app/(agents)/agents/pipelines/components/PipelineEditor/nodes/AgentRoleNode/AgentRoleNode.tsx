@@ -11,6 +11,7 @@ import {
 import { Badge } from "@rox/ui/badge";
 import { Bot } from "lucide-react";
 import type { PipelineFlowNode } from "../../graph-adapter";
+import { runStatusClass } from "../node-run-status";
 
 /**
  * An agent-role node — the workhorse of a pipeline. Renders the bound role slug
@@ -21,7 +22,7 @@ export function AgentRoleNode({ data, selected }: NodeProps<PipelineFlowNode>) {
 	return (
 		<Node
 			handles={{ target: true, source: true }}
-			className={selected ? "ring-2 ring-primary" : undefined}
+			className={runStatusClass(data, selected)}
 		>
 			<NodeHeader>
 				<div className="flex items-center gap-2">

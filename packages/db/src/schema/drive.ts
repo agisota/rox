@@ -48,6 +48,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { entitySearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 import {
 	driveFileStatusValues,
@@ -203,6 +204,11 @@ export const driveFiles = pgTable(
 			t.version,
 		),
 		check("drive_files_size_nonneg", sql`${t.sizeBytes} >= 0`),
+		// Expression GIN index backing the F16 cross-entity search (Files facet).
+		// Built from the SAME `entitySearchVectorSql` the search router uses so the
+		// indexed and queried expressions cannot drift. Drive is user-scoped (no
+		// org column), so the search query scopes this facet by `user_id`.
+		index("drive_files_fts_idx").using("gin", entitySearchVectorSql([t.name])),
 	],
 );
 

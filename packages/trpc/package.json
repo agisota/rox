@@ -44,6 +44,10 @@
 			"types": "./src/router/mail/transport.ts",
 			"default": "./src/router/mail/transport.ts"
 		},
+		"./suggestions": {
+			"types": "./src/router/suggestions/index.ts",
+			"default": "./src/router/suggestions/index.ts"
+		},
 		"./calendar-reminders": {
 			"types": "./src/router/calendar/reminders.ts",
 			"default": "./src/router/calendar/reminders.ts"
@@ -59,6 +63,8 @@
 		"typecheck": "tsc --noEmit --emitDeclarationOnly false"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "3.0.64",
+		"@ai-sdk/openai": "3.0.36",
 		"@linear/sdk": "68.1.1",
 		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
@@ -73,12 +79,14 @@
 		"@rox/workflow-core": "workspace:*",
 		"@rox/workflow-runtime": "workspace:*",
 		"@t3-oss/env-core": "0.13.11",
+		"@tavily/core": "0.7.2",
 		"@trpc/server": "11.16.0",
 		"@upstash/qstash": "2.10.1",
 		"@upstash/ratelimit": "2.0.8",
 		"@upstash/redis": "1.37.0",
 		"@vercel/blob": "2.3.2",
 		"@vercel/kv": "3.0.0",
+		"ai": "6.0.141",
 		"drizzle-orm": "0.45.2",
 		"posthog-node": "5.38.0",
 		"resend": "4.8.0",
@@ -86,6 +94,7 @@
 		"zod": "4.3.6"
 	},
 	"devDependencies": {
+		"@rox/mcp-v2": "workspace:*",
 		"@rox/typescript": "workspace:*",
 		"@types/node": "24.12.0",
 		"typescript": "6.0.3"

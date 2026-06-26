@@ -1,20 +1,33 @@
 import { db, dbWs } from "@rox/db/client";
 import { chatSessionStatusEnum } from "@rox/db/enums";
-import { chatSessions, usageRequests } from "@rox/db/schema";
+import { chatMessages, chatSessions, usageRequests } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import {
 	AVAILABLE_CHAT_MODELS,
 	ROX_CHAT_MODEL_ID,
 } from "@rox/shared/chat-models";
+import type { MessageSearchResult } from "@rox/shared/search";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
+import {
+	buildFacetSearchSql,
+	normalizeSearchQuery,
+} from "../search/search-sql";
 import { requireActiveOrgId } from "../utils/active-org";
+import { reconcileSuggestions, type TranscriptTurn } from "./label-suggestion";
+import {
+	buildLabelFilterConditions,
+	listSessionsSchema,
+} from "./labels-schema";
+import { RECENTS_DEFAULT_LIMIT, recentsInputSchema } from "./recents-schema";
+import { searchMessagesSchema } from "./search-messages-schema";
 import {
 	type ChatCompletionResult,
 	deriveSessionTitle,
+	generateLabelsFromTranscript,
 	persistQuickChatTurns,
 	runQuickChatCompletion,
 } from "./utils/chat-completion";
@@ -37,66 +50,193 @@ export const chatRouter = {
 		return { models: [...AVAILABLE_CHAT_MODELS] };
 	}),
 
-	listSessions: protectedProcedure.query(async ({ ctx }) => {
-		const organizationId = ctx.activeOrganizationId;
+	listSessions: protectedProcedure
+		.input(listSessionsSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = ctx.activeOrganizationId;
 
-		if (!organizationId) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "No active organization selected",
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+
+			// Optional label filters (F10/F17). Absent params add no conditions, so
+			// the query is identical to the previous behaviour (backward compatible).
+			const labelConditions = buildLabelFilterConditions({
+				labelsColumn: chatSessions.labels,
+				labelsAny: input?.labelsAny,
+				labelsAll: input?.labelsAll,
 			});
-		}
 
-		const sessions = await db
-			.select({
-				id: chatSessions.id,
-				title: chatSessions.title,
-				workspaceId: chatSessions.workspaceId,
-				v2WorkspaceId: chatSessions.v2WorkspaceId,
-				status: chatSessions.status,
-				labels: chatSessions.labels,
-				createdAt: chatSessions.createdAt,
-				updatedAt: chatSessions.updatedAt,
-				lastActiveAt: chatSessions.lastActiveAt,
-			})
-			.from(chatSessions)
-			.where(
-				and(
-					eq(chatSessions.createdBy, ctx.session.user.id),
-					eq(chatSessions.organizationId, organizationId),
-				),
-			)
-			.orderBy(desc(chatSessions.lastActiveAt))
-			.limit(50);
+			const sessions = await db
+				.select({
+					id: chatSessions.id,
+					title: chatSessions.title,
+					workspaceId: chatSessions.workspaceId,
+					v2WorkspaceId: chatSessions.v2WorkspaceId,
+					status: chatSessions.status,
+					pinned: chatSessions.pinned,
+					pinnedAt: chatSessions.pinnedAt,
+					labels: chatSessions.labels,
+					createdAt: chatSessions.createdAt,
+					updatedAt: chatSessions.updatedAt,
+					lastActiveAt: chatSessions.lastActiveAt,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.createdBy, ctx.session.user.id),
+						eq(chatSessions.organizationId, organizationId),
+						...labelConditions,
+					),
+				)
+				.orderBy(desc(chatSessions.lastActiveAt))
+				.limit(50);
 
-		if (sessions.length === 0) {
-			return { sessions, usageRequests: [] };
-		}
+			if (sessions.length === 0) {
+				return { sessions, usageRequests: [] };
+			}
 
-		const sessionIds = sessions.map((session) => session.id);
-		const usageRows = await db
-			.select({
-				id: usageRequests.id,
-				chatSessionId: usageRequests.chatSessionId,
-				modelId: usageRequests.modelId,
-				tokensIn: usageRequests.tokensIn,
-				tokensOut: usageRequests.tokensOut,
-				usdCost: usageRequests.usdCost,
-				roxCost: usageRequests.roxCost,
-				trace: usageRequests.trace,
-				createdAt: usageRequests.createdAt,
-			})
-			.from(usageRequests)
-			.where(
-				and(
-					eq(usageRequests.userId, ctx.session.user.id),
-					inArray(usageRequests.chatSessionId, sessionIds),
-				),
-			)
-			.orderBy(usageRequests.createdAt);
+			const sessionIds = sessions.map((session) => session.id);
+			const usageRows = await db
+				.select({
+					id: usageRequests.id,
+					chatSessionId: usageRequests.chatSessionId,
+					modelId: usageRequests.modelId,
+					tokensIn: usageRequests.tokensIn,
+					tokensOut: usageRequests.tokensOut,
+					usdCost: usageRequests.usdCost,
+					roxCost: usageRequests.roxCost,
+					trace: usageRequests.trace,
+					createdAt: usageRequests.createdAt,
+				})
+				.from(usageRequests)
+				.where(
+					and(
+						eq(usageRequests.userId, ctx.session.user.id),
+						inArray(usageRequests.chatSessionId, sessionIds),
+					),
+				)
+				.orderBy(usageRequests.createdAt);
 
-		return { sessions, usageRequests: usageRows };
-	}),
+			return { sessions, usageRequests: usageRows };
+		}),
+
+	/**
+	 * Cross-session recent jumps (F49). Returns the most recently active chat
+	 * sessions for the active organization (org-scoped, owned by the caller),
+	 * ordered by `lastActiveAt`. Powers the scrollback rail's Recents-flyout so
+	 * users can hop between conversations without leaving the rail. Default ~10;
+	 * capped at 25.
+	 */
+	recents: protectedProcedure
+		.input(recentsInputSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = ctx.activeOrganizationId;
+
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+
+			const recents = await db
+				.select({
+					sessionId: chatSessions.id,
+					title: chatSessions.title,
+					v2WorkspaceId: chatSessions.v2WorkspaceId,
+					lastActiveAt: chatSessions.lastActiveAt,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.createdBy, ctx.session.user.id),
+						eq(chatSessions.organizationId, organizationId),
+					),
+				)
+				.orderBy(desc(chatSessions.lastActiveAt))
+				.limit(input?.limit ?? RECENTS_DEFAULT_LIMIT);
+
+			return { recents };
+		}),
+
+	/**
+	 * Full-text search over chat message CONTENT (Hermes-borrow F15).
+	 *
+	 * Backs the in-conversation filter box's async content lane: the UI shows an
+	 * instant title-match the keystroke after the user types (pure, client-side),
+	 * then layers these ranked, `<mark>`-highlighted content hits on top once they
+	 * resolve. Always org + author scoped (a user only searches their own message
+	 * history); `sessionId` narrows to ONE conversation, omitted = every session.
+	 *
+	 * Reuses the canonical `buildFacetSearchSql([chatMessages.content])` — the SAME
+	 * vector the `chat_messages_fts_idx` GIN index is built from — so the scan uses
+	 * the index and the highlighted snippet comes from `ts_headline` over the same
+	 * document. An empty/whitespace query short-circuits to empty without a DB hit.
+	 */
+	searchMessages: protectedProcedure
+		.input(searchMessagesSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+			const query = normalizeSearchQuery(input.query);
+			if (!query) {
+				return { results: [], totalCount: 0 };
+			}
+
+			const cm = buildFacetSearchSql({
+				query,
+				columns: [chatMessages.content],
+			});
+			const conds: SQL[] = [
+				eq(chatMessages.organizationId, organizationId),
+				eq(chatMessages.createdBy, ctx.session.user.id),
+				cm.match,
+			];
+			if (input.sessionId) {
+				conds.push(eq(chatMessages.sessionId, input.sessionId));
+			}
+
+			const [cnt, rows] = await Promise.all([
+				db
+					.select({ value: count() })
+					.from(chatMessages)
+					.where(and(...conds)),
+				db
+					.select({
+						id: chatMessages.id,
+						sessionId: chatMessages.sessionId,
+						role: chatMessages.role,
+						content: chatMessages.content,
+						snippet: cm.headline,
+						score: cm.rank,
+						createdAt: chatMessages.createdAt,
+					})
+					.from(chatMessages)
+					.where(and(...conds))
+					.orderBy(
+						desc(cm.rank),
+						desc(chatMessages.createdAt),
+						desc(chatMessages.id),
+					)
+					.limit(input.limit),
+			]);
+
+			const results: MessageSearchResult[] = rows.map((row) => ({
+				id: row.id,
+				sessionId: row.sessionId,
+				role: row.role,
+				title: deriveMessageTitle(row.content),
+				snippet: row.snippet && row.snippet.length > 0 ? row.snippet : null,
+				score:
+					typeof row.score === "number" ? row.score : Number(row.score) || 0,
+				createdAt: row.createdAt.toISOString(),
+			}));
+
+			return { results, totalCount: cnt[0]?.value ?? 0 };
+		}),
 
 	getSessionDetail: protectedProcedure
 		.input(z.object({ sessionId: z.uuid() }))
@@ -117,6 +257,8 @@ export const chatRouter = {
 					workspaceId: chatSessions.workspaceId,
 					v2WorkspaceId: chatSessions.v2WorkspaceId,
 					status: chatSessions.status,
+					pinned: chatSessions.pinned,
+					pinnedAt: chatSessions.pinnedAt,
 					labels: chatSessions.labels,
 					createdAt: chatSessions.createdAt,
 					updatedAt: chatSessions.updatedAt,
@@ -383,6 +525,49 @@ export const chatRouter = {
 			return { updated: !!updated };
 		}),
 
+	setPinned: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				organizationId: z.uuid(),
+				pinned: z.boolean(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+			if (input.organizationId !== organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Organization mismatch",
+				});
+			}
+
+			const result = await dbWs.transaction(async (tx) => {
+				const [updated] = await tx
+					.update(chatSessions)
+					.set({
+						pinned: input.pinned,
+						pinnedAt: input.pinned ? new Date() : null,
+					})
+					.where(
+						and(
+							eq(chatSessions.id, input.sessionId),
+							eq(chatSessions.organizationId, organizationId),
+							eq(chatSessions.createdBy, ctx.session.user.id),
+						),
+					)
+					.returning({ id: chatSessions.id });
+
+				if (!updated) return { updated, txid: null };
+				const txid = await getCurrentTxid(tx);
+
+				return { updated, txid };
+			});
+			const { updated, txid } = result;
+
+			return { updated: !!updated, txid };
+		}),
+
 	setLabels: protectedProcedure
 		.input(
 			z.object({
@@ -517,4 +702,96 @@ export const chatRouter = {
 
 			return { updated: !!updated };
 		}),
+
+	/**
+	 * AI auto-tags from transcript (F14). Mirrors the auto-title pipeline on the
+	 * organization tag axis: given a chat's transcript, the Rox house model
+	 * proposes ≤3 short topical labels the renderer shows as dismissible
+	 * ghost-chips. Accepting a chip writes membership via the existing
+	 * `chat.setLabels`; this procedure only *suggests* — it never mutates
+	 * `chat_sessions.labels`.
+	 *
+	 * Org-scoped (the session must belong to the active org and the caller). The
+	 * idle-reconcile contract is the *trigger*: the host calls this on settling,
+	 * not on every message (mirrors how `generateAndSetTitle` only fires on the
+	 * first turn / every 10th), so the model stays off the per-message hot path.
+	 *
+	 * Respects the manual override: suggestions are reconciled against the
+	 * session's current `labels` so an already-applied (manual or accepted) tag is
+	 * never re-proposed and nothing the user set is overwritten. This procedure
+	 * never mutates the session — accepting a chip writes via `chat.setLabels`.
+	 */
+	generateLabelsFromTranscript: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				/** Journal-readable transcript turns (the host extracts these). */
+				turns: z
+					.array(
+						z.object({
+							role: z.enum(["system", "user", "assistant"]),
+							content: z.string().max(32_000),
+						}),
+					)
+					.min(1)
+					.max(50),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+
+			const [session] = await db
+				.select({
+					id: chatSessions.id,
+					labels: chatSessions.labels,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.organizationId, organizationId),
+						eq(chatSessions.createdBy, ctx.session.user.id),
+					),
+				)
+				.limit(1);
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Chat session not found",
+				});
+			}
+
+			let suggestions: string[];
+			try {
+				suggestions = await generateLabelsFromTranscript({
+					turns: input.turns as TranscriptTurn[],
+				});
+			} catch (error) {
+				// A genuine gateway failure must never break the chat flow — log and
+				// return no suggestions (mirrors `generateAndSetTitle`'s catch).
+				console.warn("[chat] Label suggestion failed:", error);
+				return { suggestions: [] as string[] };
+			}
+
+			// Respect the manual override: never re-propose a tag the session
+			// already carries (manual or previously accepted).
+			const fresh = reconcileSuggestions(suggestions, session.labels ?? []);
+			return { suggestions: fresh };
+		}),
 } satisfies TRPCRouterRecord;
+
+/**
+ * Chat messages have no title — derive a short, scannable display line from the
+ * content's first non-empty line for a `searchMessages` result row (the full
+ * match is still highlighted in the `ts_headline` snippet). Mirrors the
+ * cross-entity search router's `deriveMessageTitle`.
+ */
+function deriveMessageTitle(content: string): string {
+	const firstLine = content
+		.split("\n")
+		.map((line) => line.trim())
+		.find((line) => line.length > 0);
+	if (!firstLine) return "Сообщение";
+	return firstLine.length > 80 ? `${firstLine.slice(0, 79)}…` : firstLine;
+}

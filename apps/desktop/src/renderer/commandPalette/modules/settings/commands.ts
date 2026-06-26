@@ -20,7 +20,13 @@ import {
 	UsersIcon,
 	WrenchIcon,
 } from "lucide-react";
-import type { Command } from "../../core/types";
+import {
+	getPathFromSection,
+	SECTION_ORDER,
+} from "renderer/routes/_authenticated/settings/components/SettingsSidebar/settings-manifest";
+import { requestSettingsDeepLink } from "renderer/routes/_authenticated/settings/utils/settings-deeplink";
+import { SETTINGS_ITEMS } from "renderer/routes/_authenticated/settings/utils/settings-search";
+import type { Command, CommandProvider } from "../../core/types";
 
 interface SettingsTab {
 	id: string;
@@ -144,3 +150,38 @@ function tabToCommand(tab: SettingsTab): Command {
 }
 
 export const settingsTabCommands = TABS.map(tabToCommand);
+
+/**
+ * Deep-link command per registry setting (#592): "Открыть настройку: <title>".
+ *
+ * Built over the unified settings registry (`SETTINGS_ITEMS`) so every item's
+ * RU/EN keywords feed the palette fuzzy match. Running a command records the
+ * deep-link target (so the destination page flashes the card on arrival) and
+ * navigates to the owning section route. Sections are kept in manifest order so
+ * the list reads top-to-bottom like the settings sidebar.
+ */
+function sectionRank(section: string): number {
+	const index = SECTION_ORDER.indexOf(
+		section as (typeof SECTION_ORDER)[number],
+	);
+	return index === -1 ? SECTION_ORDER.length : index;
+}
+
+export const settingsItemCommands: Command[] = [...SETTINGS_ITEMS]
+	.sort((a, b) => sectionRank(a.section) - sectionRank(b.section))
+	.map((item) => ({
+		id: `settings.item.${item.id}`,
+		title: `Открыть настройку: ${item.title}`,
+		section: "navigation" as const,
+		icon: SlidersIcon,
+		keywords: [item.description, ...item.keywords],
+		run: (ctx) => {
+			requestSettingsDeepLink(item.id);
+			ctx.navigate(getPathFromSection(item.section));
+		},
+	}));
+
+export const settingsItemsProvider: CommandProvider = {
+	id: "settings-items",
+	provide: () => settingsItemCommands,
+};

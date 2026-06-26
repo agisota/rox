@@ -78,7 +78,7 @@ export function useOptimisticUpload({
 			uploadFiles(sessionId, [file])
 				.then(([uploaded]) => {
 					if (!uploaded) {
-						throw new Error("Upload failed");
+						throw new Error("Не удалось загрузить файл");
 					}
 					if (!isCurrentUpload(file.id)) return;
 
@@ -98,7 +98,9 @@ export function useOptimisticUpload({
 
 					inflightRef.current.delete(file.id);
 					const message =
-						error instanceof Error ? error.message : "Upload failed";
+						error instanceof Error
+							? error.message
+							: "Не удалось загрузить файл";
 					setEntries((previousEntries) => {
 						const nextEntries = new Map(previousEntries);
 						nextEntries.set(file.id, {

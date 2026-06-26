@@ -330,6 +330,20 @@
       "when": 1783000000000,
       "tag": "0046_push_to_talk_accelerator",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "6",
+      "when": 1783500000000,
+      "tag": "0047_saved_prompts_folders_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1784000000000,
+      "tag": "0048_tts_voice",
+      "breakpoints": true
     }
   ]
 }

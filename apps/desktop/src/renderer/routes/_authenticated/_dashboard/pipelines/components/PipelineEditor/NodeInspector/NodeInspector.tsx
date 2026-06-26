@@ -2,9 +2,10 @@ import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { Switch } from "@rox/ui/switch";
-import type { WorkflowIssue } from "@rox/workflow-core";
+import { getNodeType, type WorkflowIssue } from "@rox/workflow-core";
 import {
 	Bot,
+	Box,
 	Flag,
 	type LucideIcon,
 	Play,
@@ -14,28 +15,22 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { PipelineFlowNode, PipelineNodeKind } from "../graph-adapter";
-import { AgentNodeForm } from "./forms/AgentNodeForm";
-import { ConfirmationNodeForm } from "./forms/ConfirmationNodeForm";
-import { FinalNodeForm } from "./forms/FinalNodeForm";
-import { LoopNodeForm } from "./forms/LoopNodeForm";
-import { StartNodeForm } from "./forms/StartNodeForm";
+import type { PipelineFlowNode } from "../graph-adapter";
+import { AutoForm } from "./AutoForm";
 import type { NodePatchApi } from "./useNodePatch";
 
-const KIND_ICON: Record<PipelineNodeKind, LucideIcon> = {
-	start: Play,
-	agent_run: Bot,
-	loop: Repeat,
-	human_approval: ShieldCheck,
-	response: Flag,
-};
-
-const KIND_LABEL: Record<PipelineNodeKind, string> = {
-	start: "Старт",
-	agent_run: "Агент-роль",
-	loop: "Цикл",
-	human_approval: "Подтверждение",
-	response: "Финал",
+/**
+ * Lucide icon lookup for the registry's `render.icon` string. Kept small (the
+ * built-in node types) with a `Box` fallback so an unknown/future icon name still
+ * renders an inspector header instead of throwing.
+ */
+const ICONS: Record<string, LucideIcon> = {
+	Play,
+	Bot,
+	Repeat,
+	ShieldCheck,
+	Flag,
+	Box,
 };
 
 type NodeInspectorProps = {
@@ -54,12 +49,13 @@ type NodeInspectorProps = {
 /**
  * The per-node inspector: a Dify/Sim-style takeover of the right panel shown when
  * a node is selected. Header = type icon + inline rename + enabled Switch +
- * delete; a per-block issues list explains why a node is flagged; the body is the
- * type-specific sub-form. Returns null when no node is selected.
+ * delete; a per-block issues list explains why a node is flagged; the body is a
+ * registry-driven auto-form generated from the node type's `fields`. Returns null
+ * when no node is selected.
  *
  * Cache-first (AGENTS.md #9): values seed from `selectedNode.data`; writes go
- * through `patch` (graphRef-authoritative). Sub-forms remount per node id (keyed
- * by the parent) so local state re-seeds on selection change.
+ * through `patch` (graphRef-authoritative). The auto-form remounts per node id
+ * (keyed by the parent) so local state re-seeds on selection change.
  */
 export function NodeInspector({
 	selectedNode,
@@ -70,9 +66,14 @@ export function NodeInspector({
 }: NodeInspectorProps) {
 	if (!selectedNode) return null;
 
-	const { kind, blockId, label, enabled } = selectedNode.data;
-	const Icon = KIND_ICON[kind];
-	const isStart = kind === "start";
+	const { kind, blockId, blockType, label, enabled } = selectedNode.data;
+	// Resolve the node-type definition from the registry (by persisted type, then
+	// the rendered kind). Unknown/legacy types fall back to a generic header so the
+	// inspector never throws.
+	const def = getNodeType(blockType) ?? getNodeType(kind);
+	const Icon = def ? (ICONS[def.render.icon] ?? Box) : Box;
+	const typeLabel = def?.label ?? kind;
+	const isStart = def?.singleton ?? kind === "start";
 	const blockIssues = (issues ?? []).filter(
 		(issue) => issue.blockId === blockId,
 	);
@@ -94,7 +95,7 @@ export function NodeInspector({
 						onCommit={(name) => patch.renameNode(blockId, name)}
 					/>
 					<p className="mt-0.5 text-[11px] text-muted-foreground">
-						{KIND_LABEL[kind]}
+						{typeLabel}
 					</p>
 				</div>
 				<Button
@@ -144,7 +145,9 @@ export function NodeInspector({
 					</div>
 				)}
 
-				<NodeForm node={selectedNode} patch={patch} kind={kind} />
+				{def && (
+					<AutoForm key={blockId} def={def} node={selectedNode} patch={patch} />
+				)}
 			</div>
 
 			{/* Footer */}
@@ -162,31 +165,6 @@ export function NodeInspector({
 			)}
 		</div>
 	);
-}
-
-function NodeForm({
-	node,
-	patch,
-	kind,
-}: {
-	node: PipelineFlowNode;
-	patch: NodePatchApi;
-	kind: PipelineNodeKind;
-}) {
-	switch (kind) {
-		case "agent_run":
-			return <AgentNodeForm node={node} patch={patch} />;
-		case "loop":
-			return <LoopNodeForm node={node} patch={patch} />;
-		case "human_approval":
-			return <ConfirmationNodeForm node={node} patch={patch} />;
-		case "response":
-			return <FinalNodeForm node={node} patch={patch} />;
-		case "start":
-			return <StartNodeForm />;
-		default:
-			return null;
-	}
 }
 
 /**

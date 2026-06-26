@@ -15,7 +15,10 @@ import {
 	canvasMutationBatchSchema,
 	createInverseCanvasMutationBatch,
 	exportJsonCanvas,
+	type GitStatusTone,
 	importJsonCanvas,
+	isImageRefPath,
+	type RefNodeLiveData,
 } from "@rox/shared/canvas";
 import { TRPCError } from "@trpc/server";
 import { and, eq, like } from "drizzle-orm";
@@ -363,6 +366,134 @@ function resolveCanvasNodeRef(
 		preview: ref.preview ?? null,
 		reason: `unsupported-ref-type:${ref.type}`,
 	};
+}
+
+const IMAGE_PREVIEW_MAX_BYTES = 512 * 1024;
+
+const IMAGE_MIME_BY_EXT: Record<string, string> = {
+	png: "image/png",
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	gif: "image/gif",
+	webp: "image/webp",
+	svg: "image/svg+xml",
+	avif: "image/avif",
+	bmp: "image/bmp",
+	ico: "image/x-icon",
+};
+
+function imageMimeForPath(path: string): string {
+	const dot = path.lastIndexOf(".");
+	const ext = dot >= 0 ? path.slice(dot + 1).toLowerCase() : "";
+	return IMAGE_MIME_BY_EXT[ext] ?? "application/octet-stream";
+}
+
+/** Map a single git working-tree status char to the headless preview tone. */
+function gitStatusToneFromChars(
+	index: string,
+	workingDir: string,
+): GitStatusTone {
+	if (index === "?" && workingDir === "?") return "untracked";
+	if (index === "A" || workingDir === "A") return "added";
+	if (index === "D" || workingDir === "D") return "deleted";
+	if (index === "R" || workingDir === "R") return "renamed";
+	if (index === "M" || workingDir === "M") return "modified";
+	return "clean";
+}
+
+/**
+ * Resolve the *live mini-content* (issue #581) for a single canvas ref node,
+ * returning the headless {@link RefNodeLiveData} the renderer maps onto its
+ * type-specific preview. Read-only over the ref: it never mutates the canvas.
+ *
+ * - `note`/`file`: reads the workspace file content (path-scoped by the security
+ *   validator); files additionally carry their git working-tree status.
+ * - image refs (`file` ref with an image extension): a size-capped data URL.
+ * - `session`: the terminal-session status + a synthetic title.
+ * - other types: minimal data so the renderer falls back to the cached preview.
+ */
+async function resolveCanvasRefPreview(
+	ctx: {
+		db: HostDb;
+		git: (worktreePath: string) => Promise<import("simple-git").SimpleGit>;
+	},
+	workspace: CanvasStorageWorkspace,
+	workspaceId: string,
+	ref: CanvasNodeRef,
+): Promise<RefNodeLiveData> {
+	if (ref.type === "note" || ref.type === "file") {
+		if (!ref.path) return {};
+		const absolutePath = resolve(join(workspace.worktreePath, ref.path));
+		if (!existsSync(absolutePath) || !statSync(absolutePath).isFile()) {
+			return {};
+		}
+		if (ref.type === "file" && isImageRefPath(ref.path)) {
+			try {
+				const buffer = readFileSync(absolutePath);
+				if (buffer.byteLength > IMAGE_PREVIEW_MAX_BYTES) return {};
+				const mime = imageMimeForPath(ref.path);
+				return {
+					imageSrc: `data:${mime};base64,${buffer.toString("base64")}`,
+				};
+			} catch {
+				return {};
+			}
+		}
+		let markdown: string | undefined;
+		try {
+			markdown = readFileSync(absolutePath)
+				.subarray(0, CANVAS_REF_PREVIEW_MAX_BYTES)
+				.toString("utf8");
+		} catch {
+			markdown = undefined;
+		}
+		const data: RefNodeLiveData = { markdown };
+		if (ref.type === "file") {
+			data.gitStatus = await resolveFileGitStatus(
+				ctx,
+				workspace.worktreePath,
+				ref.path,
+			);
+		}
+		return data;
+	}
+
+	if (ref.type === "session") {
+		const session = ctx.db.query.terminalSessions
+			.findFirst({ where: eq(terminalSessions.id, ref.id) })
+			.sync();
+		if (!session) return {};
+		if (
+			session.originWorkspaceId &&
+			session.originWorkspaceId !== workspaceId
+		) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Canvas session ref belongs to another workspace",
+			});
+		}
+		return { status: session.status };
+	}
+
+	return {};
+}
+
+async function resolveFileGitStatus(
+	ctx: {
+		git: (worktreePath: string) => Promise<import("simple-git").SimpleGit>;
+	},
+	worktreePath: string,
+	path: string,
+): Promise<GitStatusTone> {
+	try {
+		const git = await ctx.git(worktreePath);
+		const status = await git.status();
+		const entry = status.files.find((file) => file.path === path);
+		if (!entry) return "clean";
+		return gitStatusToneFromChars(entry.index, entry.working_dir);
+	} catch {
+		return "clean";
+	}
 }
 
 /**
@@ -2634,6 +2765,33 @@ export const canvasRouter = router({
 			const workspace = requireWorkspace(ctx, input.workspaceId);
 			validateCanvasNodeRefAccess(input.ref, input.workspaceId);
 			return resolveCanvasNodeRef(
+				ctx,
+				workspace,
+				input.workspaceId,
+				input.ref as CanvasNodeRef,
+			);
+		}),
+
+	resolveRefPreview: protectedProcedure
+		.input(
+			z.object({
+				workspaceId: z.string().min(1),
+				ref: z.object({
+					type: z.string().min(1),
+					id: z.string().min(1),
+					workspaceId: z.string().optional(),
+					projectId: z.string().optional(),
+					path: z.string().optional(),
+					url: z.string().optional(),
+					version: z.string().optional(),
+					preview: z.string().optional(),
+				}),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const workspace = requireWorkspace(ctx, input.workspaceId);
+			validateCanvasNodeRefAccess(input.ref, input.workspaceId);
+			return resolveCanvasRefPreview(
 				ctx,
 				workspace,
 				input.workspaceId,

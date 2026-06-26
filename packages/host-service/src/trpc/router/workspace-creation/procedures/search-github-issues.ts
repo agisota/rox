@@ -8,6 +8,11 @@ import {
 	resolveGithubRepo,
 } from "../shared/project-helpers";
 import type { ExecGh } from "../utils/exec-gh";
+import {
+	normalizeLabels,
+	normalizeSearchLabels,
+	type WireLabel,
+} from "./github-enrich";
 
 interface IssueResult {
 	issueNumber: number;
@@ -15,6 +20,10 @@ interface IssueResult {
 	url: string;
 	state: string;
 	authorLogin: string | null;
+	/** Repo labels, surfaced as colored chips in the row. */
+	labels: WireLabel[];
+	/** ISO timestamp of the last update, for relative-time rendering. */
+	updatedAt: string | null;
 }
 
 interface IssuesPage {
@@ -25,15 +34,22 @@ interface IssuesPage {
 	repoMismatch?: string;
 }
 
+const ghLabelSchema = z.object({
+	name: z.string().nullable().optional(),
+	color: z.string().nullable().optional(),
+});
+
 const ghIssueViewSchema = z.object({
 	number: z.number(),
 	title: z.string(),
 	url: z.string(),
 	state: z.string(),
 	author: z.object({ login: z.string() }).nullable().optional(),
+	labels: z.array(ghLabelSchema).nullable().optional(),
+	updatedAt: z.string().nullable().optional(),
 });
 
-const ISSUE_VIEW_FIELDS = "number,title,url,state,author";
+const ISSUE_VIEW_FIELDS = "number,title,url,state,author,labels,updatedAt";
 
 async function ghDirectLookup(
 	execGh: ExecGh,
@@ -59,6 +75,8 @@ async function ghDirectLookup(
 		url: issue.url,
 		state: issue.state.toLowerCase(),
 		authorLogin: issue.author?.login ?? null,
+		labels: normalizeLabels(issue.labels),
+		updatedAt: issue.updatedAt ?? null,
 	};
 }
 
@@ -68,6 +86,19 @@ const searchIssuesItemSchema = z.object({
 	html_url: z.string(),
 	state: z.string(),
 	user: z.object({ login: z.string() }).nullable().optional(),
+	labels: z
+		.array(
+			z.union([
+				z.string(),
+				z.object({
+					name: z.string().nullable().optional(),
+					color: z.string().nullable().optional(),
+				}),
+			]),
+		)
+		.nullable()
+		.optional(),
+	updated_at: z.string().nullable().optional(),
 	pull_request: z.unknown().optional(),
 });
 
@@ -117,6 +148,8 @@ async function ghApiSearchIssues(
 			url: item.html_url,
 			state: item.state.toLowerCase(),
 			authorLogin: item.user?.login ?? null,
+			labels: normalizeSearchLabels(item.labels),
+			updatedAt: item.updated_at ?? null,
 		}));
 	const hasNextPage = page * perPage < parsed.total_count;
 	return { items, totalCount: parsed.total_count, hasNextPage };
@@ -214,6 +247,8 @@ export const searchGitHubIssues = protectedProcedure
 							url: issue.html_url,
 							state: issue.state,
 							authorLogin: issue.user?.login ?? null,
+							labels: normalizeSearchLabels(issue.labels),
+							updatedAt: issue.updated_at ?? null,
 						},
 					],
 					totalCount: 1,
@@ -240,6 +275,8 @@ export const searchGitHubIssues = protectedProcedure
 					url: item.html_url,
 					state: item.state,
 					authorLogin: item.user?.login ?? null,
+					labels: normalizeSearchLabels(item.labels),
+					updatedAt: item.updated_at ?? null,
 				}));
 			const hasNextPage = page * limit < data.total_count;
 			return {

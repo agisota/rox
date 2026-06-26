@@ -25,7 +25,6 @@ export function PipelineTemplateCard({
 	};
 	return (
 		<Card
-			data-onboarding-anchor="pipeline-template"
 			role="button"
 			tabIndex={disabled ? -1 : 0}
 			aria-disabled={disabled}

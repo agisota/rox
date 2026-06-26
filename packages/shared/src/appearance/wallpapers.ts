@@ -5,9 +5,17 @@
  * no installer weight. Each gradient carries a cinematic `scene` (aurora /
  * nebula / dunes / horizon / calm) that the renderer layers over the base mesh
  * with drifting light, film grain, and a vignette — turning flat gradients into
- * cinematic scenes without any binary assets. Image wallpapers (`bundled` /
- * `remote`) are added when a licensed photo pack is finalized; the manifest
- * shape already supports them, so consumers won't change.
+ * cinematic scenes without any binary assets.
+ *
+ * FN-047 (#489): users asked for actual photo backgrounds, not only color
+ * gradients. The `remote` image pack below ships curated, license-free photos
+ * served from the Unsplash image CDN — zero binary weight in the installer and
+ * the exact `remote` source the `WallpaperLayer` already renders (cover image +
+ * crossfade). Each carries a `thumb` (smaller CDN crop) for the settings grid
+ * and a `tone` so the quote/loading screen still picks a legible foreground.
+ * Cross-platform by construction: desktop, web, and mobile all consume the same
+ * manifest. A licensed/self-hosted/bundled pack can later swap the `remote` URL
+ * for a `bundled` path without touching any consumer.
  */
 
 import type { Wallpaper } from "./types";
@@ -183,6 +191,95 @@ export const WALLPAPERS: readonly Wallpaper[] = [
 		},
 		tone: "dark",
 		scene: "aurora",
+	},
+	// ── Photo wallpapers (FN-047 / #489) ──────────────────────────────────────
+	// License-free Unsplash photos served from its image CDN. `auto=format` lets
+	// the CDN negotiate AVIF/WebP; `w`/`q` cap the transfer. `thumb` is a small
+	// crop for the settings preview grid. Zero installer weight — the bytes load
+	// on demand, exactly like the existing remote video demo above.
+	{
+		id: "photo-mountain-lake",
+		name: "Горное озеро",
+		source: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2400&q=80",
+		},
+		thumb: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=320&q=60",
+		},
+		tone: "dark",
+		credit: "Unsplash",
+	},
+	{
+		id: "photo-misty-forest",
+		name: "Туманный лес",
+		source: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2400&q=80",
+		},
+		thumb: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=320&q=60",
+		},
+		tone: "dark",
+		credit: "Unsplash",
+	},
+	{
+		id: "photo-desert-dunes",
+		name: "Песчаные дюны",
+		source: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=2400&q=80",
+		},
+		thumb: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=320&q=60",
+		},
+		tone: "light",
+		credit: "Unsplash",
+	},
+	{
+		id: "photo-ocean-wave",
+		name: "Океанская волна",
+		source: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1505142468610-359e7d316be0?auto=format&fit=crop&w=2400&q=80",
+		},
+		thumb: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1505142468610-359e7d316be0?auto=format&fit=crop&w=320&q=60",
+		},
+		tone: "dark",
+		credit: "Unsplash",
+	},
+	{
+		id: "photo-aurora-sky",
+		name: "Северное сияние",
+		source: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&w=2400&q=80",
+		},
+		thumb: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&w=320&q=60",
+		},
+		tone: "dark",
+		credit: "Unsplash",
+	},
+	{
+		id: "photo-soft-clouds",
+		name: "Мягкие облака",
+		source: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=2400&q=80",
+		},
+		thumb: {
+			kind: "remote",
+			url: "https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=320&q=60",
+		},
+		tone: "light",
+		credit: "Unsplash",
 	},
 	// ── Looping video background (Apple-TV-aerial style) ──────────────────────
 	// Demo entry proving the `video` source works end-to-end. Replace `src` with

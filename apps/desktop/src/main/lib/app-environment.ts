@@ -61,3 +61,11 @@ export const APP_STATE_PATH = join(ROX_HOME_DIR, "app-state.json");
 
 // Window geometry state (separate from UI state - main process only, sync I/O)
 export const WINDOW_STATE_PATH = join(ROX_HOME_DIR, "window-state.json");
+
+// Per-window geometry for tear-off / popout windows (F52). Keyed by a stable
+// popout id so each detached pane window restores its own bounds independently
+// of the main window's state.
+export const POPOUT_WINDOW_STATE_PATH = join(
+	ROX_HOME_DIR,
+	"popout-windows.json",
+);

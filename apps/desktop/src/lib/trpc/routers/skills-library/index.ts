@@ -1,16 +1,38 @@
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
 	type Dirent,
 	existsSync,
+	mkdirSync,
+	mkdtempSync,
 	readdirSync,
 	readFileSync,
+	renameSync,
+	rmSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
+import { promisify } from "node:util";
+import {
+	CURATED_DEFAULT_SKILL_PACKS,
+	CURATED_DEFAULT_SKILLS,
+} from "@rox/shared/skills/curated-default-skills";
 import { TRPCError } from "@trpc/server";
+import { app } from "electron";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
+import {
+	createFile as createFileInSkill,
+	createSkill as createSkillDir,
+	deleteFile as deleteFileInSkill,
+	deleteSkill as deleteSkillDir,
+	duplicateSkill as duplicateSkillDir,
+	renameFile as renameFileInSkill,
+} from "./lifecycle";
+
+const execFileAsync = promisify(execFile);
 
 /**
  * Skills Library — reads the agent/workspace skills installed on this machine
@@ -63,6 +85,113 @@ const SKILL_ROOTS: ReadonlyArray<{ source: SkillSource; path: string }> = [
 
 const MAX_FILE_BYTES = 512 * 1024;
 const MAX_SKILL_FILES = 200;
+
+/** Where skills are installed when a user installs from the catalog. */
+const CLAUDE_SKILLS_ROOT = join(homedir(), ".claude", "skills");
+
+/**
+ * Resolve the bundled preinstall resources directory (manifest.json +
+ * skills.tar.gz). Mirrors the main-process startup path
+ * (`apps/desktop/src/main/index.ts`) so installs use the exact same bundled
+ * archive that seeds `~/.claude/skills` on first launch — no network fetch.
+ */
+function preinstallResourcesDir(): string {
+	return app.isPackaged
+		? join(process.resourcesPath, "resources/preinstall")
+		: join(app.getAppPath(), "resources/preinstall");
+}
+
+/**
+ * The curated skill directory names that belong to a catalog pack (one pack ==
+ * one source repo). The bundled archive stores each skill flattened as a
+ * top-level `skills/<name>/` directory, so installing a pack means landing all
+ * of its curated skills under `~/.claude/skills/<name>`.
+ */
+function curatedSkillNamesForPack(repo: string): string[] {
+	return CURATED_DEFAULT_SKILLS.filter((skill) => skill.repo === repo).map(
+		(skill) => skill.name,
+	);
+}
+
+interface InstallPackResult {
+	/** Skill directory names newly landed (or refreshed) under ~/.claude/skills. */
+	installed: string[];
+	/** Curated skills for this pack that the bundled archive did not contain. */
+	skipped: string[];
+}
+
+/**
+ * Install one curated pack from the bundled archive into `~/.claude/skills`.
+ *
+ * Extracts `skills.tar.gz` into a temp staging dir, then moves only the pack's
+ * curated skill directories into place (replacing any existing copy). This is
+ * the same mechanism the startup catalog seeder uses, scoped to a single pack
+ * and confined to the Claude skills root. Throws a user-facing TRPCError when
+ * the bundled archive is unavailable (e.g. a dev build that never ran the
+ * `build:catalog` prebuild step) so the UI can report honestly.
+ */
+async function installCuratedPack(repo: string): Promise<InstallPackResult> {
+	const wanted = new Set(curatedSkillNamesForPack(repo));
+	if (wanted.size === 0) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Этот пакет не содержит навыков для установки",
+		});
+	}
+
+	const archivePath = join(preinstallResourcesDir(), "skills.tar.gz");
+	if (!existsSync(archivePath)) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"Архив со скиллами не собран в этой сборке. Запустите `bun run scripts/build-preinstall-catalog.ts` в apps/desktop.",
+		});
+	}
+
+	mkdirSync(CLAUDE_SKILLS_ROOT, { recursive: true });
+	// Stage on the same volume as the install root so the final rename is atomic.
+	const stage = mkdtempSync(join(CLAUDE_SKILLS_ROOT, ".rox-install-stage-"));
+	try {
+		await execFileAsync("tar", ["-xzf", archivePath, "-C", stage]);
+		// Archive layout: top-level `skills/<name>/...`.
+		const stagedSkillsDir = join(stage, "skills");
+		const installed: string[] = [];
+		let staged: Dirent<string>[] = [];
+		try {
+			staged = readdirSync(stagedSkillsDir, { withFileTypes: true });
+		} catch {
+			staged = [];
+		}
+		const stagedByName = new Map(
+			staged
+				.filter((entry) => entry.isDirectory())
+				.map((entry) => [entry.name, entry] as const),
+		);
+
+		for (const name of wanted) {
+			const entry = stagedByName.get(name);
+			if (!entry) continue;
+			// Path-traversal guard: never let a skill name escape the root.
+			const dest = resolve(CLAUDE_SKILLS_ROOT, name);
+			if (!dest.startsWith(CLAUDE_SKILLS_ROOT + sep)) continue;
+			rmSync(dest, { recursive: true, force: true });
+			renameSync(join(stagedSkillsDir, name), dest);
+			installed.push(name);
+		}
+
+		const skipped = [...wanted].filter((name) => !installed.includes(name));
+		if (installed.length === 0) {
+			throw new TRPCError({
+				code: "NOT_FOUND",
+				message:
+					"Навыки этого пакета отсутствуют в собранном архиве (fail-soft при сборке).",
+			});
+		}
+		return { installed: installed.sort(), skipped: skipped.sort() };
+	} finally {
+		rmSync(stage, { recursive: true, force: true });
+	}
+}
 
 function parseFrontmatter(content: string): {
 	name?: string;
@@ -192,6 +321,33 @@ function resolveSkillFile(skillDir: string, relativePath: string): string {
 	return target;
 }
 
+/**
+ * Resolve a skill dir and assert it lives in a writable root. Only
+ * `~/.claude/skills` is writable; `~/.agents/skills` stays read-only so the
+ * desktop never mutates skills it does not own.
+ */
+function resolveWritableSkillDir(id: string): {
+	source: SkillSource;
+	dir: string;
+} {
+	const resolved = resolveSkillDir(id);
+	if (resolved.source !== "claude") {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message:
+				"Скиллы из ~/.agents доступны только для чтения. Редактирование возможно в ~/.claude/skills.",
+		});
+	}
+	return resolved;
+}
+
+/** Content hash + mtime for optimistic-concurrency (save-conflict) checks. */
+function fileVersion(target: string): { mtimeMs: number; hash: string } {
+	const stat = statSync(target);
+	const hash = createHash("sha256").update(readFileSync(target)).digest("hex");
+	return { mtimeMs: stat.mtimeMs, hash };
+}
+
 export const createSkillsLibraryRouter = () => {
 	return router({
 		list: publicProcedure.query((): SkillSummary[] => {
@@ -237,23 +393,38 @@ export const createSkillsLibraryRouter = () => {
 
 		readFile: publicProcedure
 			.input(z.object({ id: z.string(), relativePath: z.string() }))
-			.query(({ input }): { relativePath: string; content: string } => {
-				const { dir } = resolveSkillDir(input.id);
-				const target = resolveSkillFile(dir, input.relativePath);
-				if (!existsSync(target) || !statSync(target).isFile()) {
-					throw new TRPCError({ code: "NOT_FOUND", message: "File not found" });
-				}
-				if (statSync(target).size > MAX_FILE_BYTES) {
-					throw new TRPCError({
-						code: "PAYLOAD_TOO_LARGE",
-						message: "File too large to open in the editor",
-					});
-				}
-				return {
-					relativePath: input.relativePath,
-					content: readFileSync(target, "utf-8"),
-				};
-			}),
+			.query(
+				({
+					input,
+				}): {
+					relativePath: string;
+					content: string;
+					mtimeMs: number;
+					hash: string;
+				} => {
+					const { dir } = resolveSkillDir(input.id);
+					const target = resolveSkillFile(dir, input.relativePath);
+					if (!existsSync(target) || !statSync(target).isFile()) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "File not found",
+						});
+					}
+					if (statSync(target).size > MAX_FILE_BYTES) {
+						throw new TRPCError({
+							code: "PAYLOAD_TOO_LARGE",
+							message: "File too large to open in the editor",
+						});
+					}
+					const { mtimeMs, hash } = fileVersion(target);
+					return {
+						relativePath: input.relativePath,
+						content: readFileSync(target, "utf-8"),
+						mtimeMs,
+						hash,
+					};
+				},
+			),
 
 		writeFile: publicProcedure
 			.input(
@@ -261,19 +432,125 @@ export const createSkillsLibraryRouter = () => {
 					id: z.string(),
 					relativePath: z.string(),
 					content: z.string(),
+					/**
+					 * Hash of the content this edit was based on. When present and the
+					 * file on disk no longer matches, the write is rejected with a
+					 * CONFLICT so an external change is never silently clobbered.
+					 */
+					baseHash: z.string().optional(),
+				}),
+			)
+			.mutation(
+				({
+					input,
+				}): { relativePath: string; mtimeMs: number; hash: string } => {
+					const { dir } = resolveWritableSkillDir(input.id);
+					const target = resolveSkillFile(dir, input.relativePath);
+					if (!existsSync(target) || !statSync(target).isFile()) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "Cannot create new files from the editor",
+						});
+					}
+					// Optimistic concurrency: bail if the on-disk content drifted from
+					// what the editor loaded, so a concurrent external edit isn't lost.
+					if (input.baseHash !== undefined) {
+						const current = fileVersion(target);
+						if (current.hash !== input.baseHash) {
+							throw new TRPCError({
+								code: "CONFLICT",
+								message:
+									"Файл изменился на диске после открытия. Перезагрузите или перезапишите.",
+							});
+						}
+					}
+					writeFileSync(target, input.content, "utf-8");
+					const { mtimeMs, hash } = fileVersion(target);
+					return { relativePath: input.relativePath, mtimeMs, hash };
+				},
+			),
+
+		createSkill: publicProcedure
+			.input(z.object({ name: z.string().min(1) }))
+			.mutation(({ input }): { id: string; slug: string } => {
+				const slug = createSkillDir(CLAUDE_SKILLS_ROOT, input.name);
+				return { id: `claude:${slug}`, slug };
+			}),
+
+		deleteSkill: publicProcedure
+			.input(z.object({ id: z.string() }))
+			.mutation(({ input }): { id: string } => {
+				const { dir } = resolveWritableSkillDir(input.id);
+				deleteSkillDir(CLAUDE_SKILLS_ROOT, dir);
+				return { id: input.id };
+			}),
+
+		duplicateSkill: publicProcedure
+			.input(z.object({ id: z.string(), newName: z.string().min(1) }))
+			.mutation(({ input }): { id: string; slug: string } => {
+				const { dir } = resolveSkillDir(input.id);
+				const slug = duplicateSkillDir(CLAUDE_SKILLS_ROOT, dir, input.newName);
+				return { id: `claude:${slug}`, slug };
+			}),
+
+		createFile: publicProcedure
+			.input(z.object({ id: z.string(), relativePath: z.string().min(1) }))
+			.mutation(({ input }): { relativePath: string } => {
+				const { dir } = resolveWritableSkillDir(input.id);
+				const relativePath = createFileInSkill(dir, input.relativePath);
+				return { relativePath };
+			}),
+
+		deleteFile: publicProcedure
+			.input(z.object({ id: z.string(), relativePath: z.string().min(1) }))
+			.mutation(({ input }): { relativePath: string } => {
+				const { dir } = resolveWritableSkillDir(input.id);
+				deleteFileInSkill(dir, input.relativePath);
+				return { relativePath: input.relativePath };
+			}),
+
+		renameFile: publicProcedure
+			.input(
+				z.object({
+					id: z.string(),
+					from: z.string().min(1),
+					to: z.string().min(1),
 				}),
 			)
 			.mutation(({ input }): { relativePath: string } => {
-				const { dir } = resolveSkillDir(input.id);
-				const target = resolveSkillFile(dir, input.relativePath);
-				if (!existsSync(target) || !statSync(target).isFile()) {
-					throw new TRPCError({
-						code: "NOT_FOUND",
-						message: "Cannot create new files from the editor",
-					});
-				}
-				writeFileSync(target, input.content, "utf-8");
-				return { relativePath: input.relativePath };
+				const { dir } = resolveWritableSkillDir(input.id);
+				const relativePath = renameFileInSkill(dir, input.from, input.to);
+				return { relativePath };
 			}),
+
+		/**
+		 * Install a curated catalog pack from the bundled archive into
+		 * `~/.claude/skills`. `slug` is the catalog pack name; it is validated
+		 * against the curated pack allowlist so only known packs can be installed.
+		 */
+		install: publicProcedure
+			.input(z.object({ slug: z.string().min(1) }))
+			.mutation(
+				async ({
+					input,
+				}): Promise<{
+					slug: string;
+					source: SkillSource;
+					installed: string[];
+					skipped: string[];
+				}> => {
+					const pack = CURATED_DEFAULT_SKILL_PACKS.find(
+						(candidate) => candidate.name === input.slug,
+					);
+					if (!pack) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Неизвестный пакет скиллов",
+						});
+					}
+					const { installed, skipped } = await installCuratedPack(pack.repo);
+					return { slug: pack.name, source: "claude", installed, skipped };
+				},
+			),
 	});
 };

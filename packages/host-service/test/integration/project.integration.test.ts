@@ -36,6 +36,61 @@ describe("project router integration", () => {
 		expect(ids).toEqual([a.id, b.id].sort());
 	});
 
+	test("list surfaces local-first sync state for the renderer indicator (#537)", async () => {
+		const host = await createTestHost();
+		const repo = await createGitFixture();
+		dispose = async () => {
+			await host.dispose();
+			repo.dispose();
+		};
+
+		// A freshly local-first-created project: enqueued, cloud not yet linked.
+		const pending = seedProject(host, {
+			repoPath: repo.repoPath,
+			repoName: "offline-made",
+			syncState: "pending",
+			cloudId: null,
+		});
+		// A normally-created (synchronous-cloud) project: synced + linked.
+		const synced = seedProject(host, {
+			repoPath: `${repo.repoPath}-synced`,
+			repoName: "cloud-linked",
+			syncState: "synced",
+			cloudId: "cloud-xyz",
+		});
+
+		const rows = await host.trpc.project.list.query();
+		const byId = new Map(rows.map((r) => [r.id, r]));
+
+		const pendingRow = byId.get(pending.id);
+		expect(pendingRow?.syncState).toBe("pending");
+		expect(pendingRow?.cloudId).toBeNull();
+
+		const syncedRow = byId.get(synced.id);
+		expect(syncedRow?.syncState).toBe("synced");
+		expect(syncedRow?.cloudId).toBe("cloud-xyz");
+	});
+
+	test("get surfaces local-first sync state (#537)", async () => {
+		const host = await createTestHost();
+		const repo = await createGitFixture();
+		dispose = async () => {
+			await host.dispose();
+			repo.dispose();
+		};
+
+		const { id } = seedProject(host, {
+			repoPath: repo.repoPath,
+			repoName: "erroring",
+			syncState: "error",
+			cloudId: null,
+		});
+
+		const found = await host.trpc.project.get.query({ projectId: id });
+		expect(found?.syncState).toBe("error");
+		expect(found?.cloudId).toBeNull();
+	});
+
 	test("get returns project by id, null when missing", async () => {
 		const scenario = await createProjectScenario();
 		dispose = scenario.dispose;

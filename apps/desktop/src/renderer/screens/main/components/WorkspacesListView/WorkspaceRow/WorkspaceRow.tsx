@@ -67,8 +67,8 @@ export function WorkspaceRow({
 	const showDiffStats = pr && (pr.additions > 0 || pr.deletions > 0);
 
 	const timeText = workspace.isOpen
-		? `Opened ${getRelativeTime(workspace.lastOpenedAt)}`
-		: `Created ${getRelativeTime(workspace.createdAt)}`;
+		? `Открыто ${getRelativeTime(workspace.lastOpenedAt)}`
+		: `Создано ${getRelativeTime(workspace.createdAt)}`;
 
 	const handleClick = () => {
 		if (workspace.isOpen) {
@@ -119,7 +119,7 @@ export function WorkspaceRow({
 								Локальное рабочее пространство
 							</p>
 							<p className="text-xs text-muted-foreground">
-								Changes are made directly in the main repository
+								Изменения вносятся напрямую в основной репозиторий
 							</p>
 						</>
 					) : (
@@ -128,7 +128,7 @@ export function WorkspaceRow({
 								Рабочее пространство worktree
 							</p>
 							<p className="text-xs text-muted-foreground">
-								Isolated copy for parallel development
+								Изолированная копия для параллельной разработки
 							</p>
 						</>
 					)}
@@ -174,7 +174,7 @@ export function WorkspaceRow({
 				{isOpening ? (
 					<>
 						<LuRotateCw className="size-3 animate-spin text-foreground/60" />
-						<span className="text-foreground/60">Opening...</span>
+						<span className="text-foreground/60">Открываю…</span>
 					</>
 				) : workspace.isOpen ? (
 					<>
@@ -197,10 +197,10 @@ export function WorkspaceRow({
 	const isOpenWorkspace = workspace.workspaceId !== null;
 	const isClosedWorktree = !isOpenWorkspace && workspace.worktreeId !== null;
 	const actionLabel = isBranch
-		? "Close workspace"
+		? "Закрыть рабочее пространство"
 		: isClosedWorktree
-			? "Delete worktree"
-			: "Delete workspace";
+			? "Удалить worktree"
+			: "Удалить рабочее пространство";
 
 	// Can delete open workspaces or closed worktrees
 	const canDelete = isOpenWorkspace || isClosedWorktree;
@@ -215,7 +215,7 @@ export function WorkspaceRow({
 							className="size-4 mr-2"
 							strokeWidth={STROKE_WIDTH}
 						/>
-						Open in Editor
+						Открыть в редакторе
 					</ContextMenuItem>
 					<ContextMenuItem
 						onSelect={() => handleDeleteClick()}

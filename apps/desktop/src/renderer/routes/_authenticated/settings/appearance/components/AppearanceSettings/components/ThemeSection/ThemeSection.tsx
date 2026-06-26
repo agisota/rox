@@ -36,6 +36,8 @@ import {
 	parseThemeConfigFile,
 	type Theme,
 } from "shared/themes";
+import { SettingsCard } from "../../../../../components/SettingsCard";
+import { SETTING_ITEM_ID } from "../../../../../utils/settings-search";
 import { ThemeLibraryCombobox } from "./components/ThemeLibraryCombobox";
 
 const MAX_THEME_FILE_SIZE = 256 * 1024; // 256 KB
@@ -280,109 +282,111 @@ export function ThemeSection() {
 	};
 
 	return (
-		<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
-			<ThemeRow
-				label="Тема"
-				hint={
-					<>
-						Выберите тему или следуйте системному оформлению. Откройте{" "}
-						<a
-							href={`${COMPANY.MARKETING_URL}/marketplace/themes`}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex items-center gap-0.5 text-primary hover:underline"
-						>
-							маркетплейс
-							<HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
-						</a>{" "}
-						или{" "}
-						<a
-							href={`${COMPANY.DOCS_URL}/custom-themes`}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex items-center gap-0.5 text-primary hover:underline"
-						>
-							документацию
-							<HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
-						</a>
-						.
-					</>
-				}
-				value={activeThemeId}
-				onValueChange={setTheme}
-				currentTheme={currentTheme}
-				options={allOptions}
-				includeSystem={{
-					darkTheme: systemDarkTheme,
-					lightTheme: systemLightTheme,
-				}}
-			/>
-			<AnimatedHeight open={isSystemMode}>
+		<SettingsCard bare anchorItemId={SETTING_ITEM_ID.APPEARANCE_THEME}>
+			<div className="divide-y divide-border/60">
 				<ThemeRow
-					label="Светлая тема"
-					hint="Используется, когда система в светлом режиме."
-					value={systemLightThemeId}
-					onValueChange={(id) => setSystemThemePreference("light", id)}
-					currentTheme={systemLightTheme}
-					options={lightOptions}
+					label="Тема"
+					hint={
+						<>
+							Выберите тему или следуйте системному оформлению. Откройте{" "}
+							<a
+								href={`${COMPANY.MARKETING_URL}/marketplace/themes`}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="inline-flex items-center gap-0.5 text-primary hover:underline"
+							>
+								маркетплейс
+								<HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
+							</a>{" "}
+							или{" "}
+							<a
+								href={`${COMPANY.DOCS_URL}/custom-themes`}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="inline-flex items-center gap-0.5 text-primary hover:underline"
+							>
+								документацию
+								<HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
+							</a>
+							.
+						</>
+					}
+					value={activeThemeId}
+					onValueChange={setTheme}
+					currentTheme={currentTheme}
+					options={allOptions}
+					includeSystem={{
+						darkTheme: systemDarkTheme,
+						lightTheme: systemLightTheme,
+					}}
 				/>
-				<ThemeRow
-					label="Темная тема"
-					hint="Используется, когда система в темном режиме."
-					value={systemDarkThemeId}
-					onValueChange={(id) => setSystemThemePreference("dark", id)}
-					currentTheme={systemDarkTheme}
-					options={darkOptions}
-				/>
-			</AnimatedHeight>
-			<div className="flex items-center justify-between gap-6 p-4">
-				<div className="min-w-0 flex-1">
-					<div className="text-sm font-medium">Библиотека тем</div>
-					<div className="text-xs text-muted-foreground">
-						Ищите среди сотен тем сообщества с живым предпросмотром.
-					</div>
-				</div>
-				<ThemeLibraryCombobox
-					activeThemeId={activeThemeId}
-					onSelect={setTheme}
-				/>
-			</div>
-			<div className="flex items-center justify-between gap-6 p-4">
-				<div className="min-w-0 flex-1">
-					<div className="text-sm font-medium">Пользовательские темы</div>
-					<div className="text-xs text-muted-foreground">
-						Импортируйте файл темы или скачайте шаблон для редактирования.
-					</div>
-				</div>
-				<div className="flex items-center gap-2 shrink-0">
-					<input
-						ref={fileInputRef}
-						type="file"
-						accept=".json,application/json"
-						className="hidden"
-						onChange={handleImport}
+				<AnimatedHeight open={isSystemMode}>
+					<ThemeRow
+						label="Светлая тема"
+						hint="Используется, когда система в светлом режиме."
+						value={systemLightThemeId}
+						onValueChange={(id) => setSystemThemePreference("light", id)}
+						currentTheme={systemLightTheme}
+						options={lightOptions}
 					/>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={handleDownloadBaseTheme}
-					>
-						<HiOutlineArrowDownTray className="mr-1.5 h-4 w-4" />
-						Скачать шаблон
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={() => fileInputRef.current?.click()}
-						disabled={isImporting}
-					>
-						<HiOutlineArrowUpTray className="mr-1.5 h-4 w-4" />
-						{isImporting ? "Импорт..." : "Импорт"}
-					</Button>
+					<ThemeRow
+						label="Темная тема"
+						hint="Используется, когда система в темном режиме."
+						value={systemDarkThemeId}
+						onValueChange={(id) => setSystemThemePreference("dark", id)}
+						currentTheme={systemDarkTheme}
+						options={darkOptions}
+					/>
+				</AnimatedHeight>
+				<div className="flex items-center justify-between gap-6 p-4">
+					<div className="min-w-0 flex-1">
+						<div className="text-sm font-medium">Библиотека тем</div>
+						<div className="text-xs text-muted-foreground">
+							Ищите среди сотен тем сообщества с живым предпросмотром.
+						</div>
+					</div>
+					<ThemeLibraryCombobox
+						activeThemeId={activeThemeId}
+						onSelect={setTheme}
+					/>
+				</div>
+				<div className="flex items-center justify-between gap-6 p-4">
+					<div className="min-w-0 flex-1">
+						<div className="text-sm font-medium">Пользовательские темы</div>
+						<div className="text-xs text-muted-foreground">
+							Импортируйте файл темы или скачайте шаблон для редактирования.
+						</div>
+					</div>
+					<div className="flex items-center gap-2 shrink-0">
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept=".json,application/json"
+							className="hidden"
+							onChange={handleImport}
+						/>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleDownloadBaseTheme}
+						>
+							<HiOutlineArrowDownTray className="mr-1.5 h-4 w-4" />
+							Скачать шаблон
+						</Button>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => fileInputRef.current?.click()}
+							disabled={isImporting}
+						>
+							<HiOutlineArrowUpTray className="mr-1.5 h-4 w-4" />
+							{isImporting ? "Импорт..." : "Импорт"}
+						</Button>
+					</div>
 				</div>
 			</div>
-		</div>
+		</SettingsCard>
 	);
 }

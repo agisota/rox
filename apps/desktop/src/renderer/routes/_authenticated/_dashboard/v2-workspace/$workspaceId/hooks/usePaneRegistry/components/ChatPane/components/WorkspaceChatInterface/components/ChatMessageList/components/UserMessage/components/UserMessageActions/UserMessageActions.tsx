@@ -39,9 +39,9 @@ export function UserMessageActions({
 			<MessageActions className="rounded-lg bg-background/95 p-1 shadow-sm backdrop-blur-xs">
 				<MessageAction
 					className="size-7 text-muted-foreground hover:text-foreground"
-					label="Resend message"
+					label="Отправить заново"
 					onClick={handleResend}
-					tooltip="Resend"
+					tooltip="Заново"
 					disabled={actionDisabled}
 				>
 					{shouldAnimate ? (
@@ -63,9 +63,9 @@ export function UserMessageActions({
 				</MessageAction>
 				<MessageAction
 					className="size-7 text-muted-foreground hover:text-foreground"
-					label="Edit message"
+					label="Изменить сообщение"
 					onClick={onEdit}
-					tooltip="Edit"
+					tooltip="Изменить"
 					disabled={actionDisabled}
 				>
 					<PencilLineIcon className="size-3.5" />
@@ -73,9 +73,9 @@ export function UserMessageActions({
 				{fullText ? (
 					<MessageAction
 						className="size-7 text-muted-foreground hover:text-foreground"
-						label={copied ? "Copied" : "Copy message"}
+						label={copied ? "Скопировано" : "Копировать сообщение"}
 						onClick={onCopy}
-						tooltip={copied ? "Copied" : "Copy"}
+						tooltip={copied ? "Скопировано" : "Копировать"}
 					>
 						{copied ? (
 							<CheckIcon className="size-3.5" />

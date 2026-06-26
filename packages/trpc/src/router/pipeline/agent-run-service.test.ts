@@ -1,15 +1,47 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import {
 	type AgentRolePreset,
 	createAccumulatedContext,
 } from "@rox/workflow-core";
 import type { AgentRunRequest } from "@rox/workflow-runtime";
+// Type-only imports are erased by bun and never trigger module loading, so they
+// are safe to keep static even though the value import below is deferred.
 import type { RunAgentOnHostResult } from "./agent-run-host-bridge";
-import {
-	type LoadRolePresetPort,
-	makeAgentRunResolver,
-	type RunAgentOnHostPort,
+import type {
+	LoadRolePresetPort,
+	RunAgentOnHostPort,
 } from "./agent-run-service";
+
+/**
+ * This suite exercises `makeAgentRunResolver` purely through injected ports
+ * (`loadRolePreset` / `runOnHost`) — it never issues a DB query, mints a JWT, or
+ * crosses the relay. But importing `./agent-run-service` transitively pulls in
+ * `./agent-run-host-bridge`, which imports `@rox/db/client` (constructs DB
+ * clients) and `@rox/auth/server` (which in turn loads `@rox/email`, validating
+ * `NEXT_PUBLIC_MARKETING_URL` at module load). In a headless run without those
+ * env vars / a DB, those eager imports throw at load time — and because
+ * `mock.module` is process-global with nondeterministic file load order across
+ * the directory, whether the throw surfaced here depended on which sibling suite
+ * loaded first (an order-dependent / flaky failure).
+ *
+ * Stubbing those heavy transitive boundaries (none of which this DI suite uses)
+ * makes the import side-effect-free and the suite deterministic. Mirrors the
+ * boundary stubs in `agent-run-host-bridge.test.ts`.
+ */
+function installBoundaryMocks() {
+	mock.module("@rox/db/client", () => ({ db: {}, dbWs: {} }));
+	mock.module("@rox/auth/server", () => ({
+		mintUserJwt: async () => "jwt-test-token",
+	}));
+	mock.module("../automation/relay-client", () => ({
+		relayMutation: async () => ({}),
+		RelayDispatchError: class extends Error {},
+	}));
+}
+
+installBoundaryMocks();
+
+const { makeAgentRunResolver } = await import("./agent-run-service");
 
 const CHAT_PRESET: AgentRolePreset = {
 	agentKind: "chat",
@@ -47,6 +79,12 @@ function makeResolver(opts: {
 		},
 	});
 }
+
+beforeEach(() => {
+	// Re-assert our boundary stubs so a sibling suite's conflicting global
+	// `mock.module(...)` cannot leak in via nondeterministic file load order.
+	installBoundaryMocks();
+});
 
 describe("makeAgentRunResolver composition", () => {
 	test("ARS-01: missing role → AGENT_ROLE_NOT_FOUND, host never called", async () => {
@@ -196,6 +234,55 @@ describe("makeAgentRunResolver composition", () => {
 		});
 		await resolve(req());
 		expect(seenMaxTurns).toBe(2);
+	});
+
+	test("ARS-10: per-node modelOverride + temperature reach runOnHost (#527 transport)", async () => {
+		let seenModel: string | undefined = "UNSET";
+		let seenTemp: number | undefined = -1;
+		const resolve = makeResolver({
+			loadRolePreset: async () => ({ preset: CHAT_PRESET }),
+			runOnHost: async (a) => {
+				seenModel = a.model;
+				seenTemp = a.temperature;
+				return {
+					kind: "chat",
+					sessionId: "sess",
+					message: "ok",
+					workspaceId: "ws-1",
+				};
+			},
+		});
+		// The node overrides model + temperature; previously these were resolved but
+		// dropped at the relay — now they must be transported to the host bridge.
+		await resolve(
+			req({ modelOverride: "anthropic/claude-x", temperature: 0.4 }),
+		);
+		expect(seenModel).toBe("anthropic/claude-x");
+		expect(seenTemp).toBe(0.4);
+	});
+
+	test("ARS-11: no model/temperature override → none sent (preset has none)", async () => {
+		// CHAT_PRESET declares neither model nor temperature, so with no node override
+		// the resolver sends neither — the host keeps its runtime default (regression
+		// guard that the additive transport stays additive).
+		let modelKeyPresent = true;
+		let tempKeyPresent = true;
+		const resolve = makeResolver({
+			loadRolePreset: async () => ({ preset: CHAT_PRESET }),
+			runOnHost: async (a) => {
+				modelKeyPresent = "model" in a;
+				tempKeyPresent = "temperature" in a;
+				return {
+					kind: "chat",
+					sessionId: "sess",
+					message: "ok",
+					workspaceId: "ws-1",
+				};
+			},
+		});
+		await resolve(req());
+		expect(modelKeyPresent).toBe(false);
+		expect(tempKeyPresent).toBe(false);
 	});
 
 	test("ARS-07: terminal preset dispatches as terminal and carries artifacts", async () => {

@@ -32,8 +32,32 @@ const cloudProxy = {
 		search: {
 			queryOptions: (input: unknown) => ({ queryKey: ["search", input] }),
 		},
+		// The self-gated UnifiedSearch + CrmContacts panels also mount inside the
+		// shell when the experiment resolves available (this mock returns the same
+		// state for every feature id), so their shipped read-only queries must be
+		// stubbed here too — they render empty without a live transport.
+		listContacts: {
+			queryOptions: (input: unknown) => ({ queryKey: ["listContacts", input] }),
+		},
+		neighbors: {
+			queryOptions: (input: unknown) => ({ queryKey: ["neighbors", input] }),
+		},
 		link: {
 			mutationOptions: (opts: unknown) => opts,
+		},
+	},
+	// The self-gated IssueBoard panel (`projectOs.issueBoard`, desktop parity)
+	// also mounts inside the shell when the experiment resolves available, so its
+	// shipped read-only task queries must be stubbed here too — they render empty
+	// without a live transport.
+	task: {
+		statuses: {
+			list: {
+				queryOptions: () => ({ queryKey: ["task.statuses.list"] }),
+			},
+		},
+		list: {
+			queryOptions: (input: unknown) => ({ queryKey: ["task.list", input] }),
 		},
 	},
 };

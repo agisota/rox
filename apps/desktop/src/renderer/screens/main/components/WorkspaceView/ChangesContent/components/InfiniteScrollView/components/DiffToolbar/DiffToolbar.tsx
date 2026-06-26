@@ -4,6 +4,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { Slider } from "@rox/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import {
@@ -11,13 +13,21 @@ import {
 	LuArrowUp,
 	LuChevronDown,
 	LuChevronUp,
+	LuRotateCcw,
 } from "react-icons/lu";
 import {
+	TbDropletHalf2Filled,
 	TbFocus2,
 	TbFold,
 	TbLayoutSidebarRightFilled,
 	TbListDetails,
 } from "react-icons/tb";
+import {
+	DEFAULT_DIFF_BACKGROUND_OPACITY,
+	MAX_DIFF_BACKGROUND_OPACITY,
+	MIN_DIFF_BACKGROUND_OPACITY,
+	useSettings,
+} from "renderer/stores/settings";
 import type { ChangeCategory, DiffViewMode } from "shared/changes-types";
 import type { SectionInfo } from "../../hooks/useFocusMode";
 
@@ -68,6 +78,13 @@ export function DiffToolbar({
 	isFirstFile,
 	isLastFile,
 }: DiffToolbarProps) {
+	const diffBackgroundOpacity = useSettings(
+		(state) => state.diffBackgroundOpacity,
+	);
+	const updateSetting = useSettings((state) => state.update);
+	const opacityPercent = Math.round(diffBackgroundOpacity * 100);
+	const isGlassActive = diffBackgroundOpacity < MAX_DIFF_BACKGROUND_OPACITY;
+
 	return (
 		<div className="flex items-center gap-3 px-3 py-2.5 border-b border-r border-border bg-background sticky top-0 z-30">
 			<div className="flex items-center gap-3 text-xs text-muted-foreground flex-1">
@@ -168,6 +185,76 @@ export function DiffToolbar({
 			)}
 
 			<div className="flex items-center gap-1">
+				<Popover>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<PopoverTrigger asChild>
+								<button
+									type="button"
+									className={cn(
+										"rounded p-1 transition-colors hover:bg-accent",
+										isGlassActive
+											? "text-foreground"
+											: "text-muted-foreground/60 hover:text-muted-foreground",
+									)}
+									aria-label="Прозрачность фона diff"
+								>
+									<TbDropletHalf2Filled className="size-4" />
+								</button>
+							</PopoverTrigger>
+						</TooltipTrigger>
+						<TooltipContent side="bottom" showArrow={false}>
+							Прозрачность фона diff
+						</TooltipContent>
+					</Tooltip>
+					<PopoverContent align="end" className="w-60 space-y-3">
+						<div className="flex items-center justify-between">
+							<span className="text-sm font-medium">Стекло diff</span>
+							<span className="font-mono text-xs tabular-nums text-muted-foreground">
+								{opacityPercent}%
+							</span>
+						</div>
+						<p className="text-xs text-muted-foreground">
+							Прозрачность фона области «просмотр изменений». Меньше — сильнее
+							просвечивает обои.
+						</p>
+						<div className="flex items-center gap-2">
+							<Slider
+								aria-label="Прозрачность фона diff"
+								className="flex-1"
+								min={MIN_DIFF_BACKGROUND_OPACITY}
+								max={MAX_DIFF_BACKGROUND_OPACITY}
+								step={0.01}
+								value={[diffBackgroundOpacity]}
+								onValueChange={(values) => {
+									const next = values[0];
+									if (next === undefined) return;
+									updateSetting("diffBackgroundOpacity", next);
+								}}
+							/>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										onClick={() =>
+											updateSetting(
+												"diffBackgroundOpacity",
+												DEFAULT_DIFF_BACKGROUND_OPACITY,
+											)
+										}
+										className="rounded p-1 text-muted-foreground/60 transition-colors hover:bg-accent hover:text-muted-foreground"
+										aria-label="Сбросить прозрачность"
+									>
+										<LuRotateCcw className="size-3.5" />
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="bottom" showArrow={false}>
+									Сбросить
+								</TooltipContent>
+							</Tooltip>
+						</div>
+					</PopoverContent>
+				</Popover>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<button

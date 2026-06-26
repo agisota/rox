@@ -278,6 +278,17 @@ export const HOTKEYS_REGISTRY = {
 		label: "Toggle Workspaces Sidebar",
 		category: "Layout",
 	},
+	TOGGLE_ZEN_MODE: {
+		key: {
+			mac: L("meta+."),
+			windows: L("ctrl+."),
+			linux: L("ctrl+."),
+		},
+		label: "Toggle Focus / Zen Mode",
+		category: "Layout",
+		description:
+			"Collapse the sidebars and dim chrome to focus on the canvas; toggle again to restore",
+	},
 	SPLIT_RIGHT: {
 		key: {
 			mac: L("meta+d"),
@@ -298,25 +309,27 @@ export const HOTKEYS_REGISTRY = {
 		category: "Layout",
 		description: "Split the current pane downward",
 	},
-	SPLIT_AUTO: {
+	SPLIT_WITH_CHAT: {
 		key: {
 			mac: L("meta+e"),
 			windows: L("ctrl+shift+e"),
 			linux: L("ctrl+shift+e"),
 		},
-		label: "Split Pane Auto",
+		label: "Split with New Chat",
 		category: "Layout",
-		description: "Split the current pane along its longer side",
+		description:
+			"Split the current pane and open a new chat pane (default split)",
 	},
-	SPLIT_WITH_CHAT: {
+	SPLIT_AUTO: {
 		key: {
 			mac: L("meta+shift+e"),
 			windows: L("ctrl+alt+e"),
 			linux: L("ctrl+alt+e"),
 		},
-		label: "Split with New Chat",
+		label: "Split with New Terminal",
 		category: "Layout",
-		description: "Split the current pane and open a new chat pane",
+		description:
+			"Split the current pane along its longer side and open a terminal",
 	},
 	SPLIT_WITH_BROWSER: {
 		key: {
@@ -719,6 +732,17 @@ export const HOTKEYS_REGISTRY = {
 		label: "Open Command Palette",
 		category: "Help",
 		description: "Open the global command palette",
+	},
+	OPEN_TASKS_PALETTE: {
+		key: {
+			mac: L("meta+k"),
+			windows: L("ctrl+k"),
+			linux: L("ctrl+k"),
+		},
+		label: "Open Tasks Palette",
+		category: "Help",
+		description:
+			"Open the pane-scoped command palette in the tasks view (jump project, switch tab/view, run selected)",
 	},
 } as const satisfies Record<string, HotkeyRegistryDefinition>;
 

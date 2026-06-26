@@ -54,6 +54,8 @@ export interface BlockHandlerResult {
 	output?: Record<string, unknown>;
 	/** For condition/switch blocks: the output handle that fired. */
 	handle?: string;
+	/** Cost of the block (e.g. LLM token usage) recorded on the succeeded step. */
+	cost?: RunCost;
 	error?: WorkflowRunError;
 }
 
@@ -98,10 +100,10 @@ export interface AgentRunRequest {
 	 * bounds via `resolveAgentRunNodeConfig` (@rox/workflow-core). All additive:
 	 * when a node omits a field the preset value stands (current behavior).
 	 *
-	 * Note on transport: `maxTurns` reaches the host today; `modelOverride` and
-	 * `temperature` are merged + carried here but are NOT yet transported to the
-	 * host runtime (`agents.runAndCapture` accepts neither), so they currently
-	 * affect only the resolved config, not the live agent. See agent-run-service.
+	 * Transport (#527): `maxTurns`, `modelOverride` and `temperature` are ALL carried
+	 * to the host now — `agents.runAndCapture` accepts model/temperature and a chat
+	 * agent's runtime switches to the resolved model for the run. See
+	 * agent-run-service → agent-run-host-bridge.
 	 */
 	modelOverride?: string;
 	maxTurns?: number;

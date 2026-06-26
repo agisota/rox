@@ -6,7 +6,7 @@ import { ScrambleLanding } from "./components/ScrambleLanding";
 import type { LandingPhase } from "./constants";
 import "./landing-experience.css";
 
-const INTRO_HANDOFF_MS = 7_600;
+const INTRO_HANDOFF_MS = 8_800;
 
 /**
  * Orchestrates the anime.js landing flow as a phase state machine:

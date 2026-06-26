@@ -37,9 +37,10 @@ import { useEffect, useRef, useState } from "react";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
+import { setCanvasRefDragData } from "renderer/routes/_authenticated/_dashboard/canvas/canvasRefDrag";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
-import { CollaborativeNoteEditor } from "./components/CollaborativeNoteEditor";
+import { NoteReader, type SaveState } from "./components/NoteReader";
 
 /**
  * Render a `ts_headline` snippet with matched terms emphasized, splitting on the
@@ -71,15 +72,36 @@ function SnippetText({ snippet }: { snippet: string }) {
 }
 
 /**
- * Notes (Suite P2 surfaced in P0): a three-pane workspace — notebooks on the
- * left, the selected notebook's notes in the middle, and the selected note's
- * markdown body edited on the right in `CollaborativeNoteEditor` (single-player
- * Textarea + autosave by default; a real-time Yjs/Liveblocks co-editing peer when
- * the `collaboration.editor` experiment is open). Supports creating a notebook and
- * creating a note (title + markdown body). List queries exclude the (up to 500k)
- * markdown column; the full body is fetched per-note via `notebooks.getNote`.
+ * The server rejects MDX-unsafe note bodies via `assertNoteMarkdownSafe`, which
+ * raises an `MdxSecurityError` (message prefixed `Knowledge MDX rejected:`)
+ * mapped to a tRPC `BAD_REQUEST`. Detect that specific sentinel so an unsafe
+ * paste gets a precise toast WITHOUT false-positiving on unrelated failures —
+ * the editor buffer is kept either way.
+ */
+function isMarkdownSafetyError(error: unknown): boolean {
+	const message =
+		error instanceof Error
+			? error.message
+			: typeof error === "string"
+				? error
+				: "";
+	return message.includes("Knowledge MDX rejected");
+}
+
+/**
+ * Notes (Suite P0): a three-pane workspace — notebooks on the left, the selected
+ * notebook's notes in the middle, and the selected note opened on the right in a
+ * Notion-grade `NoteReader` (rich Tiptap `MarkdownEditor` body with slash menu /
+ * blocks / inline marks, inline title rename, delete, and an autosave-state pill).
+ * The body is persisted as markdown via `notes.updateNote` on an 800ms debounce
+ * (+ blur and unmount flush). Supports creating a notebook and a note (title +
+ * markdown body), renaming and deleting a note, and reordering/moving notes
+ * between notebooks. List queries exclude the (up to 500k) markdown column; the
+ * full body is fetched per-note via `notes.getNote`. The gated real-time
+ * Yjs/Liveblocks co-editing peer still lives in `CollaborativeNoteEditor`.
  *
- * Cache-first (AGENTS.md rule 9): existing notebooks/notes render immediately.
+ * Cache-first (AGENTS.md rule 9): existing notebooks/notes render immediately;
+ * title rename + delete patch the list cache optimistically.
  */
 export function NotesView() {
 	const trpc = useTRPC();
@@ -147,23 +169,65 @@ export function NotesView() {
 	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const pendingMarkdownRef = useRef<string | null>(null);
 
+	// Drive the reader's 'Сохранение… → Сохранено' indicator. We hold a short
+	// 'saved' window after a successful body write, then fall back to idle.
+	const [saveState, setSaveState] = useState<SaveState>("idle");
+	const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	useEffect(
+		() => () => {
+			if (savedTimer.current) clearTimeout(savedTimer.current);
+		},
+		[],
+	);
+
 	const updateNote = useMutation(
 		trpc.notes.updateNote.mutationOptions({
-			onError: (error) => {
+			onMutate: (variables) => {
+				// Only the body autosave should toggle the 'saving' pill (a title
+				// rename has its own optimistic path and no body indicator).
+				if (variables.markdown !== undefined) setSaveState("saving");
+			},
+			onSuccess: (_row, variables) => {
+				if (variables.markdown === undefined) return;
+				setSaveState("saved");
+				if (savedTimer.current) clearTimeout(savedTimer.current);
+				savedTimer.current = setTimeout(() => setSaveState("idle"), 1200);
+			},
+			onError: (error, variables) => {
 				logger.error("[NotesView] updateNote failed", error);
-				toast.error("Не удалось сохранить заметку");
+				if (variables.markdown !== undefined) setSaveState("idle");
+				// MDX-unsafe paste / serialization rejected by assertNoteMarkdownSafe:
+				// surface a non-blocking, specific toast and KEEP the editor buffer
+				// (the local editorMarkdown state is untouched) so nothing is lost.
+				if (isMarkdownSafetyError(error)) {
+					toast.error("Не удалось сохранить: недопустимый markdown");
+				} else {
+					toast.error("Не удалось сохранить заметку");
+				}
 			},
 		}),
 	);
 
-	// Hydrate the editor from the loaded note once per note id, so typing is never
-	// clobbered by a background refetch of the same note (cache-first, AGENTS.md #9).
+	// Hydrate the editor from the loaded note. Re-hydrate when EITHER the note id
+	// changes OR the editor is still empty while the server now has a non-empty body
+	// and nothing is pending — this recovers the create→getNote race where the first
+	// hydrate captured an empty/partial body and the textarea would otherwise stay
+	// frozen empty (spec notes-tiptap quick-fix). The MarkdownEditor's own
+	// focus-aware setContent + per-note remount still prevents background-refetch
+	// clobber, so no in-progress typing is lost (cache-first, AGENTS.md #9).
 	useEffect(() => {
-		if (noteQuery.data && hydratedNoteId.current !== noteQuery.data.id) {
-			setEditorMarkdown(noteQuery.data.markdown ?? "");
+		if (!noteQuery.data) return;
+		const serverMarkdown = noteQuery.data.markdown ?? "";
+		const isNewNote = hydratedNoteId.current !== noteQuery.data.id;
+		const recoversEmpty =
+			editorMarkdown === "" &&
+			serverMarkdown !== "" &&
+			pendingMarkdownRef.current === null;
+		if (isNewNote || recoversEmpty) {
+			setEditorMarkdown(serverMarkdown);
 			hydratedNoteId.current = noteQuery.data.id;
 		}
-	}, [noteQuery.data]);
+	}, [noteQuery.data, editorMarkdown]);
 
 	// Keep the freshest mutate fn / note id for the debounced + unmount flush
 	// without re-arming the effect on every keystroke.
@@ -234,6 +298,92 @@ export function NotesView() {
 			onError: (error) => {
 				logger.error("[NotesView] createNote failed", error);
 				toast.error("Не удалось создать заметку");
+			},
+		}),
+	);
+
+	// --- inline title rename + delete (per-note reader affordances) ----------
+	// Both write through notes.updateNote{title} / notes.deleteNote (the backing
+	// knowledge_documents row is the system of record) and patch the list cache
+	// optimistically so the middle column reflects the change in the same frame
+	// (cache-first, AGENTS.md #9). The reader's getNote cache is refreshed on
+	// settle so the header title stays authoritative.
+	const patchNoteTitleInList = (noteId: string, title: string) => {
+		if (!activeNotebookId) return;
+		const key = trpc.notes.listNotes.queryKey({ notebookId: activeNotebookId });
+		queryClient.setQueryData(key, (prev: typeof notes | undefined) =>
+			prev?.map((n) => (n.id === noteId ? { ...n, title } : n)),
+		);
+	};
+
+	const renameNote = useMutation(
+		trpc.notes.updateNote.mutationOptions({
+			onMutate: ({ noteId, title }) => {
+				if (title !== undefined) patchNoteTitleInList(noteId, title);
+			},
+			onSuccess: async (_row, { noteId }) => {
+				await queryClient.invalidateQueries({
+					queryKey: trpc.notes.getNote.queryKey({ noteId }),
+				});
+				if (activeNotebookId) {
+					await queryClient.invalidateQueries({
+						queryKey: trpc.notes.listNotes.queryKey({
+							notebookId: activeNotebookId,
+						}),
+					});
+				}
+			},
+			onError: (error) => {
+				logger.error("[NotesView] renameNote failed", error);
+				toast.error("Не удалось переименовать заметку");
+				// Re-pull the list so the optimistic title is rolled back to truth.
+				if (activeNotebookId) {
+					queryClient.invalidateQueries({
+						queryKey: trpc.notes.listNotes.queryKey({
+							notebookId: activeNotebookId,
+						}),
+					});
+				}
+			},
+		}),
+	);
+
+	const deleteNote = useMutation(
+		trpc.notes.deleteNote.mutationOptions({
+			onMutate: ({ noteId }) => {
+				if (!activeNotebookId) return;
+				const key = trpc.notes.listNotes.queryKey({
+					notebookId: activeNotebookId,
+				});
+				queryClient.setQueryData(key, (prev: typeof notes | undefined) =>
+					prev?.filter((n) => n.id !== noteId),
+				);
+				// If the deleted note was open, clear the reader selection.
+				setActiveNoteId((current) => (current === noteId ? null : current));
+			},
+			onSuccess: async () => {
+				toast.success("Заметка удалена");
+				if (activeNotebookId) {
+					await queryClient.invalidateQueries({
+						queryKey: trpc.notes.listNotes.queryKey({
+							notebookId: activeNotebookId,
+						}),
+					});
+				}
+				await queryClient.invalidateQueries({
+					queryKey: trpc.notes.listNotebooks.queryKey(undefined),
+				});
+			},
+			onError: (error) => {
+				logger.error("[NotesView] deleteNote failed", error);
+				toast.error("Не удалось удалить заметку");
+				if (activeNotebookId) {
+					queryClient.invalidateQueries({
+						queryKey: trpc.notes.listNotes.queryKey({
+							notebookId: activeNotebookId,
+						}),
+					});
+				}
 			},
 		}),
 	);
@@ -330,7 +480,6 @@ export function NotesView() {
 			title="Заметки"
 			description="Блокноты и markdown-заметки"
 			icon={BookText}
-			className="max-w-6xl"
 			actions={
 				<Button onClick={() => setNotebookDialogOpen(true)}>
 					<Plus className="size-4" /> Новый блокнот
@@ -466,8 +615,17 @@ export function NotesView() {
 										const documentId = note.knowledgeDocumentId;
 										const canManage = documentId != null;
 										return (
+											// biome-ignore lint/a11y/noStaticElementInteractions: native HTML5 drag source for canvas ref-drop; primary open action stays on the inner button
 											<div
 												key={note.id}
+												draggable
+												onDragStart={(event) =>
+													setCanvasRefDragData(event.dataTransfer, {
+														refType: "note",
+														refId: note.id,
+														label: note.title,
+													})
+												}
 												className={cn(
 													"group relative flex items-center border-border border-b last:border-b-0 transition-colors hover:bg-accent/40",
 													note.id === activeNoteId && "bg-accent",
@@ -575,26 +733,33 @@ export function NotesView() {
 								{noteQuery.error.message}
 							</p>
 						) : noteQuery.data ? (
-							<div className="flex h-full flex-col">
-								<div className="flex items-center justify-between border-border border-b px-4 py-3">
-									<h2 className="cursor-text select-text font-semibold text-lg">
-										{noteQuery.data.title}
-									</h2>
-									{updateNote.isPending ? (
-										<span className="text-muted-foreground text-xs">
-											Сохранение…
-										</span>
-									) : null}
-								</div>
-								<div className="flex min-h-0 flex-1 flex-col px-4 py-3">
-									<CollaborativeNoteEditor
-										key={noteQuery.data.id}
-										noteId={noteQuery.data.id}
-										value={editorMarkdown}
-										onChange={handleEditorChange}
-									/>
-								</div>
-							</div>
+							<NoteReader
+								key={noteQuery.data.id}
+								note={noteQuery.data}
+								markdown={editorMarkdown}
+								saveState={saveState}
+								deleting={deleteNote.isPending}
+								onMarkdownChange={handleEditorChange}
+								onMarkdownSave={(next) => {
+									// Blur/explicit flush: cancel the debounce and write now, so a
+									// click-away never loses the last edit (parity w/ AutomationBody).
+									if (saveTimer.current) clearTimeout(saveTimer.current);
+									pendingMarkdownRef.current = null;
+									setEditorMarkdown(next);
+									if (activeNoteId)
+										updateNote.mutate({ noteId: activeNoteId, markdown: next });
+								}}
+								onRenameTitle={(nextTitle) => {
+									if (activeNoteId)
+										renameNote.mutate({
+											noteId: activeNoteId,
+											title: nextTitle,
+										});
+								}}
+								onDelete={() => {
+									if (activeNoteId) deleteNote.mutate({ noteId: activeNoteId });
+								}}
+							/>
 						) : (
 							<div className="space-y-3 p-4">
 								<Skeleton className="h-6 w-1/2" />

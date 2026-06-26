@@ -25,6 +25,12 @@ type ContextSchema = {
 	maxTokens: number;
 	usage?: LanguageModelUsage;
 	modelId?: ModelId;
+	/**
+	 * When true, the donut fill transitions smoothly as `usedTokens` changes.
+	 * Surfaces gate this on the user's reduced-motion preference
+	 * (`useShouldAnimate`) so the ring snaps instantly when motion is reduced.
+	 */
+	animated?: boolean;
 };
 
 const ContextContext = createContext<ContextSchema | null>(null);
@@ -46,6 +52,7 @@ export const Context = ({
 	maxTokens,
 	usage,
 	modelId,
+	animated,
 	...props
 }: ContextProps) => (
 	<ContextContext.Provider
@@ -54,6 +61,7 @@ export const Context = ({
 			maxTokens,
 			usage,
 			modelId,
+			animated,
 		}}
 	>
 		<HoverCard closeDelay={0} openDelay={0} {...props} />
@@ -61,7 +69,7 @@ export const Context = ({
 );
 
 const ContextIcon = () => {
-	const { usedTokens, maxTokens } = useContextValue();
+	const { usedTokens, maxTokens, animated } = useContextValue();
 	const circumference = 2 * Math.PI * ICON_RADIUS;
 	const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
 	const dashOffset = circumference * (1 - usedPercent);
@@ -95,7 +103,11 @@ const ContextIcon = () => {
 				strokeDashoffset={dashOffset}
 				strokeLinecap="round"
 				strokeWidth={ICON_STROKE_WIDTH}
-				style={{ transformOrigin: "center", transform: "rotate(-90deg)" }}
+				style={{
+					transformOrigin: "center",
+					transform: "rotate(-90deg)",
+					transition: animated ? "stroke-dashoffset 300ms ease-out" : undefined,
+				}}
 			/>
 		</svg>
 	);

@@ -7,6 +7,7 @@ import {
 	v2UsersHosts,
 	v2Workspaces,
 } from "@rox/db/schema";
+import { ROX_CHAT_MODEL_ID } from "@rox/shared/chat-models";
 import {
 	describeSchedule,
 	nextOccurrences,
@@ -17,8 +18,13 @@ import { and, desc, eq, getTableColumns, ilike } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import { protectedProcedure } from "../../trpc";
+import {
+	type ChatCompletionMessage,
+	runQuickChatCompletion,
+} from "../chat/utils/chat-completion";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { dispatchAutomation } from "./dispatch";
+import { shapeEditPromptResult } from "./edit-prompt-helpers";
 import {
 	getAutomationForUser,
 	promptSourceFromSession,
@@ -26,6 +32,7 @@ import {
 } from "./helpers";
 import {
 	createAutomationSchema,
+	editAutomationPromptSchema,
 	listRunsSchema,
 	parseRruleSchema,
 	setAutomationPromptSchema,
@@ -392,6 +399,52 @@ export const automationRouter = {
 			});
 
 			return { ...updated, scheduleText: safeDescribeRrule(updated) };
+		}),
+
+	/**
+	 * Regenerate an automation prompt from a natural-language instruction via the
+	 * Rox house model ("Изменить через чат").
+	 *
+	 * Contract: REAL server-side LLM round-trip with a typed local fallback.
+	 * - When the Rox key is configured, it asks the model to rewrite the prompt
+	 *   and returns `{ prompt, note, local: false }`.
+	 * - When the model is unavailable for this caller (`needs-user-key` /
+	 *   `not-configured`), it returns `{ prompt: currentPrompt, note: "",
+	 *   local: true }` — NOT an error — and the renderer applies its
+	 *   deterministic local transform (a documented degraded path).
+	 *
+	 * This procedure ONLY generates: it never persists. The renderer commits the
+	 * result via the existing `setPrompt` mutation (which versions the prompt).
+	 */
+	editPrompt: protectedProcedure
+		.input(editAutomationPromptSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			await getAutomationForUser(ctx.session.user.id, organizationId, input.id);
+
+			const messages: ChatCompletionMessage[] = [
+				{
+					role: "system",
+					content:
+						"Ты редактируешь промпт автоматизации. Тебе дают текущий промпт и инструкцию пользователя на естественном языке. " +
+						"Перепиши промпт согласно инструкции и верни ТОЛЬКО готовый текст промпта — без вступлений, пояснений и Markdown-ограждений (```). " +
+						"Сохраняй исходный язык и стиль промпта, меняй только то, о чём просит инструкция. " +
+						"Если текущий промпт пуст, построй промпт из инструкции.",
+				},
+				{
+					role: "user",
+					content: `Текущий промпт:\n${input.currentPrompt}\n\nИнструкция:\n${input.instruction}`,
+				},
+			];
+
+			const result = await runQuickChatCompletion({
+				modelId: ROX_CHAT_MODEL_ID,
+				messages,
+				reasoning: "high",
+				maxTokens: 4096,
+			});
+
+			return shapeEditPromptResult(result, input.currentPrompt);
 		}),
 
 	delete: protectedProcedure

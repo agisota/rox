@@ -6,6 +6,7 @@ import {
 	getDiffsTheme,
 	getDiffViewerStyle,
 } from "renderer/screens/main/components/WorkspaceView/utils/code-theme";
+import { useSettings } from "renderer/stores/settings";
 import { useResolvedTheme } from "renderer/stores/theme";
 import type { DiffViewMode, FileContents } from "shared/changes-types";
 
@@ -27,6 +28,9 @@ export function LightDiffViewer({
 	style,
 }: LightDiffViewerProps) {
 	const activeTheme = useResolvedTheme();
+	const diffBackgroundOpacity = useSettings(
+		(state) => state.diffBackgroundOpacity,
+	);
 	const { data: fontSettings } = electronTrpc.settings.getFontSettings.useQuery(
 		undefined,
 		{
@@ -45,6 +49,7 @@ export function LightDiffViewer({
 		fontSize: Number.isFinite(parsedEditorFontSize)
 			? parsedEditorFontSize
 			: undefined,
+		backgroundOpacity: diffBackgroundOpacity,
 	});
 
 	return (

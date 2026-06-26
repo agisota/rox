@@ -1,8 +1,13 @@
-import { Label } from "@rox/ui/label";
+import { Button } from "@rox/ui/button";
 import { Slider } from "@rox/ui/slider";
 import { Switch } from "@rox/ui/switch";
 import { useEffect } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import {
+	SettingsCard,
+	SettingsRow,
+} from "../../../../../components/SettingsCard";
+import { SETTING_ITEM_ID } from "../../../../../utils/settings-search";
 import {
 	applyAppearanceGlass,
 	DEFAULT_GLASS_WINDOW_OPACITY,
@@ -68,48 +73,69 @@ export function GlassSection() {
 		setGlass.mutate({ glassEnabled, windowOpacity: next });
 	};
 
+	const isOpacityDefault = windowOpacity === DEFAULT_GLASS_WINDOW_OPACITY;
+	const handleOpacityReset = () => {
+		setGlass.mutate({
+			glassEnabled,
+			windowOpacity: DEFAULT_GLASS_WINDOW_OPACITY,
+		});
+	};
+
 	return (
-		<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
-			<div className="flex items-center justify-between gap-6 p-4">
-				<div className="min-w-0 flex-1">
-					<Label htmlFor="glass-enabled" className="text-sm font-medium">
-						Остекление
-					</Label>
-					<div className="text-xs text-muted-foreground">
+		<SettingsCard anchorItemId={SETTING_ITEM_ID.APPEARANCE_GLASS}>
+			<SettingsRow
+				htmlFor="glass-enabled"
+				label="Остекление"
+				hint={
+					<>
 						Сделать панели полупрозрачными с размытым фоном.
 						{!isMac
 							? " Нативная прозрачность окна доступна только на macOS."
 							: null}
-					</div>
-				</div>
+					</>
+				}
+			>
 				<Switch
 					id="glass-enabled"
 					checked={glassEnabled}
 					onCheckedChange={handleToggle}
 				/>
-			</div>
+			</SettingsRow>
 
 			{glassEnabled ? (
-				<div className="flex items-center justify-between gap-6 p-4">
-					<div className="min-w-0 flex-1">
-						<div className="text-sm font-medium">Непрозрачность окна</div>
-						<div className="text-xs text-muted-foreground">
+				<SettingsRow
+					label="Непрозрачность окна"
+					hint={
+						<>
 							Насколько плотными выглядят стеклянные поверхности (
 							{formatOpacityPercent(windowOpacity)}
 							).
-						</div>
+						</>
+					}
+				>
+					<div className="flex items-center gap-2">
+						<Slider
+							aria-label="Непрозрачность окна"
+							className="w-44"
+							min={MIN_WINDOW_OPACITY}
+							max={MAX_WINDOW_OPACITY}
+							step={0.01}
+							value={[windowOpacity]}
+							onValueChange={handleOpacityChange}
+						/>
+						{!isOpacityDefault && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="shrink-0"
+								onClick={handleOpacityReset}
+							>
+								Сбросить
+							</Button>
+						)}
 					</div>
-					<Slider
-						aria-label="Непрозрачность окна"
-						className="w-44"
-						min={MIN_WINDOW_OPACITY}
-						max={MAX_WINDOW_OPACITY}
-						step={0.01}
-						value={[windowOpacity]}
-						onValueChange={handleOpacityChange}
-					/>
-				</div>
+				</SettingsRow>
 			) : null}
-		</div>
+		</SettingsCard>
 	);
 }

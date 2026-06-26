@@ -239,11 +239,40 @@ export function OnboardingTourProvider({
 	const activeStepIndex = getStepIndex(activeStep);
 	const hasRemaining = status ? hasRemainingTours(status) : false;
 	const percent = status ? getOnboardingPercentComplete(status) : 0;
+	const isActiveStepCompleted =
+		status && activeStep
+			? isStepCompleted(status, activeStep) ||
+				isTourCompleted(status, activeStep.tourId)
+			: false;
 	const shouldShowResumeButton =
 		hasRemaining &&
 		(activeStep === null || pausedAt !== null || !hasAvailableTarget);
 	const shouldShowOverlay =
-		activeStep !== null && pausedAt === null && hasAvailableTarget;
+		activeStep !== null && pausedAt === null && !isActiveStepCompleted;
+
+	useEffect(() => {
+		if (!status || !activeStep || !isActiveStepCompleted) {
+			return;
+		}
+
+		const nextStep =
+			getFirstIncompleteStep(status, location.pathname, true) ??
+			getFirstIncompleteStep(status, location.pathname, false);
+		if (!nextStep) {
+			clear();
+			return;
+		}
+
+		setHasAvailableTarget(true);
+		setActiveStep(nextStep.tourId, nextStep.id, location.pathname);
+	}, [
+		activeStep,
+		clear,
+		isActiveStepCompleted,
+		location.pathname,
+		setActiveStep,
+		status,
+	]);
 
 	const patchServerTours = useCallback(
 		async (

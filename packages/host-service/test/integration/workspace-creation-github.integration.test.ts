@@ -429,7 +429,24 @@ describe("gh CLI is first-class when execGh succeeds", () => {
 				isDraft: false,
 				author: { login: "bob" },
 				mergedAt: null,
+				reviewDecision: "APPROVED",
+				statusCheckRollup: [
+					{ status: "COMPLETED", conclusion: "SUCCESS" },
+					{ status: "COMPLETED", conclusion: "FAILURE" },
+				],
+				comments: [{}, {}, {}],
+				updatedAt: "2026-06-20T10:00:00Z",
 			};
+		}
+		// Review/checks enrichment for the free-text search path.
+		if (args[0] === "pr" && args[1] === "list") {
+			return [
+				{
+					number: 101,
+					reviewDecision: "CHANGES_REQUESTED",
+					statusCheckRollup: [{ status: "COMPLETED", conclusion: "SUCCESS" }],
+				},
+			];
 		}
 		if (args[0] === "api" && args.includes("search/issues")) {
 			const qIndex = args.indexOf("-f");
@@ -445,6 +462,8 @@ describe("gh CLI is first-class when execGh succeeds", () => {
 							html_url: "https://github.com/octocat/hello/pull/101",
 							state: "open",
 							user: { login: "carol" },
+							comments: 4,
+							updated_at: "2026-06-21T08:00:00Z",
 							pull_request: { merged_at: null },
 						},
 					],
@@ -459,6 +478,8 @@ describe("gh CLI is first-class when execGh succeeds", () => {
 						html_url: "https://github.com/octocat/hello/issues/7",
 						state: "open",
 						user: { login: "dave" },
+						labels: [{ name: "bug", color: "d73a4a" }],
+						updated_at: "2026-06-22T09:00:00Z",
 					},
 				],
 			};
@@ -484,14 +505,21 @@ describe("gh CLI is first-class when execGh succeeds", () => {
 		rmSync(repoDir, { recursive: true, force: true });
 	});
 
-	test("searchPullRequests #N invokes `gh pr view` with cwd=repoPath", async () => {
+	test("searchPullRequests #N invokes `gh pr view` with cwd=repoPath and enriches", async () => {
 		const result = await host.trpc.workspaceCreation.searchPullRequests.query({
 			projectId,
 			query: "#33",
 		});
 		expect(result.pullRequests).toHaveLength(1);
-		expect(result.pullRequests[0].prNumber).toBe(33);
-		expect(result.pullRequests[0].title).toBe("PR via gh");
+		const pr = result.pullRequests[0];
+		expect(pr.prNumber).toBe(33);
+		expect(pr.title).toBe("PR via gh");
+		// `pr view` returns the rich signal in one call — no extra enrichment.
+		expect(pr.reviewDecision).toBe("approved");
+		// One SUCCESS + one FAILURE rollup → failing overall, 1/2 passed.
+		expect(pr.checks).toEqual({ status: "failing", passed: 1, total: 2 });
+		expect(pr.commentCount).toBe(3);
+		expect(pr.updatedAt).toBe("2026-06-20T10:00:00Z");
 		expect(ghCalls).toHaveLength(1);
 		expect(ghCalls[0].args.slice(0, 5)).toEqual([
 			"pr",
@@ -504,24 +532,39 @@ describe("gh CLI is first-class when execGh succeeds", () => {
 		expect(ghCalls[0].cwd).toBe(realpathSync(repoDir));
 	});
 
-	test("searchPullRequests free-text invokes `gh api search/issues` with is:pr filter", async () => {
+	test("searchPullRequests free-text searches via `gh api search/issues` and enriches review/checks via `gh pr list`", async () => {
 		const result = await host.trpc.workspaceCreation.searchPullRequests.query({
 			projectId,
 			query: "find me",
 		});
 		expect(result.pullRequests).toHaveLength(1);
-		expect(result.pullRequests[0].prNumber).toBe(101);
+		const pr = result.pullRequests[0];
+		expect(pr.prNumber).toBe(101);
 		expect(result.totalCount).toBe(1);
 		expect(result.hasNextPage).toBe(false);
-		expect(ghCalls).toHaveLength(1);
-		const args = ghCalls[0].args;
+		// Comments + updatedAt come from the search payload; review/checks from
+		// the `gh pr list` enrichment merged by number.
+		expect(pr.commentCount).toBe(4);
+		expect(pr.updatedAt).toBe("2026-06-21T08:00:00Z");
+		expect(pr.reviewDecision).toBe("changes_requested");
+		expect(pr.checks).toEqual({ status: "passing", passed: 1, total: 1 });
+
+		const searchCall = ghCalls.find((c) => c.args.includes("search/issues"));
+		expect(searchCall).toBeDefined();
+		const args = searchCall?.args ?? [];
 		expect(args[0]).toBe("api");
-		expect(args).toContain("search/issues");
 		const qArg = args[args.indexOf("-f") + 1] ?? "";
 		expect(qArg).toContain("repo:octocat/hello");
 		expect(qArg).toContain("is:pr");
 		expect(qArg).toContain("is:open");
 		expect(qArg).toContain("find me");
+
+		const listCall = ghCalls.find(
+			(c) => c.args[0] === "pr" && c.args[1] === "list",
+		);
+		expect(listCall).toBeDefined();
+		expect(listCall?.args).toContain("--search");
+		expect(listCall?.args).toContain("number,reviewDecision,statusCheckRollup");
 	});
 
 	test("searchGitHubIssues #N filters out PRs leaked by `gh issue view`", async () => {
@@ -564,6 +607,8 @@ describe("gh CLI is first-class when execGh succeeds", () => {
 		});
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0].issueNumber).toBe(7);
+		expect(result.issues[0].labels).toEqual([{ name: "bug", color: "d73a4a" }]);
+		expect(result.issues[0].updatedAt).toBe("2026-06-22T09:00:00Z");
 		expect(result.totalCount).toBe(1);
 		expect(result.hasNextPage).toBe(false);
 		expect(ghCalls).toHaveLength(1);

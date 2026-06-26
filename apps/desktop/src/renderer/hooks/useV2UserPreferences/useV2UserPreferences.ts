@@ -10,6 +10,7 @@ import {
 } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal/schema";
 
 export type RightSidebarTab = V2UserPreferencesRow["rightSidebarTab"];
+export type RightSidebarState = V2UserPreferencesRow["rightSidebarState"];
 
 export interface V2UserPreferencesApi {
 	preferences: V2UserPreferencesRow;
@@ -17,6 +18,7 @@ export interface V2UserPreferencesApi {
 	setUrlLinks: (next: LinkTierMap) => void;
 	setSidebarFileLinks: (next: LinkTierMap) => void;
 	setRightSidebarOpen: (next: boolean | ((prev: boolean) => boolean)) => void;
+	setRightSidebarState: (next: RightSidebarState) => void;
 	setRightSidebarTab: (next: RightSidebarTab) => void;
 	setRightSidebarWidth: (next: number) => void;
 	setDeleteLocalBranch: (next: boolean) => void;
@@ -88,6 +90,33 @@ export function useV2UserPreferences(): V2UserPreferencesApi {
 			}
 			collections.v2UserPreferences.update(V2_USER_PREFERENCES_ID, (draft) => {
 				draft.rightSidebarOpen = value;
+			});
+		},
+		[collections],
+	);
+
+	// 3-state right files panel (F03 / #616). Writing the resting state also
+	// keeps the legacy `rightSidebarOpen` boolean in sync (hidden → closed,
+	// peek/expanded → open) so the many existing `rightSidebarOpen` consumers
+	// (git-status provider, browser interaction passthrough) keep working without
+	// each learning about the 3-state machine.
+	const setRightSidebarState = useCallback(
+		(next: RightSidebarState) => {
+			const open = next !== "hidden";
+			const existing = collections.v2UserPreferences.get(
+				V2_USER_PREFERENCES_ID,
+			);
+			if (!existing) {
+				collections.v2UserPreferences.insert({
+					...DEFAULT_V2_USER_PREFERENCES,
+					rightSidebarState: next,
+					rightSidebarOpen: open,
+				});
+				return;
+			}
+			collections.v2UserPreferences.update(V2_USER_PREFERENCES_ID, (draft) => {
+				draft.rightSidebarState = next;
+				draft.rightSidebarOpen = open;
 			});
 		},
 		[collections],
@@ -175,6 +204,7 @@ export function useV2UserPreferences(): V2UserPreferencesApi {
 		setUrlLinks,
 		setSidebarFileLinks,
 		setRightSidebarOpen,
+		setRightSidebarState,
 		setRightSidebarTab,
 		setRightSidebarWidth,
 		setDeleteLocalBranch,

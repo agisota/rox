@@ -5,13 +5,15 @@
  */
 
 import {
+	APPEARANCE_STORAGE_KEY,
 	type AppearanceSettings,
 	clampWindowOpacity,
 	DEFAULT_APPEARANCE_SETTINGS,
 } from "@rox/shared/appearance";
 
-/** localStorage key holding the JSON-serialized appearance settings. */
-export const APPEARANCE_STORAGE_KEY = "rox-appearance";
+// Re-export so existing consumers keep importing the key from this module while
+// the F06 first-paint script and this reader share one source of truth.
+export { APPEARANCE_STORAGE_KEY };
 const MIN_ROTATE_SECONDS = 5;
 
 /** Coerce an unknown persisted blob into valid {@link AppearanceSettings}. */

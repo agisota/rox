@@ -269,6 +269,10 @@ export const settings = sqliteTable("settings", {
 		mode: "boolean",
 	}).default(false),
 	voiceAgentContext: text("voice_agent_context").default(""),
+	// FN-043 (#486): Text-to-speech voice for the "Прослушать" button on agent
+	// replies (edge-TTS, free for everyone). Null = use DEFAULT_TTS_VOICE. Stored
+	// as the edge-TTS short voice name (e.g. "ru-RU-DmitryNeural").
+	ttsVoice: text("tts_voice"),
 	// Push-to-talk (live.pushToTalkDesktop): the global TOGGLE-to-talk shortcut,
 	// stored as a native Electron `globalShortcut` accelerator string (e.g.
 	// "CommandOrControl+Shift+M") so the main process can register it directly.
@@ -588,6 +592,14 @@ export const savedPrompts = sqliteTable(
 			.$defaultFn(() => uuidv4()),
 		title: text("title").notNull(),
 		body: text("body").notNull(),
+		folder: text("folder"),
+		tags: text("tags", { mode: "json" }).$type<string[]>().default([]),
+		isFavorite: integer("is_favorite", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		copyCount: integer("copy_count").notNull().default(0),
+		lastUsedAt: integer("last_used_at"),
+		position: integer("position"),
 		createdAt: integer("created_at")
 			.notNull()
 			.$defaultFn(() => Date.now()),
@@ -595,7 +607,13 @@ export const savedPrompts = sqliteTable(
 			.notNull()
 			.$defaultFn(() => Date.now()),
 	},
-	(table) => [index("saved_prompts_updated_at_idx").on(table.updatedAt)],
+	(table) => [
+		index("saved_prompts_updated_at_idx").on(table.updatedAt),
+		index("saved_prompts_folder_idx").on(table.folder),
+		index("saved_prompts_is_favorite_idx").on(table.isFavorite),
+		index("saved_prompts_copy_count_idx").on(table.copyCount),
+		index("saved_prompts_position_idx").on(table.position),
+	],
 );
 
 export type InsertSavedPrompt = typeof savedPrompts.$inferInsert;

@@ -1,0 +1,664 @@
+import type {
+	CanvasDocument,
+	CanvasMutationBatch,
+	FreehandPoint,
+} from "@rox/shared/canvas";
+import { freehandPointsToSvgPath } from "@rox/shared/canvas";
+import { Button } from "@rox/ui/button";
+import { cn } from "@rox/ui/utils";
+import type {
+	Connection,
+	EdgeChange,
+	NodeChange,
+	OnSelectionChangeFunc,
+	ReactFlowInstance,
+} from "@xyflow/react";
+import {
+	applyEdgeChanges,
+	applyNodeChanges,
+	Background,
+	ConnectionLineType,
+	Controls,
+	getNodesBounds,
+	getViewportForBounds,
+	MiniMap,
+	Panel,
+	ReactFlow,
+	useReactFlow,
+} from "@xyflow/react";
+import { toPng } from "html-to-image";
+import {
+	AlignHorizontalJustifyStart,
+	Copy,
+	Group,
+	Maximize,
+	StretchHorizontal,
+} from "lucide-react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import "@xyflow/react/dist/style.css";
+import {
+	createAlignLeftBatch,
+	createConnectNodesBatch,
+	createDeleteElementsBatch,
+	createDistributeHorizontalBatch,
+	createDuplicateSelectionBatch,
+	createGroupSelectionBatch,
+	createNodePositionBatch,
+	createNodeSizeBatch,
+	isValidCanvasConnection,
+	type RoxFlowEdge,
+	type RoxFlowNode,
+	toReactFlowEdges,
+	toReactFlowNodes,
+} from "./canvasFlowAdapter";
+import {
+	type CanvasRefDragPayload,
+	hasCanvasRefDragType,
+	readCanvasRefDragData,
+} from "./canvasRefDrag";
+import { canvasNodeTypes } from "./RoxCanvasNode";
+
+export interface CanvasSelection {
+	nodeIds: string[];
+	edgeIds: string[];
+	groupIds: string[];
+}
+
+interface CanvasFlowProps {
+	document: CanvasDocument;
+	baseVersion: number;
+	disabled?: boolean;
+	/** Workspace owning the canvas; forwarded so ref-nodes can fetch live content. */
+	workspaceId?: string;
+	modeBadge: string;
+	/** When true, the pane captures pointer strokes for the freehand pen tool. */
+	penActive?: boolean;
+	onMutationBatch: (batch: CanvasMutationBatch, label: string) => void;
+	onSelectionChange: (selection: CanvasSelection) => void;
+	onCreateTextNodeAt: (position: { x: number; y: number }) => void;
+	/** Emitted on pen pointer-up with absolute-canvas stroke samples. */
+	onCreateFreeformNode?: (points: FreehandPoint[]) => void;
+	onDropEntityAt: (
+		position: { x: number; y: number },
+		payload: CanvasRefDragPayload,
+	) => void;
+	onOpenRefNode: (nodeId: string) => void;
+}
+
+export interface CanvasFlowHandle {
+	/** Trigger a PNG download of the current canvas viewport. */
+	exportPng: () => Promise<void>;
+}
+
+const PANEL_CLASS =
+	"glass-panel flex items-center gap-1 rounded-lg border border-border/60 p-1";
+
+export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
+	function CanvasFlow(
+		{
+			document,
+			baseVersion,
+			disabled = false,
+			workspaceId,
+			modeBadge,
+			penActive = false,
+			onMutationBatch,
+			onSelectionChange,
+			onCreateTextNodeAt,
+			onCreateFreeformNode,
+			onDropEntityAt,
+			onOpenRefNode,
+		},
+		ref,
+	) {
+		const { screenToFlowPosition } = useReactFlow<RoxFlowNode, RoxFlowEdge>();
+		const flowWrapperRef = useRef<HTMLDivElement | null>(null);
+		const instanceRef = useRef<ReactFlowInstance<
+			RoxFlowNode,
+			RoxFlowEdge
+		> | null>(null);
+
+		const projectedNodes = useMemo(
+			() => toReactFlowNodes(document, workspaceId),
+			[document, workspaceId],
+		);
+		const projectedEdges = useMemo(
+			() => toReactFlowEdges(document),
+			[document],
+		);
+		const [nodes, setNodes] = useState<RoxFlowNode[]>(projectedNodes);
+		const [edges, setEdges] = useState<RoxFlowEdge[]>(projectedEdges);
+		const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+		const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
+		const [isExporting, setIsExporting] = useState(false);
+		const [isDropActive, setIsDropActive] = useState(false);
+		// Live pen stroke: absolute-canvas samples captured during a drag. We keep
+		// a ref for the in-flight samples (no re-render per move) plus state for the
+		// rendered preview path so the stroke is visible while drawing.
+		const penPointsRef = useRef<FreehandPoint[]>([]);
+		const [penPreviewPath, setPenPreviewPath] = useState<string | null>(null);
+		const [isDrawing, setIsDrawing] = useState(false);
+
+		const handlePenPointerDown = useCallback(
+			(event: React.PointerEvent) => {
+				if (!penActive || disabled || event.button !== 0) return;
+				event.preventDefault();
+				event.stopPropagation();
+				event.currentTarget.setPointerCapture(event.pointerId);
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				penPointsRef.current = [
+					[position.x, position.y, event.pressure || 0.5],
+				];
+				setIsDrawing(true);
+				setPenPreviewPath(null);
+			},
+			[disabled, penActive, screenToFlowPosition],
+		);
+
+		const handlePenPointerMove = useCallback(
+			(event: React.PointerEvent) => {
+				if (!penActive || disabled || !isDrawing) return;
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				penPointsRef.current.push([
+					position.x,
+					position.y,
+					event.pressure || 0.5,
+				]);
+				setPenPreviewPath(freehandPointsToSvgPath(penPointsRef.current));
+			},
+			[disabled, isDrawing, penActive, screenToFlowPosition],
+		);
+
+		const finishPenStroke = useCallback(
+			(event: React.PointerEvent) => {
+				if (!isDrawing) return;
+				if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+					event.currentTarget.releasePointerCapture(event.pointerId);
+				}
+				const points = penPointsRef.current;
+				penPointsRef.current = [];
+				setIsDrawing(false);
+				setPenPreviewPath(null);
+				if (!disabled && points.length > 1) onCreateFreeformNode?.(points);
+			},
+			[disabled, isDrawing, onCreateFreeformNode],
+		);
+
+		useEffect(() => {
+			setNodes(projectedNodes);
+			setEdges(projectedEdges);
+		}, [projectedNodes, projectedEdges]);
+
+		const handleNodesChange = useCallback(
+			(changes: NodeChange<RoxFlowNode>[]) => {
+				setNodes((current) => applyNodeChanges(changes, current));
+				if (disabled) return;
+				for (const change of changes) {
+					if (change.type !== "dimensions") continue;
+					if (change.resizing !== false || !change.dimensions) continue;
+					onMutationBatch(
+						createNodeSizeBatch({
+							document,
+							baseVersion,
+							actorId: "renderer",
+							nodeId: change.id,
+							size: {
+								width: Math.round(change.dimensions.width),
+								height: Math.round(change.dimensions.height),
+							},
+						}),
+						"Размер узла",
+					);
+				}
+			},
+			[baseVersion, disabled, document, onMutationBatch],
+		);
+
+		const handleEdgesChange = useCallback(
+			(changes: EdgeChange<RoxFlowEdge>[]) => {
+				setEdges((current) => applyEdgeChanges(changes, current));
+			},
+			[],
+		);
+
+		const handleNodeDragStop = useCallback(
+			(_event: unknown, node: RoxFlowNode) => {
+				if (disabled) return;
+				onMutationBatch(
+					createNodePositionBatch({
+						document,
+						baseVersion,
+						actorId: "renderer",
+						nodeId: node.id,
+						position: {
+							x: Math.round(node.position.x),
+							y: Math.round(node.position.y),
+						},
+					}),
+					"Перемещение узла",
+				);
+			},
+			[baseVersion, disabled, document, onMutationBatch],
+		);
+
+		const handleConnect = useCallback(
+			(connection: Connection) => {
+				if (disabled || !connection.source || !connection.target) return;
+				if (!isValidCanvasConnection(connection, edges)) return;
+				onMutationBatch(
+					createConnectNodesBatch({
+						document,
+						baseVersion,
+						actorId: "renderer",
+						sourceNodeId: connection.source,
+						targetNodeId: connection.target,
+					}),
+					"Связь узлов",
+				);
+			},
+			[baseVersion, disabled, document, edges, onMutationBatch],
+		);
+
+		const validateConnection = useCallback(
+			(connection: Connection | RoxFlowEdge) =>
+				isValidCanvasConnection(connection, edges),
+			[edges],
+		);
+
+		const handleNodesDelete = useCallback(
+			(deleted: RoxFlowNode[]) => {
+				if (disabled || deleted.length === 0) return;
+				onMutationBatch(
+					createDeleteElementsBatch({
+						document,
+						baseVersion,
+						actorId: "renderer",
+						nodeIds: deleted.map((node) => node.id),
+						edgeIds: [],
+					}),
+					"Удаление узлов",
+				);
+			},
+			[baseVersion, disabled, document, onMutationBatch],
+		);
+
+		const handleEdgesDelete = useCallback(
+			(deleted: RoxFlowEdge[]) => {
+				if (disabled || deleted.length === 0) return;
+				onMutationBatch(
+					createDeleteElementsBatch({
+						document,
+						baseVersion,
+						actorId: "renderer",
+						nodeIds: [],
+						edgeIds: deleted.map((edge) => edge.id),
+					}),
+					"Удаление связей",
+				);
+			},
+			[baseVersion, disabled, document, onMutationBatch],
+		);
+
+		const handleSelectionChange = useCallback<
+			OnSelectionChangeFunc<RoxFlowNode, RoxFlowEdge>
+		>(
+			({ nodes: selectedNodes, edges: selectedEdges }) => {
+				const nodeIds = selectedNodes.map((node) => node.id);
+				const edgeIds = selectedEdges.map((edge) => edge.id);
+				setSelectedNodeIds(nodeIds);
+				setSelectedEdgeIds(edgeIds);
+				onSelectionChange({ nodeIds, edgeIds, groupIds: [] });
+			},
+			[onSelectionChange],
+		);
+
+		const handlePaneDoubleClick = useCallback(
+			(event: React.MouseEvent) => {
+				if (disabled) return;
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				onCreateTextNodeAt({ x: position.x, y: position.y });
+			},
+			[disabled, onCreateTextNodeAt, screenToFlowPosition],
+		);
+
+		// External drag-n-drop of workspace entities onto the canvas. We only
+		// intercept drags carrying our ref MIME type so native pane interactions
+		// (pan/zoom/selection-rect, double-click create) stay untouched.
+		const handleDragOver = useCallback(
+			(event: React.DragEvent) => {
+				if (disabled || !hasCanvasRefDragType(event.dataTransfer)) return;
+				event.preventDefault();
+				event.dataTransfer.dropEffect = "copy";
+				if (!isDropActive) setIsDropActive(true);
+			},
+			[disabled, isDropActive],
+		);
+
+		const handleDragLeave = useCallback((event: React.DragEvent) => {
+			// Only clear when the cursor truly leaves the wrapper, not when moving
+			// between child nodes (relatedTarget still inside the wrapper).
+			const next = event.relatedTarget;
+			if (next instanceof Node && event.currentTarget.contains(next)) return;
+			setIsDropActive(false);
+		}, []);
+
+		const handleDrop = useCallback(
+			(event: React.DragEvent) => {
+				setIsDropActive(false);
+				if (disabled) return;
+				const payload = readCanvasRefDragData(event.dataTransfer);
+				if (!payload) return;
+				event.preventDefault();
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				onDropEntityAt({ x: position.x, y: position.y }, payload);
+			},
+			[disabled, onDropEntityAt, screenToFlowPosition],
+		);
+
+		const handleNodeDoubleClick = useCallback(
+			(_event: React.MouseEvent, node: RoxFlowNode) => {
+				if (node.data.refType) onOpenRefNode(node.id);
+			},
+			[onOpenRefNode],
+		);
+
+		const handleAlignLeft = useCallback(() => {
+			if (disabled || selectedNodeIds.length < 2) return;
+			onMutationBatch(
+				createAlignLeftBatch({
+					document,
+					baseVersion,
+					actorId: "renderer",
+					nodeIds: selectedNodeIds,
+				}),
+				"Выравнивание по левому краю",
+			);
+		}, [baseVersion, disabled, document, onMutationBatch, selectedNodeIds]);
+
+		const handleDistribute = useCallback(() => {
+			if (disabled || selectedNodeIds.length < 3) return;
+			onMutationBatch(
+				createDistributeHorizontalBatch({
+					document,
+					baseVersion,
+					actorId: "renderer",
+					nodeIds: selectedNodeIds,
+				}),
+				"Распределение по горизонтали",
+			);
+		}, [baseVersion, disabled, document, onMutationBatch, selectedNodeIds]);
+
+		const handleGroup = useCallback(() => {
+			if (disabled || selectedNodeIds.length < 2) return;
+			onMutationBatch(
+				createGroupSelectionBatch({
+					document,
+					baseVersion,
+					actorId: "renderer",
+					nodeIds: selectedNodeIds,
+				}),
+				"Группировка",
+			);
+		}, [baseVersion, disabled, document, onMutationBatch, selectedNodeIds]);
+
+		const handleDuplicate = useCallback(() => {
+			if (disabled || selectedNodeIds.length === 0) return;
+			onMutationBatch(
+				createDuplicateSelectionBatch({
+					document,
+					baseVersion,
+					actorId: "renderer",
+					nodeIds: selectedNodeIds,
+				}),
+				"Дублирование",
+			);
+		}, [baseVersion, disabled, document, onMutationBatch, selectedNodeIds]);
+
+		const handleFitView = useCallback(() => {
+			instanceRef.current?.fitView({ padding: 0.24, duration: 320 });
+		}, []);
+
+		/**
+		 * PNG export following the React Flow "download image" recipe:
+		 * getViewportForBounds(getNodesBounds(nodes)) -> toPng(viewport element).
+		 * Returns the data URL so the parent surface can trigger the download.
+		 */
+		const exportToPng = useCallback(async (): Promise<string | null> => {
+			const viewport = flowWrapperRef.current?.querySelector<HTMLElement>(
+				".react-flow__viewport",
+			);
+			if (!viewport || nodes.length === 0) return null;
+			setIsExporting(true);
+			try {
+				const bounds = getNodesBounds(nodes);
+				const width = Math.min(Math.max(bounds.width + 160, 640), 4096);
+				const height = Math.min(Math.max(bounds.height + 160, 480), 4096);
+				const transform = getViewportForBounds(
+					bounds,
+					width,
+					height,
+					0.2,
+					2,
+					0.08,
+				);
+				return await toPng(viewport, {
+					backgroundColor: "#151110",
+					width,
+					height,
+					style: {
+						width: `${width}px`,
+						height: `${height}px`,
+						transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})`,
+					},
+				});
+			} finally {
+				setIsExporting(false);
+			}
+		}, [nodes]);
+
+		const handleExportPng = useCallback(async () => {
+			const dataUrl = await exportToPng();
+			if (!dataUrl) return;
+			const link = window.document.createElement("a");
+			link.download = `${document.title || "canvas"}.png`;
+			link.href = dataUrl;
+			link.click();
+		}, [document.title, exportToPng]);
+
+		useImperativeHandle(ref, () => ({ exportPng: handleExportPng }), [
+			handleExportPng,
+		]);
+
+		const selectionCount = selectedNodeIds.length + selectedEdgeIds.length;
+
+		return (
+			// biome-ignore lint/a11y/noStaticElementInteractions: drop target for native HTML5 DnD of workspace entities; keyboard create path is the existing double-click handler
+			<div
+				ref={flowWrapperRef}
+				className="relative h-full w-full"
+				onDragOver={handleDragOver}
+				onDragLeave={handleDragLeave}
+				onDrop={handleDrop}
+				data-drop-active={isDropActive ? "true" : undefined}
+				data-testid="canvas-drop-zone"
+			>
+				<ReactFlow
+					className="canvas-react-flow"
+					colorMode="dark"
+					connectionLineType={ConnectionLineType.SmoothStep}
+					defaultEdgeOptions={{ type: "smoothstep" }}
+					deleteKeyCode={disabled ? null : ["Backspace", "Delete"]}
+					edges={edges}
+					edgesFocusable={!disabled}
+					fitView
+					fitViewOptions={{ padding: 0.26 }}
+					isValidConnection={validateConnection}
+					maxZoom={2}
+					minZoom={0.12}
+					nodeTypes={canvasNodeTypes}
+					nodes={nodes}
+					nodesConnectable={!disabled && !penActive}
+					nodesDraggable={!disabled && !penActive}
+					nodesFocusable={!disabled && !penActive}
+					onConnect={handleConnect}
+					onDoubleClick={handlePaneDoubleClick}
+					onEdgesChange={handleEdgesChange}
+					onEdgesDelete={handleEdgesDelete}
+					onInit={(instance) => {
+						instanceRef.current = instance;
+					}}
+					onNodeDoubleClick={handleNodeDoubleClick}
+					onNodeDragStop={handleNodeDragStop}
+					onNodesChange={handleNodesChange}
+					onNodesDelete={handleNodesDelete}
+					onSelectionChange={handleSelectionChange}
+					panOnDrag={!penActive}
+					panOnScroll
+					proOptions={{ hideAttribution: true }}
+					selectionOnDrag={!penActive}
+					elementsSelectable={!penActive}
+					zoomOnDoubleClick={!penActive}
+				>
+					<Background
+						color="color-mix(in srgb, white 6%, transparent)"
+						gap={32}
+						size={1}
+					/>
+					<MiniMap
+						className="!rounded-lg !border !border-border/60 glass-panel"
+						maskColor="color-mix(in srgb, var(--background) 70%, transparent)"
+						nodeColor="var(--sidebar-primary)"
+						nodeStrokeWidth={2}
+						pannable
+						zoomable
+					/>
+					<Controls
+						className="!rounded-lg !border !border-border/60 glass-panel !text-foreground"
+						position="bottom-left"
+						showInteractive={false}
+					/>
+
+					<Panel position="top-left">
+						<div className={PANEL_CLASS}>
+							<span className="px-2 font-mono text-muted-foreground text-xs">
+								{selectionCount} выбрано
+							</span>
+							<Button
+								size="icon-sm"
+								variant="ghost"
+								disabled={disabled || selectedNodeIds.length < 2}
+								onClick={handleAlignLeft}
+								title="Выровнять по левому краю · Cmd+Shift+L"
+							>
+								<AlignHorizontalJustifyStart />
+							</Button>
+							<Button
+								size="icon-sm"
+								variant="ghost"
+								disabled={disabled || selectedNodeIds.length === 0}
+								onClick={handleDuplicate}
+								title="Дублировать · Cmd+D"
+							>
+								<Copy />
+							</Button>
+							<Button
+								size="icon-sm"
+								variant="ghost"
+								disabled={disabled || selectedNodeIds.length < 3}
+								onClick={handleDistribute}
+								title="Распределить по горизонтали · Cmd+Shift+H"
+							>
+								<StretchHorizontal />
+							</Button>
+							<Button
+								size="icon-sm"
+								variant="ghost"
+								disabled={disabled || selectedNodeIds.length < 2}
+								onClick={handleGroup}
+								title="Сгруппировать · Cmd+G"
+							>
+								<Group />
+							</Button>
+						</div>
+					</Panel>
+
+					<Panel position="top-right">
+						<div className={cn(PANEL_CLASS, "px-1")}>
+							<Button
+								size="icon-sm"
+								variant="ghost"
+								onClick={handleFitView}
+								title="Показать весь холст"
+							>
+								<Maximize />
+							</Button>
+							<span className="px-2 font-mono text-muted-foreground text-xs">
+								{isExporting ? "Экспорт…" : modeBadge}
+							</span>
+						</div>
+					</Panel>
+				</ReactFlow>
+
+				{penActive ? (
+					<div
+						className="absolute inset-0 z-25 cursor-crosshair touch-none"
+						onPointerDown={handlePenPointerDown}
+						onPointerMove={handlePenPointerMove}
+						onPointerUp={finishPenStroke}
+						onPointerCancel={finishPenStroke}
+						data-testid="canvas-pen-layer"
+						data-pen-drawing={isDrawing ? "true" : undefined}
+					>
+						{penPreviewPath ? (
+							<svg
+								className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+								aria-hidden="true"
+							>
+								<g
+									transform={`translate(${instanceRef.current?.getViewport().x ?? 0}, ${instanceRef.current?.getViewport().y ?? 0}) scale(${instanceRef.current?.getViewport().zoom ?? 1})`}
+								>
+									<path
+										d={penPreviewPath}
+										fill="var(--sidebar-primary)"
+										opacity={0.85}
+									/>
+								</g>
+							</svg>
+						) : null}
+					</div>
+				) : null}
+
+				{isDropActive ? (
+					<div
+						className="pointer-events-none absolute inset-3 z-20 flex items-center justify-center rounded-xl border-2 border-[var(--sidebar-primary)] border-dashed bg-[var(--sidebar-primary)]/8"
+						data-testid="canvas-drop-hint"
+					>
+						<span className="glass-panel rounded-lg border border-border/60 px-3 py-1.5 font-mono text-[var(--sidebar-primary)] text-xs">
+							Отпустите, чтобы добавить ссылку на холст
+						</span>
+					</div>
+				) : null}
+			</div>
+		);
+	},
+);

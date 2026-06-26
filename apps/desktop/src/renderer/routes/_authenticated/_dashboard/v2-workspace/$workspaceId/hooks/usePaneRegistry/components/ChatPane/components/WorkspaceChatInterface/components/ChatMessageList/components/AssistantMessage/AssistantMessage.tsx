@@ -1,22 +1,29 @@
 import {
 	Message,
+	MessageBlockCopy,
 	MessageContent,
 	type MessageResponseProps,
 } from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
 import { AnimatedFileLink } from "@rox/ui/motion";
+import { toast } from "@rox/ui/sonner";
+import type { SynthesizedAudio } from "@rox/ui/voice";
 import { FileSearchIcon } from "lucide-react";
-import { type ReactNode, useCallback } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { StreamingMessageText } from "renderer/components/Chat/ChatInterface/components/MessagePartsRenderer/components/StreamingMessageText";
 import { ReasoningBlock } from "renderer/components/Chat/ChatInterface/components/ReasoningBlock";
-import { ToolCallBlock } from "renderer/components/Chat/ChatInterface/components/ToolCallBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { normalizeToolName } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { AttachmentChip } from "../AttachmentChip";
 import { ImageHoverPreview } from "../ImageHoverPreview";
 import { PendingPlanApprovalMessage } from "../PendingPlanApprovalMessage";
+import { ActivityWorklogSection } from "./ActivityWorklogSection";
+import { AssistantMessageActions } from "./AssistantMessageActions";
+import { getAssistantMessageText } from "./getAssistantMessageText";
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 type ChatMessageContent = ChatMessage["content"][number];
@@ -40,13 +47,21 @@ interface AssistantMessageProps {
 		action: "approved" | "rejected";
 		feedback?: string;
 	}) => Promise<void>;
+	/** F43: re-run the turn that produced this assistant answer (regenerate). */
+	onRegenerate?: () => void;
+	/** F43: retry the last request as-is (shown for interrupted answers). */
+	onRetry?: () => void;
+	/** F43: true when this answer was interrupted and can be retried. */
+	canRetry?: boolean;
+	/** F43: disable destructive actions while another turn is in flight. */
+	actionDisabled?: boolean;
 }
 
 function ImagePart({ data, mimeType }: { data: string; mimeType: string }) {
 	return (
 		<img
 			src={`data:${mimeType};base64,${data}`}
-			alt="Attached"
+			alt="Вложение"
 			className="max-h-48 rounded-lg object-contain"
 		/>
 	);
@@ -109,19 +124,64 @@ export function AssistantMessage({
 	isStreaming,
 	workspaceId,
 	sessionId,
-	organizationId,
-	workspaceCwd,
 	previewToolParts = [],
 	footer,
 	pendingPlanApproval,
 	pendingPlanToolCallId = null,
 	isPlanSubmitting = false,
 	onPlanRespond,
+	onRegenerate,
+	onRetry,
+	canRetry = false,
+	actionDisabled = false,
 }: AssistantMessageProps) {
 	const addFileViewerPane = useTabsStore((store) => store.addFileViewerPane);
+	const { copyToClipboard } = useCopyToClipboard();
+	const ttsUtils = electronTrpc.useUtils();
+	const [copied, setCopied] = useState(false);
+	const fullText = getAssistantMessageText(message);
+	const handleCopyFull = useCallback(() => {
+		if (!fullText) return;
+		void copyToClipboard(fullText);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1500);
+	}, [fullText, copyToClipboard]);
+	// FN-043 (#486): synthesize this reply to speech via the desktop edge-TTS
+	// router for the "Прослушать" button. Kept here (the desktop edge) so the
+	// shared ListenButton stays IPC-free and reusable on web/mobile.
+	const handleSynthesize = useCallback(
+		(text: string): Promise<SynthesizedAudio> =>
+			ttsUtils.client.tts.synthesize.mutate({ text }),
+		[ttsUtils],
+	);
+	const handleListenError = useCallback((error: unknown) => {
+		const detail = error instanceof Error ? error.message : "";
+		toast.error(
+			detail
+				? `Не удалось озвучить ответ: ${detail}`
+				: "Не удалось озвучить ответ",
+		);
+	}, []);
+	const showActions =
+		!isStreaming && Boolean(onRegenerate) && message.content.length > 0;
 	const nodes: ReactNode[] = [];
 	const renderedToolCallIds = new Set<string>();
 	let didRenderPendingPlanApproval = false;
+	// F39: buffer consecutive tool parts so a run collapses into ONE persistent,
+	// verb-bucketed Activity worklog timeline instead of N standalone blocks.
+	let pendingToolParts: ToolPart[] = [];
+	const flushActivityWorklog = () => {
+		if (pendingToolParts.length === 0) return;
+		const runParts = pendingToolParts;
+		pendingToolParts = [];
+		nodes.push(
+			<ActivityWorklogSection
+				key={`${message.id}-activity-${runParts[0].toolCallId}`}
+				parts={runParts}
+				chatId={sessionId ?? message.id}
+			/>,
+		);
+	};
 	const handleAttachmentClick = useCallback(
 		(url: string, filename?: string) => {
 			addFileViewerPane(workspaceId, {
@@ -159,23 +219,41 @@ export function AssistantMessage({
 	for (let partIndex = 0; partIndex < message.content.length; partIndex++) {
 		const part = message.content[partIndex];
 
+		// F39: a non-tool part ends the current tool run — flush the worklog first
+		// so the timeline renders in transcript order.
+		if (part.type !== "tool_call" && part.type !== "tool_result") {
+			flushActivityWorklog();
+		}
+
 		if (part.type === "text") {
+			const blockText = part.text;
 			nodes.push(
-				<StreamingMessageText
+				<div
 					key={`${message.id}-${partIndex}`}
-					text={part.text}
-					isAnimating={isStreaming}
-					mermaid={{
-						config: {
-							theme: "default",
-						},
-					}}
-					components={{
-						a: AnimatedFileLink as NonNullable<
-							MessageResponseProps["components"]
-						>["a"],
-					}}
-				/>,
+					className="group/block relative"
+				>
+					<StreamingMessageText
+						text={blockText}
+						isAnimating={isStreaming}
+						mermaid={{
+							config: {
+								theme: "default",
+							},
+						}}
+						components={{
+							a: AnimatedFileLink as NonNullable<
+								MessageResponseProps["components"]
+							>["a"],
+						}}
+					/>
+					{!isStreaming && blockText.trim() ? (
+						<MessageBlockCopy
+							text={blockText}
+							onCopyText={copyToClipboard}
+							className="absolute top-0 right-0 size-7 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/block:opacity-100 group-focus-within/block:opacity-100"
+						/>
+					) : null}
+				</div>,
 			);
 			continue;
 		}
@@ -228,7 +306,7 @@ export function AssistantMessage({
 						src={data}
 						filename={rawPart.filename}
 						mediaType={mediaType}
-						alt={rawPart.filename ?? "Generated"}
+						alt={rawPart.filename ?? "Сгенерировано"}
 						triggerClassName="max-w-[85%]"
 					>
 						<button
@@ -236,14 +314,14 @@ export function AssistantMessage({
 							className="cursor-pointer"
 							aria-label={
 								rawPart.filename
-									? `View ${rawPart.filename}`
-									: "View generated image"
+									? `Открыть ${rawPart.filename}`
+									: "Открыть сгенерированное изображение"
 							}
 							onClick={() => handleAttachmentClick(data, rawPart.filename)}
 						>
 							<img
 								src={data}
-								alt={rawPart.filename ?? "Generated"}
+								alt={rawPart.filename ?? "Сгенерировано"}
 								className="max-h-48 rounded-lg object-contain"
 							/>
 						</button>
@@ -274,22 +352,20 @@ export function AssistantMessage({
 				startAt: partIndex + 1,
 			});
 
-			nodes.push(
-				<ToolCallBlock
-					key={`${message.id}-tool-${part.id}`}
-					part={toToolPartFromCall({
-						part,
-						result,
-						isStreaming,
-					})}
-					workspaceId={workspaceId}
-					sessionId={sessionId}
-					organizationId={organizationId}
-					workspaceCwd={workspaceCwd}
-					isStreaming={isStreaming}
-				/>,
+			pendingToolParts.push(
+				toToolPartFromCall({
+					part,
+					result,
+					isStreaming,
+				}),
 			);
-			nodes.push(...getInlineToolStateNodes(part.id));
+
+			// Inline plan approval must appear after the buffered run, in order.
+			const inlineNodes = getInlineToolStateNodes(part.id);
+			if (inlineNodes.length > 0) {
+				flushActivityWorklog();
+				nodes.push(...inlineNodes);
+			}
 
 			if (resultIndex === partIndex + 1) {
 				partIndex++;
@@ -302,17 +378,13 @@ export function AssistantMessage({
 				continue;
 			}
 			renderedToolCallIds.add(part.id);
-			nodes.push(
-				<ToolCallBlock
-					key={`${message.id}-tool-result-${part.id}`}
-					part={toToolPartFromResult(part)}
-					workspaceId={workspaceId}
-					sessionId={sessionId}
-					organizationId={organizationId}
-					workspaceCwd={workspaceCwd}
-				/>,
-			);
-			nodes.push(...getInlineToolStateNodes(part.id));
+			pendingToolParts.push(toToolPartFromResult(part));
+
+			const inlineResultNodes = getInlineToolStateNodes(part.id);
+			if (inlineResultNodes.length > 0) {
+				flushActivityWorklog();
+				nodes.push(...inlineResultNodes);
+			}
 			continue;
 		}
 
@@ -331,30 +403,41 @@ export function AssistantMessage({
 
 	for (const previewPart of previewToolParts) {
 		if (renderedToolCallIds.has(previewPart.toolCallId)) continue;
-		nodes.push(
-			<ToolCallBlock
-				key={`${message.id}-tool-preview-${previewPart.toolCallId}`}
-				part={previewPart}
-				workspaceId={workspaceId}
-				sessionId={sessionId}
-				organizationId={organizationId}
-				workspaceCwd={workspaceCwd}
-			/>,
-		);
-		nodes.push(...getInlineToolStateNodes(previewPart.toolCallId));
+		pendingToolParts.push(previewPart);
+		const previewInlineNodes = getInlineToolStateNodes(previewPart.toolCallId);
+		if (previewInlineNodes.length > 0) {
+			flushActivityWorklog();
+			nodes.push(...previewInlineNodes);
+		}
 	}
 
+	// F39: flush any trailing tool run into a final Activity worklog.
+	flushActivityWorklog();
+
 	return (
-		<Message from="assistant">
+		<Message from="assistant" className="group/msg">
 			<MessageContent>
 				{nodes.length === 0 && isStreaming ? (
 					<ShimmerLabel className="text-sm text-muted-foreground">
-						Thinking...
+						Думаю…
 					</ShimmerLabel>
 				) : (
 					nodes
 				)}
 				{footer}
+				{showActions && onRegenerate ? (
+					<AssistantMessageActions
+						actionDisabled={actionDisabled}
+						copied={copied}
+						fullText={fullText}
+						canRetry={canRetry}
+						onCopy={handleCopyFull}
+						onRegenerate={onRegenerate}
+						onRetry={onRetry ?? onRegenerate}
+						onSynthesize={handleSynthesize}
+						onListenError={handleListenError}
+					/>
+				) : null}
 			</MessageContent>
 		</Message>
 	);

@@ -54,6 +54,13 @@ export type WorkingPromptComposerProps = {
 	afterComposer?: ReactNode;
 	header?: ReactNode;
 	messageClassName?: string;
+	/** Extra footer controls rendered left of submit (e.g. a mic button) (F42). */
+	footerExtras?: ReactNode;
+	/**
+	 * Context-usage ring rendered in the left tools cluster, after `footerTools`
+	 * (F42). A `ReactNode` so the caller owns the live token inputs.
+	 */
+	contextRing?: ReactNode;
 	/**
 	 * Initial draft text for the composer's `PromptInputProvider`, mirroring the
 	 * desktop composer's `initialInput`. Lets a remount restore a previously
@@ -72,6 +79,8 @@ export function WorkingPromptComposer({
 	afterComposer,
 	header,
 	messageClassName,
+	footerExtras,
+	contextRing,
 	initialInput,
 }: WorkingPromptComposerProps) {
 	const [sending, setSending] = useState(false);
@@ -137,9 +146,11 @@ export function WorkingPromptComposer({
 					<PromptInputFooter>
 						<PromptInputTools className={cn(footerToolsClassName)}>
 							{footerTools}
+							{contextRing}
 						</PromptInputTools>
 						<div className="flex items-center gap-2">
 							<PlusMenu />
+							{footerExtras}
 							<PromptInputSubmit
 								status={sending ? "submitted" : error ? "error" : undefined}
 								className="size-[23px] rounded-full border border-transparent bg-foreground/10 p-[5px] shadow-none hover:bg-foreground/20"

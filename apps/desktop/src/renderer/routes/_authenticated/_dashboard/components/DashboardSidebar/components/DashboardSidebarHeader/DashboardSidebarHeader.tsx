@@ -17,7 +17,6 @@ import {
 	LuLayers,
 	LuLayoutTemplate,
 	LuLibrary,
-	LuMessageCircle,
 	LuPlus,
 	LuWorkflow,
 } from "react-icons/lu";
@@ -83,7 +82,6 @@ export function DashboardSidebarHeader({
 	const isTasksOpen = !!matchRoute({ to: "/tasks", fuzzy: true });
 	const isAutomationsOpen = !!matchRoute({ to: "/automations", fuzzy: true });
 	const isPipelinesOpen = !!matchRoute({ to: "/pipelines", fuzzy: true });
-	const isQuickChatOpen = !!matchRoute({ to: "/quick-chat" });
 	const isSkillsLibraryOpen = !!matchRoute({ to: "/skills-library" });
 	const isSavedPromptsOpen = !!matchRoute({ to: "/saved-prompts" });
 
@@ -122,10 +120,6 @@ export function DashboardSidebarHeader({
 		});
 	};
 
-	const handleQuickChatClick = () => {
-		navigate({ to: "/quick-chat" });
-	};
-
 	const handleSkillsLibraryClick = () => {
 		navigate({ to: "/skills-library" });
 	};
@@ -143,6 +137,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Рабочие пространства"
 							data-onboarding-anchor="nav-workspaces"
 							onClick={handleWorkspacesClick}
 							className={cn(
@@ -162,6 +157,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Автоматизации"
 							data-onboarding-anchor="nav-automations"
 							onClick={handleAutomationsClick}
 							className={cn(
@@ -181,9 +177,9 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
-							data-onboarding-anchor="nav-pipelines"
 							onClick={handlePipelinesClick}
 							aria-label="Пайплайны"
+							data-onboarding-anchor="nav-pipelines"
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
 								isPipelinesOpen
@@ -201,6 +197,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Задачи"
 							data-onboarding-anchor="nav-tasks-pr"
 							onClick={handleTasksClick}
 							className={cn(
@@ -213,32 +210,14 @@ export function DashboardSidebarHeader({
 							<HiOutlineClipboardDocumentList className="size-4" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Задачи и PR</TooltipContent>
+					<TooltipContent side="right">Задачи</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
 					<TooltipTrigger asChild>
 						<button
 							type="button"
-							data-onboarding-anchor="nav-quick-chat"
-							onClick={handleQuickChatClick}
-							className={cn(
-								"flex size-8 items-center justify-center rounded-md transition-colors",
-								isQuickChatOpen
-									? "bg-accent text-foreground"
-									: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-							)}
-						>
-							<LuMessageCircle className="size-4" />
-						</button>
-					</TooltipTrigger>
-					<TooltipContent side="right">Быстрый чат</TooltipContent>
-				</Tooltip>
-
-				<Tooltip delayDuration={300}>
-					<TooltipTrigger asChild>
-						<button
-							type="button"
+							aria-label="Библиотека скиллов"
 							data-onboarding-anchor="nav-skills-library"
 							onClick={handleSkillsLibraryClick}
 							className={cn(
@@ -400,22 +379,7 @@ export function DashboardSidebarHeader({
 				)}
 			>
 				<HiOutlineClipboardDocumentList className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Задачи и PR</span>
-			</button>
-
-			<button
-				type="button"
-				data-onboarding-anchor="nav-quick-chat"
-				onClick={handleQuickChatClick}
-				className={cn(
-					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
-					isQuickChatOpen
-						? "bg-accent text-foreground"
-						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-				)}
-			>
-				<LuMessageCircle className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Быстрый чат</span>
+				<span className="flex-1 text-left">Задачи</span>
 			</button>
 
 			<button

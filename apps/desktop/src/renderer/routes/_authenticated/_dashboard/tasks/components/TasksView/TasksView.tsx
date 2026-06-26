@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useHotkey } from "renderer/hotkeys";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	tasksSearchFromFilters,
@@ -20,6 +21,7 @@ import {
 import { LinearCTA } from "./components/LinearCTA";
 import { PullRequestsContent } from "./components/PullRequestsContent";
 import { TableContent } from "./components/TableContent";
+import { TasksCommandPalette } from "./components/TasksCommandPalette";
 import { type TabValue, TasksTopBar } from "./components/TasksTopBar";
 import type { TaskWithStatus } from "./hooks/useTasksData";
 
@@ -41,6 +43,7 @@ export function TasksView({
 	const navigate = useNavigate();
 	const collections = useCollections();
 	const currentTab: TabValue = initialTab ?? "all";
+	const [linearCtaDismissed, setLinearCtaDismissed] = useState(false);
 	const [searchQuery, setSearchQuery] = useState(initialSearch ?? "");
 	const deferredSearchQuery = useDeferredValue(searchQuery);
 	const assigneeFilter = initialAssignee ?? null;
@@ -218,72 +221,97 @@ export function TasksView({
 		});
 	};
 
-	const showLinearCTA =
-		integrations !== undefined && !isLinearConnected && typeTab === "tasks";
+	const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+	useHotkey("OPEN_TASKS_PALETTE", () => setIsPaletteOpen((prev) => !prev), {
+		preventDefault: true,
+	});
+
+	const selectedCount =
+		typeTab === "issues" ? selectedIssues.length : selectedTasks.length;
 
 	const showTasks = typeTab === "tasks";
 	const showPRs = typeTab === "prs";
 	const showIssues = typeTab === "issues";
 
+	// Linear disconnected only blocks the Tasks tab. Keep the top bar (and thus
+	// the type tabs) always mounted so PR / Issues stay reachable; the founder
+	// can dismiss the full takeover to a thin banner.
+	const linearMissing =
+		integrations !== undefined && !isLinearConnected && showTasks;
+	const showLinearFull = linearMissing && !linearCtaDismissed;
+	const showLinearBanner = linearMissing && linearCtaDismissed;
+
 	return (
 		<div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-			{!showLinearCTA && (
-				<TasksTopBar
-					currentTab={currentTab}
-					onTabChange={handleTabChange}
-					searchQuery={searchQuery}
-					onSearchChange={handleSearchChange}
-					assigneeFilter={assigneeFilter}
-					onAssigneeFilterChange={handleAssigneeFilterChange}
-					selectedTasks={selectedTasks}
-					onClearSelection={handleClearSelection}
-					selectedIssues={selectedIssues}
-					onClearIssueSelection={handleClearIssueSelection}
-					viewMode={viewMode}
-					onViewModeChange={setViewMode}
-					typeTab={typeTab}
-					onTypeTabChange={handleTypeTabChange}
-					projectFilter={projectFilter}
-					onProjectFilterChange={handleProjectFilterChange}
-				/>
-			)}
+			<TasksTopBar
+				currentTab={currentTab}
+				onTabChange={handleTabChange}
+				searchQuery={searchQuery}
+				onSearchChange={handleSearchChange}
+				assigneeFilter={assigneeFilter}
+				onAssigneeFilterChange={handleAssigneeFilterChange}
+				selectedTasks={selectedTasks}
+				onClearSelection={handleClearSelection}
+				selectedIssues={selectedIssues}
+				onClearIssueSelection={handleClearIssueSelection}
+				viewMode={viewMode}
+				onViewModeChange={setViewMode}
+				typeTab={typeTab}
+				onTypeTabChange={handleTypeTabChange}
+				projectFilter={projectFilter}
+				onProjectFilterChange={handleProjectFilterChange}
+			/>
 
-			{showLinearCTA ? (
-				<LinearCTA />
-			) : (
-				<div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-					{showTasks &&
-						(viewMode === "board" ? (
-							<BoardContent
-								filterTab={currentTab}
-								searchQuery={deferredSearchQuery}
-								assigneeFilter={assigneeFilter}
-								onTaskClick={handleTaskClick}
-							/>
-						) : (
-							<TableContent
-								filterTab={currentTab}
-								searchQuery={deferredSearchQuery}
-								assigneeFilter={assigneeFilter}
-								onTaskClick={handleTaskClick}
-								onSelectionChange={handleSelectionChange}
-							/>
-						))}
-					{showPRs && (
-						<PullRequestsContent
-							projectFilter={projectFilter}
+			{showLinearBanner && <LinearCTA variant="banner" />}
+
+			<div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+				{showLinearFull ? (
+					<LinearCTA onDismiss={() => setLinearCtaDismissed(true)} />
+				) : (
+					showTasks &&
+					(viewMode === "board" ? (
+						<BoardContent
+							filterTab={currentTab}
 							searchQuery={deferredSearchQuery}
+							assigneeFilter={assigneeFilter}
+							onTaskClick={handleTaskClick}
 						/>
-					)}
-					{showIssues && (
-						<GitHubIssuesContent
-							projectFilter={projectFilter}
+					) : (
+						<TableContent
+							filterTab={currentTab}
 							searchQuery={deferredSearchQuery}
-							onSelectionChange={handleIssueSelectionChange}
+							assigneeFilter={assigneeFilter}
+							onTaskClick={handleTaskClick}
+							onSelectionChange={handleSelectionChange}
 						/>
-					)}
-				</div>
-			)}
+					))
+				)}
+				{showPRs && (
+					<PullRequestsContent
+						projectFilter={projectFilter}
+						searchQuery={deferredSearchQuery}
+					/>
+				)}
+				{showIssues && (
+					<GitHubIssuesContent
+						projectFilter={projectFilter}
+						searchQuery={deferredSearchQuery}
+						onSelectionChange={handleIssueSelectionChange}
+					/>
+				)}
+			</div>
+
+			<TasksCommandPalette
+				open={isPaletteOpen}
+				onOpenChange={setIsPaletteOpen}
+				typeTab={typeTab}
+				viewMode={viewMode}
+				projectFilter={projectFilter}
+				selectedCount={selectedCount}
+				onTypeTabChange={handleTypeTabChange}
+				onViewModeChange={setViewMode}
+				onProjectFilterChange={handleProjectFilterChange}
+			/>
 		</div>
 	);
 }

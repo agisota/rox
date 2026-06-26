@@ -13,8 +13,12 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import {
+	WorkspaceSwitcher,
+	WorkspaceSwitcherIcons,
+} from "@rox/ui/workspace-switcher";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -98,31 +102,26 @@ export function Header() {
 									<DropdownMenuSubTrigger className="cursor-pointer">
 										<span>Сменить организацию</span>
 									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent>
-										<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-											{user?.email}
-										</DropdownMenuLabel>
-										{organizations.map((org) => (
-											<DropdownMenuItem
-												key={org.id}
-												className="cursor-pointer gap-2"
-												onClick={() => handleSwitchOrganization(org.id)}
-											>
-												<Avatar className="size-4">
-													<AvatarImage
-														src={org.logo ?? undefined}
-														alt={org.name ?? "Организация"}
-													/>
-													<AvatarFallback className="text-[8px]">
-														{org.name?.charAt(0) ?? "O"}
-													</AvatarFallback>
-												</Avatar>
-												<span className="flex-1 truncate">{org.name}</span>
-												{org.id === activeOrganizationId && (
-													<Check className="size-4 text-primary" />
-												)}
-											</DropdownMenuItem>
-										))}
+									<DropdownMenuSubContent className="p-0">
+										<WorkspaceSwitcher
+											className="w-64"
+											activeId={activeOrganizationId}
+											options={organizations.map((org) => ({
+												id: org.id,
+												name: org.name ?? "Организация",
+												path: org.slug ?? "",
+												logo: org.logo,
+											}))}
+											onSelect={(id) => handleSwitchOrganization(id)}
+											footerActions={[
+												{
+													id: "manage",
+													label: "Управление",
+													icon: WorkspaceSwitcherIcons.manage,
+													onSelect: () => router.push("/settings/organization"),
+												},
+											]}
+										/>
 									</DropdownMenuSubContent>
 								</DropdownMenuSub>
 								<DropdownMenuSeparator />

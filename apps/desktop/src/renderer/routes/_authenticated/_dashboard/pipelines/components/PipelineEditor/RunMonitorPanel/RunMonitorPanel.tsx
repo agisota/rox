@@ -23,6 +23,10 @@ function statusVariant(
 
 type RunMonitorPanelProps = {
 	pipelineId: string;
+	/** The run currently visualised on the canvas (lifted to the editor). */
+	activeRunId: string | null;
+	/** Select a run (updates the shared canvas trace + this panel). */
+	onSelectRun: (runId: string | null) => void;
 };
 
 /**
@@ -30,15 +34,22 @@ type RunMonitorPanelProps = {
  * recent runs (`pipeline.listRuns`), and live-polls the selected/active run's
  * steps (`pipeline.getRun`) for status.
  *
+ * The active run id is lifted to the editor (`activeRunId`/`onSelectRun`) so the
+ * panel, the toolbar run button, and the on-canvas run trace all agree on the
+ * watched run.
+ *
  * Cache-first (AGENTS.md rule 9): persisted runs/steps render immediately; the
  * `isLoading` branches only show when there is no data yet. Polling is enabled
  * only while a run is in a live status, so finished runs stop refetching.
  */
-export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
+export function RunMonitorPanel({
+	pipelineId,
+	activeRunId,
+	onSelectRun,
+}: RunMonitorPanelProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const [seedMessage, setSeedMessage] = useState("");
-	const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
 	const runsInput = { pipelineId, limit: 20 };
 	const runsQuery = useQuery({
@@ -64,7 +75,7 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 	const runOnceMutation = useMutation(
 		trpc.pipeline.runOnce.mutationOptions({
 			onSuccess: async (result) => {
-				setActiveRunId(result.runId);
+				onSelectRun(result.runId);
 				await queryClient.invalidateQueries({
 					queryKey: trpc.pipeline.listRuns.queryKey(runsInput),
 				});
@@ -193,7 +204,7 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 							status={run.status}
 							createdAt={run.createdAt}
 							selected={run.id === activeRunId}
-							onClick={() => setActiveRunId(run.id)}
+							onClick={() => onSelectRun(run.id)}
 						/>
 					))}
 				</div>

@@ -495,6 +495,31 @@ export const chatSessionStatusValues = ["active", "archived"] as const;
 export const chatSessionStatusEnum = z.enum(chatSessionStatusValues);
 export type ChatSessionStatus = z.infer<typeof chatSessionStatusEnum>;
 
+// Mobile workspace surface cards (FN-016/FN-087) -----------------------------
+// Durable Claude session + terminal lifecycle, synced org-scoped so mobile/web/
+// desktop can render a live "is this running?" badge. Append-only string unions
+// backing Postgres pgEnums; map 1:1 onto `@rox/shared/workspace-status`
+// `SurfaceLifecycle`. Never reorder/remove existing members.
+export const durableSessionStatusValues = [
+	"starting",
+	"running",
+	"idle",
+	"ended",
+	"error",
+] as const;
+export const durableSessionStatusEnum = z.enum(durableSessionStatusValues);
+export type DurableSessionStatus = z.infer<typeof durableSessionStatusEnum>;
+
+export const terminalStatusValues = [
+	"starting",
+	"running",
+	"idle",
+	"ended",
+	"error",
+] as const;
+export const terminalStatusEnum = z.enum(terminalStatusValues);
+export type TerminalStatus = z.infer<typeof terminalStatusEnum>;
+
 // Journal & Memory (journal-memory epic) --------------------------------------
 // Per-user daily journal (AI-generated from chat sessions) + a curated memory
 // store. Append-only string unions backing Postgres pgEnums; never reorder/remove.
@@ -930,6 +955,18 @@ export const mailProviderValues = ["cloudflare", "resend"] as const;
 export const mailProviderEnum = z.enum(mailProviderValues);
 export type MailProvider = z.infer<typeof mailProviderEnum>;
 
+/**
+ * Server-backed folder placement of a mail thread (FN-135 / #697). `inbox` is the
+ * default landing folder; the rest are user-driven filing targets the left rail
+ * exposes (archive / spam / trash). `sent`/`drafts` are NOT placements — they are
+ * derived from message direction / the `mail_drafts` table — so they are
+ * intentionally absent here. APPEND-ONLY: never reorder/remove (Postgres pgEnum
+ * ordinals are stable); new placements are added at the end.
+ */
+export const mailFolderValues = ["inbox", "archive", "spam", "trash"] as const;
+export const mailFolderEnum = z.enum(mailFolderValues);
+export type MailFolder = z.infer<typeof mailFolderEnum>;
+
 // ---------------------------------------------------------------------------
 // Rox Workspace Suite — D4 XMPP / Jabber Federation (comms-suite epic, P0).
 // Makes the locked rox identity (`user_profiles.handle`, ROX-522) reachable on
@@ -1016,3 +1053,14 @@ export const meshDeliveryStatusValues = [
 ] as const;
 export const meshDeliveryStatusEnum = z.enum(meshDeliveryStatusValues);
 export type MeshDeliveryStatus = z.infer<typeof meshDeliveryStatusEnum>;
+
+/**
+ * Workspace governance items (#517): the three kinds of entry in the v2
+ * workspace "Управление" panel — ЦЕЛИ (goals), ЗАДАЧИ (tasks), МИССИИ
+ * (missions). Mirrors the renderer-side `governanceKindSchema` so db/trpc/client
+ * agree on the same union. APPEND-ONLY: never reorder/remove values (pgEnum
+ * ordinal mapping).
+ */
+export const governanceKindValues = ["goal", "task", "mission"] as const;
+export const governanceKindEnum = z.enum(governanceKindValues);
+export type GovernanceKind = z.infer<typeof governanceKindEnum>;

@@ -1,15 +1,15 @@
 {
-	"version": "catalog-v1",
+	"version": "catalog-curated-v1",
 	"skills": {
-		"count": 985,
+		"count": 285,
 		"archive": "skills.tar.gz",
-		"sha256": "cbe250bcddaaf4c20496522838bd7958faac83838d0d362662079e96aa85442d",
-		"bytes": 72956754
+		"sha256": "42d891a9f4c7fccc31bc9fa1aadf4b8e649a27aeda21791f45028ee5bf645e93",
+		"bytes": 28492706
 	},
 	"agents": {
-		"count": 111,
+		"count": 0,
 		"archive": "agents.tar.gz",
-		"sha256": "a17bd2c9b5597519e28400ba1867a8f81f6a849de00aa9320652bb79a4a8ea40",
-		"bytes": 275390
+		"sha256": "b0bb481a3eca764e5105f2c4bb4e6905f16f233cff39591991224271bdf323e5",
+		"bytes": 147
 	}
 }

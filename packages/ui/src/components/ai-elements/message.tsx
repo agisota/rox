@@ -3,8 +3,10 @@
 import { mermaid } from "@streamdown/mermaid";
 import type { FileUIPart, UIMessage } from "ai";
 import {
+	CheckIcon,
 	ChevronLeftIcon,
 	ChevronRightIcon,
+	CopyIcon,
 	PaperclipIcon,
 	XIcon,
 } from "lucide-react";
@@ -68,6 +70,21 @@ export const MessageContent = ({
 	</div>
 );
 
+/**
+ * F43: single source of truth for message-action labels (RU). Shared by the
+ * user-message and assistant-message action rows so the copy/regenerate/retry
+ * affordances stay consistent across every chat surface (web/mobile/desktop).
+ */
+export const messageActionLabels = {
+	copy: { tooltip: "Копировать", aria: "Копировать сообщение" },
+	copied: { tooltip: "Скопировано", aria: "Скопировано" },
+	copyBlock: { tooltip: "Копировать блок", aria: "Копировать блок" },
+	regenerate: { tooltip: "Перегенерировать", aria: "Перегенерировать ответ" },
+	retry: { tooltip: "Повторить", aria: "Повторить запрос" },
+	resend: { tooltip: "Заново", aria: "Отправить заново" },
+	edit: { tooltip: "Изменить", aria: "Изменить сообщение" },
+} as const;
+
 export type MessageActionsProps = ComponentProps<"div">;
 
 export const MessageActions = ({
@@ -114,6 +131,59 @@ export const MessageAction = ({
 	}
 
 	return button;
+};
+
+export type MessageBlockCopyProps = ComponentProps<typeof Button> & {
+	/** Raw text/markdown copied when the affordance is pressed. */
+	text: string;
+	/** Async clipboard writer supplied by the host surface. */
+	onCopyText: (text: string) => void | Promise<void>;
+	label?: string;
+	copiedLabel?: string;
+};
+
+/**
+ * F43: per-block copy affordance. Markdown blocks (Mermaid/KaTeX/code/prose)
+ * render their own copy button so users can grab a single block's source while
+ * preserving its markdown. Clipboard access is injected (`onCopyText`) so this
+ * primitive stays free of host-specific hooks and works on every surface.
+ */
+export const MessageBlockCopy = ({
+	text,
+	onCopyText,
+	label = messageActionLabels.copyBlock.aria,
+	copiedLabel = messageActionLabels.copied.aria,
+	className,
+	variant = "ghost",
+	size = "icon-sm",
+	...props
+}: MessageBlockCopyProps) => {
+	const [copied, setCopied] = useState(false);
+
+	const handleClick = async () => {
+		await onCopyText(text);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1500);
+	};
+
+	return (
+		<Button
+			aria-label={copied ? copiedLabel : label}
+			className={className}
+			onClick={handleClick}
+			size={size}
+			type="button"
+			variant={variant}
+			{...props}
+		>
+			{copied ? (
+				<CheckIcon className="size-3.5" />
+			) : (
+				<CopyIcon className="size-3.5" />
+			)}
+			<span className="sr-only">{copied ? copiedLabel : label}</span>
+		</Button>
+	);
 };
 
 type MessageBranchContextType = {
@@ -256,7 +326,7 @@ export const MessageBranchPrevious = ({
 
 	return (
 		<Button
-			aria-label="Previous branch"
+			aria-label="Предыдущий вариант"
 			disabled={totalBranches <= 1}
 			onClick={goToPrevious}
 			size="icon-sm"
@@ -279,7 +349,7 @@ export const MessageBranchNext = ({
 
 	return (
 		<Button
-			aria-label="Next branch"
+			aria-label="Следующий вариант"
 			disabled={totalBranches <= 1}
 			onClick={goToNext}
 			size="icon-sm"
@@ -308,7 +378,7 @@ export const MessageBranchPage = ({
 			)}
 			{...props}
 		>
-			{currentBranch + 1} of {totalBranches}
+			{currentBranch + 1} из {totalBranches}
 		</ButtonGroupText>
 	);
 };

@@ -24,6 +24,10 @@ function statusVariant(
 
 type RunMonitorPanelProps = {
 	pipelineId: string;
+	/** The run currently visualised on the canvas (lifted to the editor). */
+	activeRunId: string | null;
+	/** Select a run (updates the shared canvas trace + this panel). */
+	onSelectRun: (runId: string | null) => void;
 };
 
 /**
@@ -31,15 +35,22 @@ type RunMonitorPanelProps = {
  * recent runs (`pipeline.listRuns`), and live-polls the selected/active run's
  * steps (`pipeline.getRun`) for status.
  *
+ * The active run id is lifted to the editor (`activeRunId`/`onSelectRun`) so the
+ * panel, the toolbar run button, and the on-canvas run trace all agree on the
+ * watched run.
+ *
  * Cache-first (AGENTS.md rule 9): persisted runs/steps render immediately; the
  * `isLoading` branches only show when there is no data yet. Polling is enabled
  * only while a run is in a live status, so finished runs stop refetching.
  */
-export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
+export function RunMonitorPanel({
+	pipelineId,
+	activeRunId,
+	onSelectRun,
+}: RunMonitorPanelProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const [seedMessage, setSeedMessage] = useState("");
-	const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
 	const runsInput = { pipelineId, limit: 20 };
 	const runsQuery = useQuery({
@@ -65,7 +76,7 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 	const runOnceMutation = useMutation(
 		trpc.pipeline.runOnce.mutationOptions({
 			onSuccess: async (result) => {
-				setActiveRunId(result.runId);
+				onSelectRun(result.runId);
 				await queryClient.invalidateQueries({
 					queryKey: trpc.pipeline.listRuns.queryKey(runsInput),
 				});
@@ -168,33 +179,70 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 						</span>
 						<div className="h-px flex-1 bg-border" />
 					</div>
-					{runs.length === 0 && !runsQuery.isLoading && (
+					{runsQuery.isError && (
+						<div className="rounded-md border border-destructive/40 p-2">
+							<p className="select-text cursor-text text-xs text-destructive">
+								{runsQuery.error.message}
+							</p>
+							<Button
+								size="sm"
+								variant="outline"
+								className="mt-2 h-7 text-xs"
+								onClick={() => runsQuery.refetch()}
+							>
+								Повторить
+							</Button>
+						</div>
+					)}
+					{runs.length === 0 && !runsQuery.isLoading && !runsQuery.isError && (
 						<p className="text-xs text-muted-foreground">
 							Запусков ещё не было.
 						</p>
 					)}
 					{runs.map((run) => (
-						<button
+						<RunHistoryButton
 							key={run.id}
-							type="button"
-							onClick={() => setActiveRunId(run.id)}
-							className={`flex items-center gap-2 rounded-md border p-2 text-left transition-colors hover:border-primary/50 ${
-								run.id === activeRunId ? "border-primary" : "bg-card"
-							}`}
-						>
-							<Badge
-								variant={statusVariant(run.status)}
-								className="text-[10px]"
-							>
-								{run.status}
-							</Badge>
-							<span className="flex-1 truncate text-xs text-muted-foreground">
-								{new Date(run.createdAt).toLocaleString("ru-RU")}
-							</span>
-						</button>
+							status={run.status}
+							createdAt={run.createdAt}
+							selected={run.id === activeRunId}
+							onClick={() => onSelectRun(run.id)}
+						/>
 					))}
 				</div>
 			</ScrollArea>
 		</div>
+	);
+}
+
+function RunHistoryButton({
+	status,
+	createdAt,
+	selected,
+	onClick,
+}: {
+	status: string;
+	createdAt: Date | string;
+	selected: boolean;
+	onClick: () => void;
+}) {
+	const createdAtLabel = new Date(createdAt).toLocaleString("ru-RU");
+
+	return (
+		<button
+			type="button"
+			aria-pressed={selected}
+			aria-label={`Открыть запуск от ${createdAtLabel}, статус ${status}`}
+			onClick={onClick}
+			className={`flex items-center gap-2 rounded-md border p-2 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+				selected ? "border-primary" : "bg-card"
+			}`}
+		>
+			<Badge variant={statusVariant(status)} className="text-[10px]">
+				{status}
+			</Badge>
+			<span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+				{createdAtLabel}
+			</span>
+		</button>
 	);
 }

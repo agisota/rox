@@ -28,6 +28,7 @@ export function ChatPaneTitle({ context, workspaceId }: ChatPaneTitleProps) {
 		handleSelectSession,
 		handleNewChat,
 		handleDeleteSession,
+		handleSetPinned,
 	} = useWorkspaceChatController({
 		workspaceId,
 		sessionId,
@@ -39,10 +40,11 @@ export function ChatPaneTitle({ context, workspaceId }: ChatPaneTitleProps) {
 			<SessionSelector
 				currentSessionId={sessionId}
 				sessions={sessionItems}
-				fallbackTitle="New Chat"
+				fallbackTitle="Новый чат"
 				onSelectSession={handleSelectSession}
 				onNewChat={handleNewChat}
 				onDeleteSession={handleDeleteSession}
+				onSetPinned={handleSetPinned}
 			/>
 			<V2NotificationStatusIndicator
 				sources={getV2NotificationSourcesForPane(context.pane)}

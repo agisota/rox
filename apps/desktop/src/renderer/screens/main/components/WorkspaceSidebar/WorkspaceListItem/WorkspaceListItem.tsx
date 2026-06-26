@@ -1,3 +1,4 @@
+import { Badge } from "@rox/ui/badge";
 import { Input } from "@rox/ui/input";
 import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
@@ -28,15 +29,15 @@ import {
 	GITHUB_STATUS_STALE_TIME,
 	MAX_KEYBOARD_SHORTCUT_INDEX,
 } from "./constants";
+import { useWorkspaceBranchDecoration } from "./useWorkspaceBranchDecoration";
 import { useWorkspaceDnD } from "./useWorkspaceDnD";
-import { WorkspaceAheadBehind } from "./WorkspaceAheadBehind";
 import { WorkspaceContextMenu } from "./WorkspaceContextMenu";
 import { WorkspaceDiffStats } from "./WorkspaceDiffStats";
 import { WorkspaceIcon } from "./WorkspaceIcon";
+import { WorkspaceRowStatus } from "./WorkspaceRowStatus";
 import {
 	WorkspaceConnectionBadge,
 	type WorkspaceConnectionState,
-	WorkspaceStatusBadge,
 } from "./WorkspaceStatusBadge";
 
 interface WorkspaceListItemProps {
@@ -80,6 +81,11 @@ export function WorkspaceListItem({
 	orderedWorkspaceIds = [],
 }: WorkspaceListItemProps) {
 	const isBranchWorkspace = type === "branch";
+	const {
+		tint: branchNameTint,
+		ring: branchNameRing,
+		labels: branchLabels,
+	} = useWorkspaceBranchDecoration(id);
 	const navigate = useNavigate();
 	const matchRoute = useMatchRoute();
 	const {
@@ -379,7 +385,7 @@ export function WorkspaceListItem({
 									Локальное рабочее пространство
 								</p>
 								<p className="text-xs text-muted-foreground">
-									Changes are made directly in the main repository
+									Изменения вносятся напрямую в основной репозиторий
 								</p>
 							</>
 						) : (
@@ -388,7 +394,7 @@ export function WorkspaceListItem({
 									Рабочее пространство worktree
 								</p>
 								<p className="text-xs text-muted-foreground">
-									Isolated copy for parallel development
+									Изолированная копия для параллельной работы
 								</p>
 							</>
 						)}
@@ -429,12 +435,12 @@ export function WorkspaceListItem({
 								{isBranchWorkspace ? "local" : name || branch}
 							</span>
 
-							{isBranchWorkspace && aheadBehind && (
-								<WorkspaceAheadBehind
-									ahead={aheadBehind.ahead}
-									behind={aheadBehind.behind}
-								/>
-							)}
+							{/* Always-visible git/PR signal cluster — reads cache only */}
+							<WorkspaceRowStatus
+								pr={pr}
+								aheadBehind={isBranchWorkspace ? aheadBehind : null}
+								isActive={isActive}
+							/>
 
 							<AnimatePresence initial={false} mode="popLayout">
 								<WorkspaceConnectionBadge
@@ -485,20 +491,41 @@ export function WorkspaceListItem({
 							</div>
 						</div>
 
-						{(showBranchSubtitle || pr) && (
-							<div className="flex items-center gap-2 text-[11px] w-full">
-								{showBranchSubtitle && (
-									<span className="text-muted-foreground/60 truncate font-mono leading-tight">
-										{branch}
-									</span>
-								)}
-								{pr && (
-									<WorkspaceStatusBadge
-										state={pr.state}
-										prNumber={pr.number}
-										prUrl={pr.url}
-										className="ml-auto"
-									/>
+						{showBranchSubtitle && (
+							<div className="flex items-center gap-1.5 text-[12px] w-full min-w-0">
+								<span
+									className={cn(
+										"truncate font-mono leading-tight min-w-0",
+										branchNameTint
+											? "rounded-[5px] px-1.5 py-0.5 text-foreground/75 ring-1 ring-inset"
+											: "text-muted-foreground/60",
+									)}
+									style={
+										branchNameTint
+											? {
+													backgroundColor: branchNameTint,
+													// ring color via CSS var consumed by `ring-inset`
+													["--tw-ring-color" as string]:
+														branchNameRing ?? undefined,
+												}
+											: undefined
+									}
+								>
+									{branch}
+								</span>
+								{branchLabels.length > 0 && (
+									<div className="flex shrink-0 items-center gap-1">
+										{branchLabels.map((label) => (
+											<Badge
+												key={label}
+												variant="secondary"
+												className="h-[15px] max-w-[120px] truncate rounded-[5px] border-transparent px-1.5 py-0 text-[10px] font-medium leading-none"
+												title={label}
+											>
+												{label}
+											</Badge>
+										))}
+									</div>
 								)}
 							</div>
 						)}

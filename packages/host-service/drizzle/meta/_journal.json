@@ -57,6 +57,20 @@
       "when": 1781955880490,
       "tag": "0007_canvas_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1782331594049,
+      "tag": "0008_short_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1782398743610,
+      "tag": "0009_role_model_mapping",
+      "breakpoints": true
     }
   ]
 }

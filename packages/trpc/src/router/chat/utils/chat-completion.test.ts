@@ -1,6 +1,10 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { ROX_CHAT_MODEL_ID } from "@rox/shared/chat-models";
-import { deriveSessionTitle, runQuickChatCompletion } from "./chat-completion";
+import {
+	deriveSessionTitle,
+	generateLabelsFromTranscript,
+	runQuickChatCompletion,
+} from "./chat-completion";
 
 describe("deriveSessionTitle", () => {
 	test("uses the first trimmed line", () => {
@@ -68,4 +72,65 @@ describe("runQuickChatCompletion model resolution", () => {
 			}
 		},
 	);
+});
+
+describe("generateLabelsFromTranscript (F14 AI auto-tags)", () => {
+	const originalFetch = globalThis.fetch;
+	const originalKey = process.env.ROX_AI_API_KEY;
+
+	afterEach(() => {
+		globalThis.fetch = originalFetch;
+		if (originalKey === undefined) {
+			delete process.env.ROX_AI_API_KEY;
+		} else {
+			process.env.ROX_AI_API_KEY = originalKey;
+		}
+	});
+
+	test("returns [] for an empty transcript without calling the gateway", async () => {
+		let called = false;
+		globalThis.fetch = (async () => {
+			called = true;
+			return new Response("{}", { status: 200 });
+		}) as typeof fetch;
+
+		const labels = await generateLabelsFromTranscript({
+			turns: [{ role: "user", content: "   " }],
+		});
+		expect(labels).toEqual([]);
+		expect(called).toBe(false);
+	});
+
+	test("parses ≤3 normalized labels from the model reply", async () => {
+		process.env.ROX_AI_API_KEY = "test-key";
+		globalThis.fetch = (async () =>
+			new Response(
+				JSON.stringify({
+					choices: [
+						{ message: { content: "Billing, Onboarding, Bug, Design" } },
+					],
+				}),
+				{ status: 200, headers: { "Content-Type": "application/json" } },
+			)) as typeof fetch;
+
+		const labels = await generateLabelsFromTranscript({
+			turns: [{ role: "user", content: "Как настроить биллинг и онбординг?" }],
+		});
+		expect(labels).toEqual(["billing", "onboarding", "bug"]);
+	});
+
+	test("returns [] when no server key is configured (no per-user key path)", async () => {
+		delete process.env.ROX_AI_API_KEY;
+		let called = false;
+		globalThis.fetch = (async () => {
+			called = true;
+			return new Response("{}", { status: 200 });
+		}) as typeof fetch;
+
+		const labels = await generateLabelsFromTranscript({
+			turns: [{ role: "user", content: "тема разговора" }],
+		});
+		expect(labels).toEqual([]);
+		expect(called).toBe(false);
+	});
 });

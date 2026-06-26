@@ -1,4 +1,5 @@
 import type { SelectAutomationRun } from "@rox/db/schema";
+import { Badge } from "@rox/ui/badge";
 import {
 	DrawnCheck,
 	ease,
@@ -12,25 +13,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { formatDistanceStrict } from "date-fns";
+import { ru } from "date-fns/locale";
 import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode, useEffect } from "react";
 import { useNow } from "renderer/hooks/useNow";
-
-const STATUS_DOT: Record<SelectAutomationRun["status"], string> = {
-	dispatched: "bg-emerald-500",
-	dispatching: "bg-amber-500",
-	skipped_offline: "bg-red-500",
-	dispatch_failed: "bg-red-500",
-};
-
-type StatusKind = "success" | "failure" | "pending";
-
-function statusKindOf(status: SelectAutomationRun["status"]): StatusKind {
-	if (status === "dispatched") return "success";
-	if (status === "dispatch_failed" || status === "skipped_offline")
-		return "failure";
-	return "pending";
-}
+import {
+	inferTrigger,
+	RUN_STATUS_DOT,
+	RUN_TRIGGER_LABEL,
+	statusKindOf,
+} from "../../../lib/runStatus";
+import { formatRunDuration } from "../../../lib/scheduleRu";
 
 /** Wraps a failure row with a one-shot shake on mount (essential tier). */
 function FailureRow({ children }: { children: ReactNode }) {
@@ -48,7 +41,7 @@ interface PreviousRunsListProps {
 function formatAgo(date: Date, now: Date): string {
 	const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 	if (seconds < 60) return "менее минуты назад";
-	return `${formatDistanceStrict(date, now)} назад`;
+	return `${formatDistanceStrict(date, now, { locale: ru })} назад`;
 }
 
 export function PreviousRunsList({ runs }: PreviousRunsListProps) {
@@ -81,6 +74,11 @@ export function PreviousRunsList({ runs }: PreviousRunsListProps) {
 				{runs.map((run, index) => {
 					const clickable = !!run.v2WorkspaceId;
 					const kind = statusKindOf(run.status);
+					const trigger = inferTrigger(run);
+					const duration = formatRunDuration(
+						run.scheduledFor,
+						run.dispatchedAt,
+					);
 
 					const statusIndicator =
 						animate && run.status === "dispatching" ? (
@@ -96,7 +94,7 @@ export function PreviousRunsList({ runs }: PreviousRunsListProps) {
 								aria-label={run.status}
 								className={cn(
 									"inline-block size-2 shrink-0 rounded-full",
-									STATUS_DOT[run.status],
+									RUN_STATUS_DOT[run.status],
 								)}
 							/>
 						);
@@ -115,6 +113,17 @@ export function PreviousRunsList({ runs }: PreviousRunsListProps) {
 						>
 							{statusIndicator}
 							<span className="truncate">{run.title || "Автоматизация"}</span>
+							<Badge
+								variant="outline"
+								className="shrink-0 text-[9px] font-normal text-muted-foreground"
+							>
+								{RUN_TRIGGER_LABEL[trigger]}
+							</Badge>
+							{duration && (
+								<span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+									{duration}
+								</span>
+							)}
 							<span className="ml-auto shrink-0 truncate text-muted-foreground">
 								{run.scheduledFor
 									? formatAgo(new Date(run.scheduledFor), now)

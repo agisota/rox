@@ -10,7 +10,7 @@ import { Button } from "@rox/ui/button";
 import { MessageRow } from "@rox/ui/motion";
 import { AnimatePresence } from "framer-motion";
 import { CheckIcon, Loader2Icon, Share2Icon } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import type {
 	ChatMessage,
@@ -25,6 +25,7 @@ import { PendingPlanApprovalMessage } from "./components/PendingPlanApprovalMess
 import { ThinkingMessage } from "./components/ThinkingMessage";
 import { ToolPreviewMessage } from "./components/ToolPreviewMessage";
 import { UserMessage } from "./components/UserMessage";
+import { getUserMessageDraft } from "./components/UserMessage/utils/getUserMessageDraft";
 import { useChatMessageSearch } from "./hooks/useChatMessageSearch";
 import {
 	findLatestSubmitPlanToolCallId,
@@ -189,11 +190,11 @@ export function ChatMessageList({
 	const shouldShowShareButton = Boolean(
 		onShareConversation && hasConversationContent,
 	);
-	let shareButtonLabel = "Share";
+	let shareButtonLabel = "Поделиться";
 	if (isSharingConversation) {
-		shareButtonLabel = "Publishing";
+		shareButtonLabel = "Публикация…";
 	} else if (lastSharedConversationUrl) {
-		shareButtonLabel = "Link copied";
+		shareButtonLabel = "Ссылка скопирована";
 	}
 
 	const inlineToolStateProps = {
@@ -202,6 +203,40 @@ export function ChatMessageList({
 		isPlanSubmitting,
 		onPlanRespond,
 	} as const;
+
+	// F43: regenerate an assistant answer by re-running the turn from its nearest
+	// preceding user message. Reuses the same `onRestartUserMessage` mutation the
+	// user-message resend uses, so branch/regeneration history stays on one path.
+	const regenerateAssistantAt = useCallback(
+		(assistantIndex: number) => {
+			let userIndex = assistantIndex - 1;
+			while (userIndex >= 0 && renderedMessages[userIndex].role !== "user") {
+				userIndex--;
+			}
+			if (userIndex < 0) return;
+			const userMessage = renderedMessages[userIndex];
+			const draft = getUserMessageDraft(userMessage);
+			if (!draft.text && draft.files.length === 0) return;
+			void onRestartUserMessage({
+				messageId: userMessage.id,
+				prefixMessages: renderedMessages.slice(0, userIndex),
+				payload: {
+					content: draft.text,
+					...(draft.files.length > 0
+						? {
+								files: draft.files.map((file) => ({
+									data: file.url,
+									mediaType: file.mediaType,
+									filename: file.filename,
+									uploaded: false as const,
+								})),
+							}
+						: {}),
+				},
+			});
+		},
+		[onRestartUserMessage, renderedMessages],
+	);
 
 	return (
 		<Conversation className="flex-1">
@@ -268,6 +303,8 @@ export function ChatMessageList({
 											workspaceCwd={workspaceCwd}
 											isStreaming={false}
 											previewToolParts={[]}
+											actionDisabled={isAwaitingAssistant}
+											onRegenerate={() => regenerateAssistantAt(messageIndex)}
 											{...inlineToolStateProps}
 										/>
 									</MessageRow>
@@ -286,6 +323,11 @@ export function ChatMessageList({
 										workspaceCwd={workspaceCwd}
 										isStreaming={false}
 										previewToolParts={[]}
+										actionDisabled={isAwaitingAssistant}
+										canRetry
+										onRegenerate={() =>
+											regenerateAssistantAt(renderedMessages.length)
+										}
 										{...inlineToolStateProps}
 										footer={<InterruptedFooter />}
 									/>

@@ -153,7 +153,9 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           TARGET_ARCH: ${{ matrix.arch }}
-          # Authenticated `gh release download` for the preinstall catalog (prepackage step)
+          # The preinstall catalog (prepackage step) is now built locally via
+          # `build:catalog` (anonymous git clone of curated repos), so GH_TOKEN
+          # is no longer required; kept harmlessly for other authenticated `gh` use.
           GH_TOKEN: ${{ github.token }}
         run: bun run package -- --publish never --config ${{ inputs.electron_builder_config }} --${{ matrix.arch }}
 
@@ -310,7 +312,9 @@ jobs:
       - name: Build Electron app
         working-directory: apps/desktop
         env:
-          # Authenticated `gh release download` for the preinstall catalog (prepackage step)
+          # The preinstall catalog (prepackage step) is now built locally via
+          # `build:catalog` (anonymous git clone of curated repos), so GH_TOKEN
+          # is no longer required; kept harmlessly for other authenticated `gh` use.
           GH_TOKEN: ${{ github.token }}
         run: bun run package -- --publish never --config ${{ inputs.electron_builder_config }}
 

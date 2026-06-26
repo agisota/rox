@@ -23,15 +23,15 @@ const FOOTER_LINKS: FooterLink[] = [
 		badge: "new",
 	},
 	{
+		id: "legal",
+		href: "/legal",
+		label: "Юридическая информация",
+	},
+	{
 		id: "docs",
 		href: COMPANY.DOCS_URL,
 		label: "Документация",
 		external: true,
-	},
-	{
-		id: "legal",
-		href: "/legal",
-		label: "Юридическая информация",
 	},
 ];
 
@@ -135,6 +135,6 @@ function FooterLinkItem({
 
 function getHomeFooterAlign(id: FooterLink["id"]) {
 	if (id === "changelog") return "justify-self-start";
-	if (id === "docs") return "justify-self-center";
+	if (id === "legal") return "justify-self-center text-center";
 	return "justify-self-end text-right";
 }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtemp, readFile, readlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CURATED_DEFAULT_SKILL_PACKS } from "@rox/shared/skills/curated-default-skills";
 import {
 	buildSkillsManifest,
 	DEFAULT_SKILLS,
@@ -14,12 +15,12 @@ const DEFAULT_NAMES: readonly string[] = DEFAULT_SKILLS.map(
 );
 
 describe("DEFAULT_SKILLS", () => {
-	it("ships the curated Rox preinstalled skill set", () => {
+	it("derives the curated Rox preinstalled skill set from the shared constant", () => {
 		expect([...DEFAULT_NAMES].sort()).toEqual(
-			["dev-skills", "effective-html", "markdown-editor"].sort(),
+			CURATED_DEFAULT_SKILL_PACKS.map((pack) => pack.name).sort(),
 		);
 		for (const skill of DEFAULT_SKILLS) {
-			expect(skill.repo).toStartWith("github.com/plannotator/");
+			expect(skill.repo).toStartWith("github.com/");
 			expect(skill.description.length).toBeGreaterThan(0);
 		}
 	});
@@ -73,11 +74,17 @@ describe("buildSkillsManifest", () => {
 	});
 
 	it("never overwrites an existing skill entry with the same name", () => {
+		const [firstPack, secondPack] = CURATED_DEFAULT_SKILL_PACKS;
+		if (!firstPack || !secondPack) {
+			throw new Error("curated skill packs must have at least two entries");
+		}
+		const overriddenName = firstPack.name;
+		const otherName = secondPack.name;
 		const existing = JSON.stringify({
 			skills: [
 				{
-					name: "dev-skills",
-					repo: "file://custom-dev-skills",
+					name: overriddenName,
+					repo: "file://custom-override",
 					description: "Custom local override",
 				},
 			],
@@ -86,14 +93,14 @@ describe("buildSkillsManifest", () => {
 		const parsed = JSON.parse(out as string) as {
 			skills: Array<{ name: string; repo: string; description?: string }>;
 		};
-		expect(parsed.skills.find((skill) => skill.name === "dev-skills")).toEqual({
-			name: "dev-skills",
-			repo: "file://custom-dev-skills",
+		expect(
+			parsed.skills.find((skill) => skill.name === overriddenName),
+		).toEqual({
+			name: overriddenName,
+			repo: "file://custom-override",
 			description: "Custom local override",
 		});
-		expect(parsed.skills.some((skill) => skill.name === "effective-html")).toBe(
-			true,
-		);
+		expect(parsed.skills.some((skill) => skill.name === otherName)).toBe(true);
 	});
 
 	it("is a no-op when all defaults already exist", () => {

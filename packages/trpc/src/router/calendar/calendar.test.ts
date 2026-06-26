@@ -1035,6 +1035,254 @@ describe("calendar.updateReminder", () => {
 	});
 });
 
+describe("calendar.updateEvent reminder recompute (#528)", () => {
+	const REMINDER_ID = "66666666-6666-4666-8666-666666666666";
+
+	test("recomputes scheduled relative reminders' next_fire_at on a dtstart reschedule", async () => {
+		// Reschedule the one-off event from 09:00 → 12:00 (far future so fires stay
+		// in the future). A relative reminder fires 30min before dtstart, so its
+		// next_fire_at must move 11:30, not stay at the old 08:30.
+		const updatedEvent = {
+			id: EVENT_ID,
+			calendarId: CAL_ID,
+			organizationId: "org-1",
+			dtstart: new Date("2999-06-20T12:00:00Z"),
+			dtend: new Date("2999-06-20T13:00:00Z"),
+			timezone: "UTC",
+			rrule: null,
+			exdates: [],
+			status: "confirmed",
+		};
+		state.selectQueue = [
+			[
+				{
+					...updatedEvent,
+					dtstart: new Date("2999-06-20T09:00:00Z"),
+					dtend: new Date("2999-06-20T10:00:00Z"),
+				},
+			], // getEventWithAccess → existing event (pre-update)
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[
+				{
+					id: REMINDER_ID,
+					organizationId: "org-1",
+					eventId: EVENT_ID,
+					ownerUserId: "user-1",
+					triggerKind: "relative",
+					offsetMinutes: 30,
+					absoluteFireAt: null,
+					status: "scheduled",
+				},
+			], // recomputeRemindersForEvent → scheduled reminders
+		];
+		// The event update's `.returning()` yields the NEW row the recompute reads.
+		state.updateReturning = [updatedEvent];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateEvent({
+			eventId: EVENT_ID,
+			dtstart: new Date("2999-06-20T12:00:00Z"),
+			dtend: new Date("2999-06-20T13:00:00Z"),
+		});
+		// state.updated[0] = the event row update; [1] = the reminder recompute.
+		const reminderSet = state.updated[1];
+		expect(reminderSet).toBeDefined();
+		expect((reminderSet?.nextFireAt as Date).toISOString()).toBe(
+			"2999-06-20T11:30:00.000Z",
+		);
+	});
+
+	test("recomputes on an rrule change (series start moves the relative fire)", async () => {
+		// A weekly series anchored 2999-06-20T09:00Z; a reminder fires 15min before
+		// the first future occurrence. Changing the rule to a later byhour shifts the
+		// computed occurrence and therefore the reminder's next_fire_at.
+		const updatedEvent = {
+			id: EVENT_ID,
+			calendarId: CAL_ID,
+			organizationId: "org-1",
+			dtstart: new Date("2999-06-20T09:00:00Z"),
+			dtend: new Date("2999-06-20T10:00:00Z"),
+			timezone: "UTC",
+			rrule: "FREQ=DAILY",
+			exdates: [],
+			status: "confirmed",
+		};
+		state.selectQueue = [
+			[{ ...updatedEvent, rrule: "FREQ=WEEKLY" }], // existing event (pre-update)
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[
+				{
+					id: REMINDER_ID,
+					organizationId: "org-1",
+					eventId: EVENT_ID,
+					ownerUserId: "user-1",
+					triggerKind: "relative",
+					offsetMinutes: 15,
+					absoluteFireAt: null,
+					status: "scheduled",
+				},
+			], // scheduled reminders
+		];
+		state.updateReturning = [updatedEvent];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateEvent({
+			eventId: EVENT_ID,
+			rrule: "FREQ=DAILY",
+		});
+		const reminderSet = state.updated[1];
+		expect(reminderSet).toBeDefined();
+		// First future DAILY occurrence at 09:00Z − 15min fire instant is written.
+		expect(reminderSet?.nextFireAt).toBeInstanceOf(Date);
+		expect((reminderSet?.nextFireAt as Date).getUTCMinutes()).toBe(45);
+	});
+
+	test("retires a reminder whose fire instant is now in the past after the reschedule", async () => {
+		// Move the one-off event into the PAST → the relative fire has no future
+		// instant, so the scheduled reminder must flip to `fired`, not keep a stale
+		// future next_fire_at.
+		const updatedEvent = {
+			id: EVENT_ID,
+			calendarId: CAL_ID,
+			organizationId: "org-1",
+			dtstart: new Date("2000-01-01T09:00:00Z"),
+			dtend: new Date("2000-01-01T10:00:00Z"),
+			timezone: "UTC",
+			rrule: null,
+			exdates: [],
+			status: "confirmed",
+		};
+		state.selectQueue = [
+			[
+				{
+					...updatedEvent,
+					dtstart: new Date("2999-06-20T09:00:00Z"),
+					dtend: new Date("2999-06-20T10:00:00Z"),
+				},
+			], // existing event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[
+				{
+					id: REMINDER_ID,
+					organizationId: "org-1",
+					eventId: EVENT_ID,
+					ownerUserId: "user-1",
+					triggerKind: "relative",
+					offsetMinutes: 30,
+					absoluteFireAt: null,
+					status: "scheduled",
+				},
+			], // scheduled reminders
+		];
+		state.updateReturning = [updatedEvent];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateEvent({
+			eventId: EVENT_ID,
+			dtstart: new Date("2000-01-01T09:00:00Z"),
+			dtend: new Date("2000-01-01T10:00:00Z"),
+		});
+		const reminderSet = state.updated[1];
+		expect(reminderSet).toBeDefined();
+		expect(reminderSet?.status).toBe("fired");
+		expect(reminderSet?.nextFireAt).toBeUndefined();
+	});
+
+	test("leaves absolute reminders untouched (their fire is anchor-independent)", async () => {
+		const updatedEvent = {
+			id: EVENT_ID,
+			calendarId: CAL_ID,
+			organizationId: "org-1",
+			dtstart: new Date("2999-06-20T12:00:00Z"),
+			dtend: new Date("2999-06-20T13:00:00Z"),
+			timezone: "UTC",
+			rrule: null,
+			exdates: [],
+			status: "confirmed",
+		};
+		state.selectQueue = [
+			[
+				{
+					...updatedEvent,
+					dtstart: new Date("2999-06-20T09:00:00Z"),
+					dtend: new Date("2999-06-20T10:00:00Z"),
+				},
+			], // existing event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[
+				{
+					id: REMINDER_ID,
+					organizationId: "org-1",
+					eventId: EVENT_ID,
+					ownerUserId: "user-1",
+					triggerKind: "absolute",
+					offsetMinutes: null,
+					absoluteFireAt: new Date("2999-12-31T00:00:00Z"),
+					status: "scheduled",
+				},
+			], // scheduled reminders (absolute)
+		];
+		state.updateReturning = [updatedEvent];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateEvent({
+			eventId: EVENT_ID,
+			dtstart: new Date("2999-06-20T12:00:00Z"),
+			dtend: new Date("2999-06-20T13:00:00Z"),
+		});
+		// Only the event row was updated; the absolute reminder was skipped.
+		expect(state.updated).toHaveLength(1);
+	});
+
+	test("does NOT touch reminders on a metadata-only edit (title change, same timing)", async () => {
+		// A title-only update must not re-query or re-write reminders at all: only
+		// the event row is updated, so no second `set` is recorded.
+		const event = {
+			id: EVENT_ID,
+			calendarId: CAL_ID,
+			organizationId: "org-1",
+			title: "renamed",
+			dtstart: new Date("2999-06-20T09:00:00Z"),
+			dtend: new Date("2999-06-20T10:00:00Z"),
+			timezone: "UTC",
+			rrule: null,
+			exdates: [],
+			status: "confirmed",
+		};
+		state.selectQueue = [
+			[event], // existing event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+		];
+		state.updateReturning = [event];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateEvent({ eventId: EVENT_ID, title: "renamed" });
+		// Only the event row update was recorded — reminders left alone.
+		expect(state.updated).toHaveLength(1);
+	});
+
+	test("does NOT recompute when dtstart is re-sent unchanged (no real delta)", async () => {
+		// Sending the same dtstart back is a no-op for timing → no reminder writes.
+		const event = {
+			id: EVENT_ID,
+			calendarId: CAL_ID,
+			organizationId: "org-1",
+			dtstart: new Date("2999-06-20T09:00:00Z"),
+			dtend: new Date("2999-06-20T10:00:00Z"),
+			timezone: "UTC",
+			rrule: null,
+			exdates: [],
+			status: "confirmed",
+		};
+		state.selectQueue = [
+			[event], // existing event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+		];
+		state.updateReturning = [event];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateEvent({
+			eventId: EVENT_ID,
+			dtstart: new Date("2999-06-20T09:00:00Z"),
+		});
+		expect(state.updated).toHaveLength(1);
+	});
+});
+
 describe("calendar.deleteReminder", () => {
 	test("deletes scoped by org + owner and returns ok", async () => {
 		const caller = callerFor("org-1", "user-1");

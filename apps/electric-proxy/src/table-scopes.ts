@@ -7,6 +7,7 @@ import {
 	comments,
 	commentThreads,
 	devicePresence,
+	durableSessions,
 	githubPullRequests,
 	githubRepositories,
 	integrationConnections,
@@ -16,6 +17,7 @@ import {
 	members,
 	memoryImportJobs,
 	memoryItems,
+	orgSettings,
 	projects,
 	sandboxImages,
 	subscriptions,
@@ -23,12 +25,15 @@ import {
 	tasks,
 	teamMembers,
 	teams,
+	terminals,
 	userAmbientSettings,
+	userPreferences,
 	v2Clients,
 	v2Hosts,
 	v2Projects,
 	v2UsersHosts,
 	v2Workspaces,
+	workspaceGovernanceItems,
 	workspaces,
 } from "@rox/db/schema";
 import type { PgColumn } from "drizzle-orm/pg-core";
@@ -85,6 +90,12 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	v2_clients: { orgColumn: v2Clients.organizationId },
 	v2_users_hosts: { orgColumn: v2UsersHosts.organizationId },
 	v2_workspaces: { orgColumn: v2Workspaces.organizationId },
+
+	// Mobile workspace surface cards (FN-016/FN-087): durable Claude sessions and
+	// terminals sync org-scoped (every org member sees the same workspace status),
+	// exactly like v2_workspaces.
+	durable_sessions: { orgColumn: durableSessions.organizationId },
+	terminals: { orgColumn: terminals.organizationId },
 	"auth.members": { orgColumn: members.organizationId },
 	"auth.invitations": { orgColumn: invitations.organizationId },
 	"auth.teams": { orgColumn: teams.organizationId },
@@ -164,10 +175,25 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 		userColumn: userAmbientSettings.createdBy,
 	},
 
+	// F46 cross-device prefs: the per-(org, user) prefs document syncs per-user
+	// (pins/views/locale follow the user), exactly like journal/memory.
+	user_preferences: {
+		orgColumn: userPreferences.organizationId,
+		userColumn: userPreferences.createdBy,
+	},
+	// org_settings is org-shared (every member sees the same org defaults).
+	org_settings: { orgColumn: orgSettings.organizationId },
+
 	github_repositories: { orgColumn: githubRepositories.organizationId },
 	github_pull_requests: { orgColumn: githubPullRequests.organizationId },
 	automations: { orgColumn: automations.organizationId },
 	automation_runs: { orgColumn: automationRuns.organizationId },
+
+	// #517 workspace governance (ЦЕЛИ/ЗАДАЧИ/МИССИИ): org-shared per workspace —
+	// every member of the org sees the same panel items, like `automations`.
+	workspace_governance_items: {
+		orgColumn: workspaceGovernanceItems.organizationId,
+	},
 
 	// C2: sandbox_images is per-project sandbox build config, org-scoped so the
 	// client can read its org's recipes; now syncable through electric-proxy.

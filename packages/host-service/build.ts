@@ -23,6 +23,17 @@ const result = await Bun.build({
 	external: [
 		"better-sqlite3",
 		"node-pty",
+		// playwright-core's bidiOverCdp module does a deep CJS require of
+		// `chromium-bidi/lib/cjs/...`, but chromium-bidi is not a direct
+		// dependency of playwright-core — it only lands in node_modules when a
+		// puppeteer-core install hoists it. Newer @browserbasehq/stagehand
+		// (pulled in transitively via mastracode) moved puppeteer-core from
+		// optionalDependencies to optional peerDependencies, so chromium-bidi
+		// is no longer installed and Bun can't statically resolve the require.
+		// The require is lazy (only hit when driving a browser over BiDi-over-CDP
+		// transport, which the host-service never does), so marking it external
+		// keeps it as an inert runtime require instead of failing the bundle.
+		"chromium-bidi",
 		"@parcel/watcher",
 		"libsql",
 		"onnxruntime-node",

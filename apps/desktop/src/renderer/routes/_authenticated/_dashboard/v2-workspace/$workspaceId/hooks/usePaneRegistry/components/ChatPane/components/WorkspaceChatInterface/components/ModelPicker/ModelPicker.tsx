@@ -13,7 +13,7 @@ import { claudeIcon } from "@rox/ui/icons/preset-icons";
 import { motionDuration, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { useNavigate } from "@tanstack/react-router";
 import { LayoutGroup, motion } from "framer-motion";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, TriangleAlertIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PILL_BUTTON_CLASS } from "renderer/components/Chat/ChatInterface/styles";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
@@ -41,6 +41,13 @@ interface ModelPickerProps {
 	onSelectModel: (model: ModelOption) => void;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/**
+	 * Id of a persisted selection that could not be resolved against `models`
+	 * (e.g. a custom-provider model whose `/v1/models` discovery failed). When
+	 * set, the pill renders an explicit "unavailable" state instead of silently
+	 * showing the house model as if it were the user's choice.
+	 */
+	unresolvedModelId?: string | null;
 }
 
 /**
@@ -71,11 +78,14 @@ export function ModelPicker({
 	onSelectModel,
 	open,
 	onOpenChange,
+	unresolvedModelId,
 }: ModelPickerProps) {
 	const navigate = useNavigate();
-	const selectedLogo = selectedModel
-		? providerToLogo(selectedModel.provider)
-		: null;
+	const isUnresolved = Boolean(unresolvedModelId);
+	const selectedLogo =
+		selectedModel && !isUnresolved
+			? providerToLogo(selectedModel.provider)
+			: null;
 
 	const { data: anthropicStatus, refetch: refetchAnthropicStatus } =
 		chatServiceTrpc.auth.getAnthropicStatus.useQuery();
@@ -163,24 +173,37 @@ export function ModelPicker({
 			<ModelSelector open={open} onOpenChange={onOpenChange}>
 				<ModelSelectorTrigger asChild>
 					<PromptInputButton
-						className={`${PILL_BUTTON_CLASS} relative px-2 gap-1.5 text-xs text-foreground`}
+						className={`${PILL_BUTTON_CLASS} relative px-2 gap-1.5 text-xs ${
+							isUnresolved ? "text-destructive" : "text-foreground"
+						}`}
+						title={
+							isUnresolved
+								? `Модель ${unresolvedModelId} недоступна — проверьте custom-провайдер`
+								: undefined
+						}
 					>
-						{!open && animate && selectedModel && (
+						{!open && animate && selectedModel && !isUnresolved && (
 							<motion.div
 								layoutId="model-picker-active-pill"
 								className="pointer-events-none absolute inset-0 rounded-[inherit] bg-accent/10"
 							/>
 						)}
-						{selectedLogo === ANTHROPIC_LOGO_PROVIDER ? (
+						{isUnresolved ? (
+							<TriangleAlertIcon className="size-3" />
+						) : selectedLogo === ANTHROPIC_LOGO_PROVIDER ? (
 							<img alt="Claude" className="size-3" src={claudeIcon} />
 						) : selectedLogo ? (
 							<ModelSelectorLogo provider={selectedLogo} />
 						) : null}
-						<span>{selectedModel?.name ?? "Модель"}</span>
+						<span>
+							{isUnresolved
+								? `${unresolvedModelId} недоступна`
+								: (selectedModel?.name ?? "Модель")}
+						</span>
 						<ChevronDownIcon className="size-2.5 opacity-50" />
 					</PromptInputButton>
 				</ModelSelectorTrigger>
-				<ModelSelectorContent title="Выбор модели">
+				<ModelSelectorContent glass title="Выбор модели">
 					<motion.div
 						initial={animate ? { opacity: 0, scale: 0.96, y: -4 } : false}
 						animate={{ opacity: 1, scale: 1, y: 0 }}

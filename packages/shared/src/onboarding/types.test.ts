@@ -37,6 +37,6 @@ describe("onboarding shared state", () => {
 			},
 		});
 
-		expect(getOnboardingPercentComplete(status)).toBe(47);
+		expect(getOnboardingPercentComplete(status)).toBe(50);
 	});
 });

@@ -51,21 +51,6 @@ export const ONBOARDING_TOURS: Record<SurfaceTourId, OnboardingTourDefinition> =
 				},
 			],
 		},
-		quick_chat: {
-			id: "quick_chat",
-			surfaceName: "Быстрый чат",
-			required: true,
-			steps: [
-				{
-					id: "quick-chat-input",
-					anchor: "quick-chat-input",
-					title: "Быстрый вопрос без workspace",
-					body: "Быстрый чат подходит для коротких вопросов, когда не нужна отдельная рабочая сессия.",
-					action: "Откройте быстрый чат и задайте один вопрос.",
-					route: "/quick-chat",
-				},
-			],
-		},
 		tasks_pr: {
 			id: "tasks_pr",
 			surfaceName: "Задачи и PR",

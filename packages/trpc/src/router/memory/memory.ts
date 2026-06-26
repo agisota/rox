@@ -107,6 +107,69 @@ export const memoryRouter = {
 			return result;
 		}),
 
+	/**
+	 * Promote a journal "В память" candidate into the Memory store. Creates an
+	 * approved item with `source:"agent"` (the candidate was distilled by Rox R1
+	 * from the day's sessions) and records the originating `day` in `sourceRef`
+	 * for provenance. Idempotent per (category, body): if the user already has
+	 * the same body in that group, the existing item is returned untouched so a
+	 * double-click never duplicates a memory.
+	 */
+	promoteFromJournal: protectedProcedure
+		.input(
+			z.object({
+				category: categorySchema,
+				body: z.string().trim().min(1).max(4000),
+				day: z
+					.string()
+					.regex(/^\d{4}-\d{2}-\d{2}$/, "day must be YYYY-MM-DD")
+					.optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const body = input.body.trim();
+			const result = await dbWs.transaction(async (tx) => {
+				const [existing] = await tx
+					.select({ id: memoryItems.id })
+					.from(memoryItems)
+					.where(
+						and(
+							eq(memoryItems.organizationId, organizationId),
+							eq(memoryItems.createdBy, ctx.session.user.id),
+							eq(memoryItems.category, input.category),
+							eq(memoryItems.body, body),
+						),
+					)
+					.limit(1);
+				if (existing) {
+					const txid = await getCurrentTxid(tx);
+					return { id: existing.id, txid };
+				}
+				const [item] = await tx
+					.insert(memoryItems)
+					.values({
+						organizationId,
+						createdBy: ctx.session.user.id,
+						category: input.category,
+						body,
+						source: "agent",
+						status: "approved",
+						sourceRef: input.day ? { day: input.day } : undefined,
+					})
+					.returning({ id: memoryItems.id });
+				const txid = await getCurrentTxid(tx);
+				return { id: item?.id, txid };
+			});
+			if (!result.id) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Не удалось добавить запись в память.",
+				});
+			}
+			return result;
+		}),
+
 	/** Approve a suggested item (keeps it in its group). */
 	approve: protectedProcedure
 		.input(idInput)
@@ -136,6 +199,21 @@ export const memoryRouter = {
 					.where(
 						ownSuggestedItem(organizationId, ctx.session.user.id, input.id),
 					)
+					.returning({ id: memoryItems.id });
+				return row;
+			});
+		}),
+
+	/** Edit the body of an existing item, preserving its id/createdAt/provenance. */
+	update: protectedProcedure
+		.input(idInput.extend({ body: z.string().trim().min(1).max(4000) }))
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			return mutateOwnedItem(async (tx) => {
+				const [row] = await tx
+					.update(memoryItems)
+					.set({ body: input.body })
+					.where(ownItem(organizationId, ctx.session.user.id, input.id))
 					.returning({ id: memoryItems.id });
 				return row;
 			});

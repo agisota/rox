@@ -1,4 +1,4 @@
-import { db } from "@rox/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	members,
 	roxBalances,
@@ -11,6 +11,7 @@ import {
 	normalizeOnboardingStatus,
 	type OnboardingStatus,
 	REQUIRED_SURFACE_TOURS,
+	type SurfaceTourId,
 } from "@rox/shared/onboarding";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
@@ -58,6 +59,28 @@ const onboardingProgressPatchSchema = z.object({
 		.optional(),
 });
 
+function mergeTourCompletedSteps(
+	current: OnboardingStatus["tours"]["completedSteps"],
+	patch?: OnboardingStatus["tours"]["completedSteps"],
+): OnboardingStatus["tours"]["completedSteps"] {
+	if (!patch) {
+		return current;
+	}
+
+	const next = { ...current };
+	for (const [tourId, completedSteps] of Object.entries(patch) as [
+		SurfaceTourId,
+		Record<string, string>,
+	][]) {
+		next[tourId] = {
+			...(next[tourId] ?? {}),
+			...completedSteps,
+		};
+	}
+
+	return next;
+}
+
 function mergeOnboardingStatus(
 	current: OnboardingStatus | null | undefined,
 	patch: z.infer<typeof onboardingProgressPatchSchema>,
@@ -76,10 +99,10 @@ function mergeOnboardingStatus(
 		tours: {
 			...normalized.tours,
 			...(patch.tours ?? {}),
-			completedSteps: {
-				...normalized.tours.completedSteps,
-				...(patch.tours?.completedSteps ?? {}),
-			},
+			completedSteps: mergeTourCompletedSteps(
+				normalized.tours.completedSteps,
+				patch.tours?.completedSteps,
+			),
 			completedTours: {
 				...normalized.tours.completedTours,
 				...(patch.tours?.completedTours ?? {}),
@@ -225,20 +248,30 @@ export const userRouter = {
 	updateOnboardingProgress: protectedProcedure
 		.input(onboardingProgressPatchSchema)
 		.mutation(async ({ ctx, input }) => {
-			const user = await db.query.users.findFirst({
-				where: eq(users.id, ctx.session.user.id),
-				columns: {
-					onboardingProgress: true,
-				},
+			return dbWs.transaction(async (tx) => {
+				const [user] = await tx
+					.select({ onboardingProgress: users.onboardingProgress })
+					.from(users)
+					.where(eq(users.id, ctx.session.user.id))
+					.for("update")
+					.limit(1);
+
+				if (!user) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "User not found",
+					});
+				}
+
+				const next = mergeOnboardingStatus(user.onboardingProgress, input);
+
+				await tx
+					.update(users)
+					.set({ onboardingProgress: next })
+					.where(eq(users.id, ctx.session.user.id));
+
+				return next;
 			});
-			const next = mergeOnboardingStatus(user?.onboardingProgress, input);
-
-			await db
-				.update(users)
-				.set({ onboardingProgress: next })
-				.where(eq(users.id, ctx.session.user.id));
-
-			return next;
 		}),
 
 	completeActivation: protectedProcedure
@@ -252,58 +285,78 @@ export const userRouter = {
 		.mutation(async ({ ctx, input }) => {
 			const completedAt = new Date();
 			const completedAtIso = completedAt.toISOString();
-			const user = await db.query.users.findFirst({
-				where: eq(users.id, ctx.session.user.id),
-				columns: {
-					onboardingProgress: true,
-				},
+			return dbWs.transaction(async (tx) => {
+				const [user] = await tx
+					.select({ onboardingProgress: users.onboardingProgress })
+					.from(users)
+					.where(eq(users.id, ctx.session.user.id))
+					.for("update")
+					.limit(1);
+
+				if (!user) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "User not found",
+					});
+				}
+
+				const next = mergeOnboardingStatus(user.onboardingProgress, {
+					activation: {
+						completedAt: completedAtIso,
+						currentStep: "first_agent_action",
+						completedSteps: {
+							first_agent_action: completedAtIso,
+						},
+						projectId: input.projectId ?? null,
+						workspaceId: input.workspaceId ?? null,
+					},
+				});
+
+				const [updatedUser] = await tx
+					.update(users)
+					.set({ onboardedAt: completedAt, onboardingProgress: next })
+					.where(eq(users.id, ctx.session.user.id))
+					.returning();
+
+				return updatedUser;
 			});
-			const next = mergeOnboardingStatus(user?.onboardingProgress, {
+		}),
+
+	completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+		const completedAt = new Date();
+		const completedAtIso = completedAt.toISOString();
+		return dbWs.transaction(async (tx) => {
+			const [user] = await tx
+				.select({ onboardingProgress: users.onboardingProgress })
+				.from(users)
+				.where(eq(users.id, ctx.session.user.id))
+				.for("update")
+				.limit(1);
+
+			if (!user) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found",
+				});
+			}
+
+			const next = mergeOnboardingStatus(user.onboardingProgress, {
 				activation: {
 					completedAt: completedAtIso,
 					currentStep: "first_agent_action",
 					completedSteps: {
 						first_agent_action: completedAtIso,
 					},
-					projectId: input.projectId ?? null,
-					workspaceId: input.workspaceId ?? null,
 				},
 			});
 
-			const [updatedUser] = await db
+			const [updatedUser] = await tx
 				.update(users)
 				.set({ onboardedAt: completedAt, onboardingProgress: next })
 				.where(eq(users.id, ctx.session.user.id))
 				.returning();
-
 			return updatedUser;
-		}),
-
-	completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
-		const completedAt = new Date();
-		const completedAtIso = completedAt.toISOString();
-		const user = await db.query.users.findFirst({
-			where: eq(users.id, ctx.session.user.id),
-			columns: {
-				onboardingProgress: true,
-			},
 		});
-		const next = mergeOnboardingStatus(user?.onboardingProgress, {
-			activation: {
-				completedAt: completedAtIso,
-				currentStep: "first_agent_action",
-				completedSteps: {
-					first_agent_action: completedAtIso,
-				},
-			},
-		});
-
-		const [updatedUser] = await db
-			.update(users)
-			.set({ onboardedAt: completedAt, onboardingProgress: next })
-			.where(eq(users.id, ctx.session.user.id))
-			.returning();
-		return updatedUser;
 	}),
 
 	uploadAvatar: protectedProcedure

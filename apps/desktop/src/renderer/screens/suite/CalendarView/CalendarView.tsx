@@ -1,214 +1,505 @@
-import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@rox/ui/dialog";
+import { useShouldAnimate } from "@rox/ui/motion";
 import { Skeleton } from "@rox/ui/skeleton";
-import { toast } from "@rox/ui/sonner";
+import { Tabs, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { cn } from "@rox/ui/utils";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	CalendarDays,
 	ChevronLeft,
 	ChevronRight,
-	Clock,
-	MapPin,
+	Download,
+	Plus,
+	Upload,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { authClient } from "renderer/lib/auth-client";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
-import { addMonths, dayKey, monthRange } from "../utils/monthRange";
+import { AgendaView } from "./components/AgendaView/AgendaView";
+import { CalendarScopePopover } from "./components/CalendarScopePopover";
+import { CalendarSettingsPopover } from "./components/CalendarSettingsPopover";
+import { EventDialog, type EventDialogValue } from "./components/EventDialog";
+import { MonthView } from "./components/MonthView/MonthView";
 import { SubscribeFeedDialog } from "./components/SubscribeFeedDialog";
+import { TimeGridView } from "./components/TimeGridView/TimeGridView";
+import { useCalendarActions } from "./hooks/useCalendarActions";
+import type {
+	CalendarColorById,
+	CalendarRow,
+	EventsById,
+	OccurrenceItem,
+} from "./types";
+import { buildMonthGrid, shiftMonth } from "./utils/monthGrid";
+import {
+	anchorToParam,
+	type CalendarSearch,
+	type CalendarViewMode,
+	paramToAnchor,
+} from "./utils/searchParams";
+import { addUtcDays, startOfUtcDay, startOfUtcWeek } from "./utils/timeGrid";
 
-type RsvpStatus = "needs_action" | "accepted" | "declined" | "tentative";
-
-const RSVP_OPTIONS: { status: RsvpStatus; label: string }[] = [
-	{ status: "accepted", label: "Принять" },
-	{ status: "tentative", label: "Возможно" },
-	{ status: "declined", label: "Отклонить" },
+const VIEW_TABS: { value: CalendarViewMode; label: string }[] = [
+	{ value: "month", label: "Месяц" },
+	{ value: "week", label: "Неделя" },
+	{ value: "day", label: "День" },
+	{ value: "agenda", label: "Список" },
 ];
 
-/** Reminder presets → minutes BEFORE the occurrence start (C6). */
-const REMINDER_PRESETS: { label: string; offsetMinutes: number }[] = [
-	{ label: "В момент", offsetMinutes: 0 },
-	{ label: "За 10 мин", offsetMinutes: 10 },
-	{ label: "За 1 час", offsetMinutes: 60 },
-	{ label: "За 1 день", offsetMinutes: 1440 },
+const MONTHS_RU = [
+	"Январь",
+	"Февраль",
+	"Март",
+	"Апрель",
+	"Май",
+	"Июнь",
+	"Июль",
+	"Август",
+	"Сентябрь",
+	"Октябрь",
+	"Ноябрь",
+	"Декабрь",
 ];
 
-function reminderOffsetLabel(offsetMinutes: number | null): string {
-	const offset = offsetMinutes ?? 0;
-	return (
-		REMINDER_PRESETS.find((p) => p.offsetMinutes === offset)?.label ??
-		`За ${offset} мин`
-	);
+/** Default new-event window: the clicked day at 09:00–10:00 UTC. */
+function defaultDayEventValue(calendarId: string, day: Date): EventDialogValue {
+	const dtstart = startOfUtcDay(day);
+	dtstart.setUTCHours(9, 0, 0, 0);
+	const dtend = new Date(dtstart);
+	dtend.setUTCHours(10, 0, 0, 0);
+	return {
+		calendarId,
+		title: "",
+		description: null,
+		location: null,
+		dtstart,
+		dtend,
+		allDay: false,
+		timezone: "UTC",
+		rrule: null,
+	};
 }
 
-interface AgendaItem {
-	key: string;
-	eventId: string;
-	/** RECURRENCE-ID (occ.start ISO) for "this event only" actions. */
-	originalStart: string;
-	start: Date;
-	end: Date;
-	/** Per-occurrence field overrides; absent = inherit the series value. */
-	title?: string;
-	description?: string;
-	location?: string;
-	allDay?: boolean;
+/** New-event window seeded from a clicked time slot (1h default duration). */
+function defaultSlotEventValue(
+	calendarId: string,
+	start: Date,
+): EventDialogValue {
+	const dtend = new Date(start);
+	dtend.setUTCHours(dtend.getUTCHours() + 1);
+	return {
+		calendarId,
+		title: "",
+		description: null,
+		location: null,
+		dtstart: new Date(start),
+		dtend,
+		allDay: false,
+		timezone: "UTC",
+		rrule: null,
+	};
 }
 
-function formatTime(date: Date): string {
-	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+/** Trigger a browser download for an in-memory .ics document. */
+function downloadIcs(filename: string, ics: string) {
+	const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	document.body.append(anchor);
+	anchor.click();
+	anchor.remove();
+	URL.revokeObjectURL(url);
 }
 
-function formatDayHeading(date: Date): string {
-	return date.toLocaleDateString([], {
-		weekday: "long",
+/** RU label for the current period (month name, week span, or weekday+date). */
+function periodLabel(view: CalendarViewMode, anchor: Date): string {
+	if (view === "month") {
+		return `${MONTHS_RU[anchor.getUTCMonth()]} ${anchor.getUTCFullYear()}`;
+	}
+	if (view === "day") {
+		return new Intl.DateTimeFormat("ru-RU", {
+			timeZone: "UTC",
+			weekday: "long",
+			day: "numeric",
+			month: "long",
+		}).format(anchor);
+	}
+	// week: "16–22 июня" (or spanning months / years where needed).
+	const weekStart = startOfUtcWeek(anchor);
+	const weekEnd = addUtcDays(weekStart, 6);
+	const dayFmt = new Intl.DateTimeFormat("ru-RU", {
+		timeZone: "UTC",
+		day: "numeric",
+	});
+	const monthFmt = new Intl.DateTimeFormat("ru-RU", {
+		timeZone: "UTC",
 		day: "numeric",
 		month: "long",
 	});
+	const sameMonth = weekStart.getUTCMonth() === weekEnd.getUTCMonth();
+	const left = sameMonth
+		? dayFmt.format(weekStart)
+		: monthFmt.format(weekStart);
+	const right = monthFmt.format(weekEnd);
+	return `${left} – ${right}`;
 }
 
 /**
- * Calendar agenda (Suite P0). Reads `calendar.listOccurrences` for the visible
- * month, groups expanded occurrences by local day, and opens an event detail
- * dialog with RSVP actions (`calendar.rsvp`). Month navigation re-queries the
- * range. Recurrence expansion + org scoping happen server-side; the view never
- * materialises recurrences itself.
+ * Desktop Calendar surface (Suite P1). Ports the web month grid + EventDialog +
+ * pure utils and adds the net-new Week/Day time grids, all on the same
+ * `calendar.listOccurrences` range query (server-side RRULE expansion). Four
+ * views (Месяц / Неделя / День / Список) share one detail/edit dialog; create
+ * flows from the toolbar, an empty month cell, or an empty time slot.
  *
- * Cache-first (AGENTS.md rule 9): occurrences already in cache render while a
- * month re-fetch is in flight.
+ * Cache-first (AGENTS.md rule 9): the last known occurrence set renders while a
+ * range refetch is in flight; the skeleton only shows when there is genuinely no
+ * data.
+ *
+ * #538: view / anchor / scope are NO LONGER component-local — they are driven by
+ * the route's `?view=&anchor=&calendars=` search params (parsed by the shared
+ * route's `validateSearch`), so the navigation state survives reload and the
+ * router Back button. The route owns the URL write; this screen is the pure
+ * consumer that maps the params onto its grids and reports changes back up.
  */
-export function CalendarView() {
+export interface CalendarViewProps {
+	/** Active layout, from `?view=` (already defaulted/validated by the route). */
+	view: CalendarViewMode;
+	/** Anchor day as `YYYY-MM-DD`, from `?anchor=`. */
+	anchorParam: string;
+	/** Selected calendar ids, from `?calendars=` (`[]` = every readable one). */
+	calendarIds: string[];
+	/** Merge a partial change onto the route's search params. */
+	onSearchChange: (partial: Partial<CalendarSearch>) => void;
+}
+
+export function CalendarView({
+	view,
+	anchorParam,
+	calendarIds,
+	onSearchChange,
+}: CalendarViewProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id ?? null;
+	const animateSwitch = useShouldAnimate("decorative");
+	const { updateEvent, updateOccurrence } = useCalendarActions();
 
-	const [anchor, setAnchor] = useState(() => new Date());
-	// Selection carries the clicked instance's RECURRENCE-ID (originalStart) so a
-	// recurring event can be cancelled "this event only"; null = nothing open.
-	const [selected, setSelected] = useState<{
-		eventId: string;
-		originalStart: string;
-	} | null>(null);
+	// URL-derived navigation state (#538). The anchor is a UTC day; the scope is a
+	// Set for the popover/grid APIs, rebuilt from the `calendars` param.
+	const anchor = useMemo(() => paramToAnchor(anchorParam), [anchorParam]);
+	const selectedCalendarIds = useMemo(
+		() => new Set(calendarIds),
+		[calendarIds],
+	);
+	const setView = useCallback(
+		(next: CalendarViewMode) => onSearchChange({ view: next }),
+		[onSearchChange],
+	);
+	const setAnchor = useCallback(
+		(next: Date) => onSearchChange({ anchor: anchorToParam(next) }),
+		[onSearchChange],
+	);
 
-	// The public subscribe feed is owner-managed; load the calendar list to gate
-	// the control on ownership and read the feed state.
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [dialogValue, setDialogValue] = useState<EventDialogValue | null>(null);
+	const importInputRef = useRef<HTMLInputElement>(null);
+
 	const calendarsQuery = useQuery(trpc.calendar.listCalendars.queryOptions());
-	const firstCalendar = calendarsQuery.data?.[0] ?? null;
+	const calendars: CalendarRow[] = useMemo(
+		() => calendarsQuery.data ?? [],
+		[calendarsQuery.data],
+	);
+	const firstCalendar = calendars[0] ?? null;
+	const firstCalendarId = firstCalendar?.id ?? "";
 	const ownsFirstCalendar =
 		firstCalendar !== null &&
 		currentUserId !== null &&
 		firstCalendar.ownerUserId === currentUserId;
+	const noCalendars = calendarsQuery.isSuccess && calendars.length === 0;
 
-	const range = useMemo(() => monthRange(anchor), [anchor]);
+	// Per-view half-open `[rangeStart, rangeEnd)` window fed to listOccurrences.
+	const monthGrid = useMemo(() => buildMonthGrid(anchor), [anchor]);
+	const range = useMemo(() => {
+		if (view === "month") {
+			return { start: monthGrid.rangeStart, end: monthGrid.rangeEnd };
+		}
+		if (view === "week") {
+			const start = startOfUtcWeek(anchor);
+			return { start, end: addUtcDays(start, 7) };
+		}
+		if (view === "day") {
+			const start = startOfUtcDay(anchor);
+			return { start, end: addUtcDays(start, 1) };
+		}
+		// agenda follows the month window.
+		return { start: monthGrid.rangeStart, end: monthGrid.rangeEnd };
+	}, [view, anchor, monthGrid]);
+
+	const calendarIdsInput = useMemo(
+		() =>
+			selectedCalendarIds.size > 0
+				? Array.from(selectedCalendarIds)
+				: undefined,
+		[selectedCalendarIds],
+	);
+
 	const queryInput = useMemo(
-		() => ({ rangeStart: range.start, rangeEnd: range.end }),
-		[range],
+		() => ({
+			rangeStart: range.start,
+			rangeEnd: range.end,
+			...(calendarIdsInput ? { calendarIds: calendarIdsInput } : {}),
+		}),
+		[range, calendarIdsInput],
 	);
 
 	const occQuery = useQuery(
 		trpc.calendar.listOccurrences.queryOptions(queryInput),
 	);
 
-	const rsvp = useMutation(
-		trpc.calendar.rsvp.mutationOptions({
-			onSuccess: async () => {
-				await queryClient.invalidateQueries({
-					queryKey: trpc.calendar.listOccurrences.queryKey(queryInput),
-				});
-				toast.success("Ответ сохранён");
-				setSelected(null);
-			},
-			onError: (error) => {
-				logger.error("[CalendarView] rsvp failed", error);
-				toast.error("Не удалось сохранить ответ");
-			},
-		}),
+	// The event currently open for edit drives the detailed getEvent query.
+	const editingEventId = dialogValue?.eventId ?? null;
+	const eventDetail = useQuery(
+		trpc.calendar.getEvent.queryOptions(
+			{ eventId: editingEventId ?? "" },
+			{ enabled: dialogOpen && Boolean(editingEventId) },
+		),
 	);
+	const attendees = eventDetail.data?.attendees ?? [];
+	const currentUserRsvp = useMemo(() => {
+		if (!currentUserId) return null;
+		const mine = attendees.find((a) => a.userId === currentUserId);
+		return mine?.status ?? null;
+	}, [attendees, currentUserId]);
 
-	const cancelOccurrence = useMutation(
-		trpc.calendar.cancelOccurrence.mutationOptions({
-			onSuccess: async () => {
-				await queryClient.invalidateQueries({
-					queryKey: trpc.calendar.listOccurrences.queryKey(queryInput),
-				});
-				toast.success("Событие удалено (только это)");
-				setSelected(null);
-			},
-			onError: (error) => {
-				logger.error("[CalendarView] cancelOccurrence failed", error);
-				toast.error("Не удалось удалить событие");
-			},
-		}),
-	);
+	const occurrences: OccurrenceItem[] = occQuery.data?.occurrences ?? [];
+	const rawEvents = occQuery.data?.events ?? [];
 
-	const occurrences = occQuery.data?.occurrences ?? [];
-	const events = occQuery.data?.events ?? [];
-	const eventsById = useMemo(
-		() => new Map(events.map((event) => [event.id, event])),
-		[events],
-	);
-
-	const grouped = useMemo(() => {
-		const byDay = new Map<string, AgendaItem[]>();
-		for (const occ of occurrences) {
-			const start = new Date(occ.start);
-			const item: AgendaItem = {
-				key: `${occ.eventId}-${occ.start}`,
-				eventId: occ.eventId,
-				originalStart: occ.originalStart ?? occ.start,
-				start,
-				end: new Date(occ.end),
-				// Per-occurrence field overrides surfaced by listOccurrences; absent =
-				// inherit the series value.
-				title: occ.title,
-				description: occ.description,
-				location: occ.location,
-				allDay: occ.allDay,
-			};
-			const key = dayKey(start);
-			const list = byDay.get(key);
-			if (list) list.push(item);
-			else byDay.set(key, [item]);
+	// Lookup the grids share: series defaults + owning calendar (for color tint).
+	const eventsById: EventsById = useMemo(() => {
+		const map: EventsById = new Map();
+		for (const e of rawEvents) {
+			map.set(e.id, {
+				id: e.id,
+				title: e.title,
+				allDay: e.allDay,
+				calendarId: e.calendarId,
+			});
 		}
-		return [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
-	}, [occurrences]);
+		return map;
+	}, [rawEvents]);
 
-	const selectedEvent = selected
-		? (eventsById.get(selected.eventId) ?? null)
-		: null;
-	// The clicked occurrence's per-occurrence overrides, so the detail dialog
-	// reflects a "this event only" edit rather than the series defaults.
-	const selectedOcc = selected
-		? (occurrences.find(
-				(o) =>
-					o.eventId === selected.eventId &&
-					(o.originalStart ?? o.start) === selected.originalStart,
-			) ?? null)
-		: null;
-	const monthLabel = anchor.toLocaleDateString([], {
-		month: "long",
-		year: "numeric",
-	});
+	const colorById: CalendarColorById = useMemo(() => {
+		const map: CalendarColorById = new Map();
+		for (const cal of calendars) {
+			map.set(cal.id, cal.color ?? undefined);
+		}
+		return map;
+	}, [calendars]);
+
+	const hasData = occQuery.data !== undefined;
 	const isEmpty = occurrences.length === 0;
+
+	const stepAnchor = (dir: 1 | -1) => {
+		// Compute the next anchor off the current URL-derived value, then write it
+		// back to `?anchor=` (the view determines the step granularity).
+		const next =
+			view === "week"
+				? addUtcDays(startOfUtcWeek(anchor), dir * 7)
+				: view === "day"
+					? addUtcDays(startOfUtcDay(anchor), dir)
+					: shiftMonth(anchor, dir);
+		setAnchor(next);
+	};
+
+	const openCreateDay = (day: Date) => {
+		if (!firstCalendarId) return;
+		setDialogValue(defaultDayEventValue(firstCalendarId, day));
+		setDialogOpen(true);
+	};
+
+	const openCreateSlot = (start: Date) => {
+		if (!firstCalendarId) return;
+		setDialogValue(defaultSlotEventValue(firstCalendarId, start));
+		setDialogOpen(true);
+	};
+
+	const openEdit = (occurrence: OccurrenceItem) => {
+		const event = rawEvents.find((e) => e.id === occurrence.eventId);
+		if (!event) return;
+		const isInstance = Boolean(event.rrule);
+		// HIGH fix: seed the dialog from the CLICKED instance, not the series
+		// anchor. Editing "this event only" then writes THIS instance's time as the
+		// override; seeding from the anchor would teleport the instance to the
+		// series start even when the user never touched the time. A one-off event's
+		// occurrence start/end already equal its anchor, so this is a no-op there.
+		setDialogValue({
+			eventId: event.id,
+			calendarId: event.calendarId,
+			title: occurrence.title ?? event.title,
+			description: occurrence.description ?? event.description,
+			location: occurrence.location ?? event.location,
+			dtstart: isInstance
+				? new Date(occurrence.start)
+				: new Date(event.dtstart),
+			dtend: isInstance ? new Date(occurrence.end) : new Date(event.dtend),
+			allDay: occurrence.allDay ?? event.allDay,
+			timezone: event.timezone,
+			rrule: event.rrule,
+			// Carry the clicked instance's RECURRENCE-ID verbatim so "this event
+			// only" writes against the right slot (never recomputed client-side).
+			occurrenceStart: isInstance
+				? new Date(occurrence.originalStart ?? occurrence.start)
+				: undefined,
+			// Surface whether this instance carries an override so the dialog can
+			// offer "вернуть к серии" (deleteOccurrenceOverride) only when there is
+			// an override to drop.
+			occurrenceOverridden: isInstance
+				? Boolean(occurrence.overridden)
+				: undefined,
+		});
+		setDialogOpen(true);
+	};
+
+	/**
+	 * Persist a drag-MOVE or edge-RESIZE from the time grid. A one-off event
+	 * writes the whole series via `updateEvent`; a recurring instance writes a
+	 * "this event only" override via `updateOccurrence`, threading the clicked
+	 * instance's RECURRENCE-ID (`occurrence.originalStart`) back VERBATIM so the
+	 * server keys the override on the right slot (never recomputed client-side —
+	 * teleport/DST-safe). Both `dtstart`/`dtend` are sent as ISO UTC.
+	 */
+	const persistOccurrenceTime = useCallback(
+		(occurrence: OccurrenceItem, next: { start: Date; end: Date }) => {
+			const event = rawEvents.find((e) => e.id === occurrence.eventId);
+			if (!event) return;
+			const dtstart = next.start.toISOString();
+			const dtend = next.end.toISOString();
+			if (event.rrule) {
+				updateOccurrence.mutate({
+					eventId: event.id,
+					originalStart: occurrence.originalStart ?? occurrence.start,
+					dtstart,
+					dtend,
+				});
+			} else {
+				updateEvent.mutate({ eventId: event.id, dtstart, dtend });
+			}
+		},
+		[rawEvents, updateEvent, updateOccurrence],
+	);
+
+	const handleExport = async () => {
+		if (!firstCalendarId) return;
+		try {
+			const { ics, filename } = await queryClient.fetchQuery(
+				trpc.calendar.exportIcs.queryOptions({ calendarId: firstCalendarId }),
+			);
+			downloadIcs(filename, ics);
+		} catch (error) {
+			logger.error("[CalendarView] export failed", error);
+		}
+	};
+
+	const toggleCalendar = (calendarId: string) => {
+		// Toggle membership in the scope, then persist the new id list to
+		// `?calendars=` (order-stable so the URL stays deterministic).
+		const next = new Set(selectedCalendarIds);
+		if (next.has(calendarId)) next.delete(calendarId);
+		else next.add(calendarId);
+		onSearchChange({ calendars: Array.from(next) });
+	};
+
+	const resetCalendars = () => onSearchChange({ calendars: [] });
+
+	const monthLabel = periodLabel(view, anchor);
 
 	return (
 		<SuiteScreen
 			title="Календарь"
-			description="Повестка событий по месяцам, RSVP"
+			description="Месяц · Неделя · День · Список"
 			icon={CalendarDays}
+			className="max-w-none"
 			actions={
-				<div className="flex items-center gap-1">
+				<div className="flex flex-wrap items-center justify-end gap-1.5">
+					<div className="flex items-center gap-1">
+						<Button
+							size="icon"
+							variant="ghost"
+							aria-label="Предыдущий период"
+							onClick={() => stepAnchor(-1)}
+						>
+							<ChevronLeft className="size-4" />
+						</Button>
+						<span className="min-w-40 text-center font-medium text-sm capitalize">
+							{monthLabel}
+						</span>
+						<Button
+							size="icon"
+							variant="ghost"
+							aria-label="Следующий период"
+							onClick={() => stepAnchor(1)}
+						>
+							<ChevronRight className="size-4" />
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onClick={() => setAnchor(new Date())}
+						>
+							Сегодня
+						</Button>
+					</div>
+
+					<Tabs
+						value={view}
+						onValueChange={(v) => setView(v as CalendarViewMode)}
+					>
+						<TabsList>
+							{VIEW_TABS.map((t) => (
+								<TabsTrigger key={t.value} value={t.value}>
+									{t.label}
+								</TabsTrigger>
+							))}
+						</TabsList>
+					</Tabs>
+
+					{calendars.length > 0 && (
+						<CalendarScopePopover
+							calendars={calendars}
+							selected={selectedCalendarIds}
+							onToggle={toggleCalendar}
+							onReset={resetCalendars}
+						/>
+					)}
+
+					<Button
+						size="icon"
+						variant="ghost"
+						aria-label="Экспорт в .ics"
+						title="Экспорт в .ics"
+						onClick={handleExport}
+						disabled={!firstCalendarId}
+					>
+						<Download className="size-4" />
+					</Button>
+					<ImportIcsButton
+						calendarId={firstCalendarId}
+						inputRef={importInputRef}
+					/>
+
+					{firstCalendar && (
+						<CalendarSettingsPopover
+							calendar={firstCalendar}
+							isOwner={ownsFirstCalendar}
+						/>
+					)}
+
 					{ownsFirstCalendar && firstCalendar && (
 						<SubscribeFeedDialog
 							calendarId={firstCalendar.id}
@@ -216,24 +507,13 @@ export function CalendarView() {
 							feedBusyOnly={firstCalendar.feedBusyOnly}
 						/>
 					)}
+
 					<Button
-						size="icon"
-						variant="ghost"
-						aria-label="Предыдущий месяц"
-						onClick={() => setAnchor((d) => addMonths(d, -1))}
+						size="sm"
+						onClick={() => openCreateDay(new Date())}
+						disabled={!firstCalendarId}
 					>
-						<ChevronLeft className="size-4" />
-					</Button>
-					<span className="min-w-36 text-center font-medium text-sm capitalize">
-						{monthLabel}
-					</span>
-					<Button
-						size="icon"
-						variant="ghost"
-						aria-label="Следующий месяц"
-						onClick={() => setAnchor((d) => addMonths(d, 1))}
-					>
-						<ChevronRight className="size-4" />
+						<Plus className="mr-1 size-4" /> Событие
 					</Button>
 				</div>
 			}
@@ -245,6 +525,8 @@ export function CalendarView() {
 				</div>
 			)}
 
+			{noCalendars && <NoCalendarsCard />}
+
 			{occQuery.isError && (
 				<SuiteQueryError
 					message={occQuery.error.message}
@@ -252,301 +534,176 @@ export function CalendarView() {
 				/>
 			)}
 
-			{isEmpty && occQuery.isLoading && (
-				<div className="space-y-4">
-					{[0, 1, 2].map((i) => (
-						<div key={i} className="space-y-2">
-							<Skeleton className="h-4 w-40" />
-							<Skeleton className="h-14 w-full" />
-						</div>
-					))}
-				</div>
+			{/* Cache-first: skeleton only when there is genuinely no data yet. */}
+			{!hasData && occQuery.isLoading && !noCalendars && (
+				<CalendarLoading view={view} />
 			)}
 
-			{isEmpty && occQuery.isSuccess && (
-				<div className="flex flex-col items-center justify-center rounded-lg border border-border border-dashed py-20 text-center">
-					<CalendarDays className="mb-3 size-8 text-muted-foreground" />
-					<span className="text-foreground text-sm">Событий нет</span>
-					<span className="mt-1 max-w-sm text-muted-foreground text-xs">
-						В этом месяце запланированных событий не найдено.
-					</span>
-				</div>
+			{hasData && !occQuery.isError && (
+				<AnimatePresence mode="wait" initial={false}>
+					<motion.div
+						key={view}
+						initial={animateSwitch ? { opacity: 0, y: 6 } : false}
+						animate={{ opacity: 1, y: 0 }}
+						exit={animateSwitch ? { opacity: 0, y: -6 } : undefined}
+						transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+					>
+						{isEmpty && occQuery.isSuccess ? (
+							<EmptyState />
+						) : view === "month" ? (
+							<MonthView
+								grid={monthGrid}
+								occurrences={occurrences}
+								eventsById={eventsById}
+								colorById={colorById}
+								onSelectDay={openCreateDay}
+								onSelectEvent={openEdit}
+							/>
+						) : view === "agenda" ? (
+							<AgendaView
+								occurrences={occurrences}
+								eventsById={eventsById}
+								colorById={colorById}
+								onSelectEvent={openEdit}
+							/>
+						) : (
+							<TimeGridView
+								rangeStart={range.start}
+								days={view === "week" ? 7 : 1}
+								occurrences={occurrences}
+								eventsById={eventsById}
+								colorById={colorById}
+								onCreateAt={openCreateSlot}
+								onSelectEvent={openEdit}
+								onMoveOccurrence={persistOccurrenceTime}
+								onResizeOccurrence={persistOccurrenceTime}
+							/>
+						)}
+					</motion.div>
+				</AnimatePresence>
 			)}
 
-			{!isEmpty && (
-				<div className="space-y-6">
-					{grouped.map(([key, items]) => (
-						<div key={key}>
-							<h2 className="mb-2 font-medium text-muted-foreground text-sm capitalize">
-								{formatDayHeading(items[0]?.start ?? new Date())}
-							</h2>
-							<div className="space-y-1.5">
-								{items.map((item) => {
-									const event = eventsById.get(item.eventId);
-									// Per-occurrence override wins over the series value.
-									const allDay = item.allDay ?? event?.allDay;
-									const title = item.title ?? event?.title ?? "Событие";
-									const location = item.location ?? event?.location;
-									return (
-										<button
-											key={item.key}
-											type="button"
-											onClick={() =>
-												setSelected({
-													eventId: item.eventId,
-													originalStart: item.originalStart,
-												})
-											}
-											className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/50"
-										>
-											<span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-												{allDay ? "весь день" : formatTime(item.start)}
-											</span>
-											<span className="min-w-0 flex-1 truncate text-sm">
-												{title}
-											</span>
-											{location && (
-												<span className="hidden shrink-0 items-center gap-1 text-muted-foreground text-xs sm:flex">
-													<MapPin className="size-3" />
-													<span className="max-w-32 truncate">{location}</span>
-												</span>
-											)}
-										</button>
-									);
-								})}
-							</div>
-						</div>
-					))}
-				</div>
+			{dialogValue && (
+				<EventDialog
+					open={dialogOpen}
+					onOpenChange={setDialogOpen}
+					calendars={calendars.map((c) => ({ id: c.id, name: c.name }))}
+					initial={dialogValue}
+					attendees={attendees}
+					currentUserId={currentUserId}
+					currentUserRsvp={currentUserRsvp}
+					attendeesLoading={eventDetail.isLoading}
+				/>
 			)}
-
-			{/* Event detail + RSVP dialog */}
-			<Dialog
-				open={selectedEvent !== null}
-				onOpenChange={(open) => {
-					if (!open) setSelected(null);
-				}}
-			>
-				<DialogContent>
-					{selectedEvent &&
-						(() => {
-							// Per-occurrence override wins over the series value; the
-							// occurrence's start/end already reflect a moved-time override.
-							const detailTitle = selectedOcc?.title ?? selectedEvent.title;
-							const detailDescription =
-								selectedOcc?.description ?? selectedEvent.description;
-							const detailLocation =
-								selectedOcc?.location ?? selectedEvent.location;
-							const detailAllDay = selectedOcc?.allDay ?? selectedEvent.allDay;
-							const detailStart = selectedOcc?.start ?? selectedEvent.dtstart;
-							const detailEnd = selectedOcc?.end ?? selectedEvent.dtend;
-							return (
-								<>
-									<DialogHeader>
-										<DialogTitle className="cursor-text select-text">
-											{detailTitle}
-										</DialogTitle>
-										{detailDescription && (
-											<DialogDescription className="cursor-text select-text whitespace-pre-wrap">
-												{detailDescription}
-											</DialogDescription>
-										)}
-									</DialogHeader>
-									<dl className="space-y-2 text-sm">
-										<div className="flex items-center gap-2 text-muted-foreground">
-											<Clock className="size-4 shrink-0" />
-											<span>
-												{new Date(detailStart).toLocaleString([], {
-													dateStyle: "medium",
-													timeStyle: detailAllDay ? undefined : "short",
-												})}
-												{" — "}
-												{new Date(detailEnd).toLocaleString([], {
-													dateStyle: "medium",
-													timeStyle: detailAllDay ? undefined : "short",
-												})}
-											</span>
-										</div>
-										{detailLocation && (
-											<div className="flex items-center gap-2 text-muted-foreground">
-												<MapPin className="size-4 shrink-0" />
-												<span className="cursor-text select-text">
-													{detailLocation}
-												</span>
-											</div>
-										)}
-										{selectedEvent.rrule && (
-											<Badge variant="outline" className="text-[10px]">
-												повторяющееся
-											</Badge>
-										)}
-									</dl>
-									<div className="flex flex-wrap gap-2 pt-2">
-										{RSVP_OPTIONS.map((option) => (
-											<Button
-												key={option.status}
-												size="sm"
-												variant={
-													option.status === "accepted" ? "default" : "outline"
-												}
-												disabled={rsvp.isPending}
-												onClick={() =>
-													rsvp.mutate({
-														eventId: selectedEvent.id,
-														status: option.status,
-													})
-												}
-												className={cn(
-													option.status === "declined" &&
-														"text-destructive hover:text-destructive",
-												)}
-											>
-												{option.label}
-											</Button>
-										))}
-									</div>
-
-									{/* Recurring: cancel just this instance ("this event only"). */}
-									{selectedEvent.rrule && selected && (
-										<div className="border-t pt-3">
-											<Button
-												size="sm"
-												variant="outline"
-												disabled={cancelOccurrence.isPending}
-												className="text-destructive hover:text-destructive"
-												onClick={() =>
-													cancelOccurrence.mutate({
-														eventId: selected.eventId,
-														originalStart: new Date(selected.originalStart),
-													})
-												}
-											>
-												Удалить только это событие
-											</Button>
-										</div>
-									)}
-
-									<EventReminders eventId={selectedEvent.id} />
-								</>
-							);
-						})()}
-				</DialogContent>
-			</Dialog>
 		</SuiteScreen>
 	);
 }
 
-interface EventRemindersProps {
-	eventId: string;
-}
-
-/**
- * C6 reminders surface for the desktop event detail (read + RSVP screen has no
- * full editor). Shows the caller's own reminders for the event with add-preset +
- * delete via `calendar.createReminder`/`deleteReminder`. Cache-first (AGENTS.md
- * rule 9): persisted rows render immediately; loading only gates the empty
- * branch.
- */
-function EventReminders({ eventId }: EventRemindersProps) {
-	const trpc = useTRPC();
-	const queryClient = useQueryClient();
-	const remindersQuery = useQuery(
-		trpc.calendar.listReminders.queryOptions({ eventId }),
-	);
-	const reminders = remindersQuery.data ?? [];
-
-	const refresh = async () => {
-		await queryClient.invalidateQueries({
-			queryKey: trpc.calendar.listReminders.queryKey({ eventId }),
-		});
-	};
-
-	const createReminder = useMutation(
-		trpc.calendar.createReminder.mutationOptions({
-			onSuccess: async () => {
-				await refresh();
-				toast.success("Напоминание добавлено");
-			},
-			onError: (error) => {
-				logger.error("[CalendarView] createReminder failed", error);
-				toast.error("Не удалось добавить напоминание");
-			},
-		}),
-	);
-
-	const deleteReminder = useMutation(
-		trpc.calendar.deleteReminder.mutationOptions({
-			onSuccess: async () => {
-				await refresh();
-				toast.success("Напоминание удалено");
-			},
-			onError: (error) => {
-				logger.error("[CalendarView] deleteReminder failed", error);
-				toast.error("Не удалось удалить напоминание");
-			},
-		}),
-	);
-
-	return (
-		<div className="space-y-2 border-t pt-3">
-			<span className="font-medium text-muted-foreground text-xs">
-				Напоминания
-			</span>
-
-			{reminders.length > 0 ? (
-				<ul className="space-y-1">
-					{reminders.map((reminder) => (
-						<li
-							key={reminder.id}
-							className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm"
-						>
-							<span className="cursor-text select-text truncate">
-								{reminderOffsetLabel(reminder.offsetMinutes)}
-								{reminder.channel === "email" ? " · Email" : " · В приложении"}
-							</span>
-							<Button
-								size="sm"
-								variant="ghost"
-								className="h-7 px-2 text-destructive text-xs hover:text-destructive"
-								disabled={deleteReminder.isPending}
-								onClick={() =>
-									deleteReminder.mutate({ reminderId: reminder.id })
-								}
-							>
-								Удалить
-							</Button>
-						</li>
-					))}
-				</ul>
-			) : remindersQuery.isLoading ? (
-				<span className="text-muted-foreground text-xs">Загрузка…</span>
-			) : (
-				<span className="text-muted-foreground text-xs">
-					Напоминаний пока нет.
-				</span>
-			)}
-
-			<div className="flex flex-wrap gap-1.5 pt-1">
-				{REMINDER_PRESETS.map((preset) => (
-					<Button
-						key={preset.offsetMinutes}
-						size="sm"
-						variant="outline"
-						className="h-7 px-2 text-xs"
-						disabled={createReminder.isPending}
-						onClick={() =>
-							createReminder.mutate({
-								eventId,
-								channel: "in_app",
-								trigger: "relative",
-								offsetMinutes: preset.offsetMinutes,
-							})
-						}
-					>
-						+ {preset.label}
-					</Button>
+/** Per-view skeleton for the genuine no-data state. */
+function CalendarLoading({ view }: { view: CalendarViewMode }) {
+	if (view === "agenda") {
+		return (
+			<div className="space-y-4">
+				{[0, 1, 2].map((i) => (
+					<div key={i} className="space-y-2">
+						<Skeleton className="h-4 w-40" />
+						<Skeleton className="h-14 w-full" />
+					</div>
 				))}
 			</div>
+		);
+	}
+	if (view === "month") {
+		return <Skeleton className="h-[60dvh] w-full rounded-lg" />;
+	}
+	// week / day: skeleton hour rows.
+	return (
+		<div className="space-y-2 rounded-lg border border-border p-3">
+			{SKELETON_ROWS.map((row) => (
+				<Skeleton key={row} className="h-8 w-full" />
+			))}
 		</div>
+	);
+}
+
+/** Stable keys for the week/day loading skeleton (avoids index-key churn). */
+const SKELETON_ROWS = Array.from({ length: 10 }, (_, i) => `cal-skel-${i}`);
+
+/** Empty state shared by all views (query succeeded, no events in range). */
+function EmptyState() {
+	return (
+		<div className="flex flex-col items-center justify-center rounded-lg border border-border border-dashed py-20 text-center">
+			<CalendarDays className="mb-3 size-8 text-muted-foreground" />
+			<span className="text-foreground text-sm">Событий нет</span>
+			<span className="mt-1 max-w-sm text-muted-foreground text-xs">
+				В этом периоде запланированных событий не найдено.
+			</span>
+		</div>
+	);
+}
+
+/** Empty state + CTA when the caller has no calendars yet. */
+function NoCalendarsCard() {
+	const { createCalendar } = useCalendarActions();
+
+	return (
+		<div
+			className={cn(
+				"mb-4 flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm",
+			)}
+		>
+			<p>У вас пока нет календарей.</p>
+			<Button
+				onClick={() =>
+					createCalendar.mutate({ name: "Мой календарь", timezone: "UTC" })
+				}
+				disabled={createCalendar.isPending}
+			>
+				Создать календарь
+			</Button>
+		</div>
+	);
+}
+
+/** .ics import: hidden file input + trigger button, gated on a calendar. */
+function ImportIcsButton({
+	calendarId,
+	inputRef,
+}: {
+	calendarId: string;
+	inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+	const { importIcs } = useCalendarActions();
+
+	const runImport = async (file: File) => {
+		if (!calendarId) return;
+		const ics = await file.text();
+		importIcs.mutate({ calendarId, ics });
+	};
+
+	return (
+		<>
+			<Button
+				size="icon"
+				variant="ghost"
+				aria-label="Импорт из .ics"
+				title="Импорт из .ics"
+				onClick={() => inputRef.current?.click()}
+				disabled={!calendarId || importIcs.isPending}
+			>
+				<Upload className="size-4" />
+			</Button>
+			<input
+				ref={inputRef}
+				type="file"
+				accept=".ics,text/calendar"
+				className="hidden"
+				onChange={(e) => {
+					const file = e.target.files?.[0];
+					if (file) void runImport(file);
+					e.target.value = "";
+				}}
+			/>
+		</>
 	);
 }

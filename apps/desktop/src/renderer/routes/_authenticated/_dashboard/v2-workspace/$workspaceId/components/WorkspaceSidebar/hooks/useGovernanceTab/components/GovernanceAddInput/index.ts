@@ -1,0 +1,1 @@
+export { GovernanceAddInput } from "./GovernanceAddInput";

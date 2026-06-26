@@ -20,6 +20,7 @@ import type {
 	SelectMemoryImportJob,
 	SelectMemoryItem,
 	SelectOrganization,
+	SelectOrgSettings,
 	SelectProject,
 	SelectSubscription,
 	SelectTask,
@@ -27,14 +28,20 @@ import type {
 	SelectTeam,
 	SelectTeamMember,
 	SelectUser,
+	SelectUserPreferences,
 	SelectV2Client,
 	SelectV2Host,
 	SelectV2Project,
 	SelectV2UsersHosts,
 	SelectV2Workspace,
 	SelectWorkspace,
+	SelectWorkspaceGovernanceItem,
 } from "@rox/db/schema";
 import type { AppRouter as HostServiceAppRouter } from "@rox/host-service";
+import {
+	pickOrgSettingsPatch,
+	pickUserPreferencesPatch,
+} from "@rox/shared/prefs";
 import type { AppRouter } from "@rox/trpc";
 import { BasicIndex } from "@tanstack/db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
@@ -68,6 +75,10 @@ import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { logger } from "renderer/lib/logger";
 import superjson from "superjson";
 import { z } from "zod";
+import {
+	type TaskLinkRow,
+	taskLinkSchema,
+} from "../../_dashboard/tasks/linkage/schema";
 import {
 	type DashboardSidebarProjectRow,
 	type DashboardSidebarSectionRow,
@@ -190,6 +201,8 @@ export interface OrgCollections {
 	chatSessions: Collection<SelectChatSession>;
 	journalEntries: Collection<SelectJournalEntry>;
 	journalEvents: Collection<SelectJournalEvent>;
+	userPreferences: Collection<SelectUserPreferences>;
+	orgSettings: Collection<SelectOrgSettings>;
 	memoryItems: Collection<SelectMemoryItem>;
 	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
@@ -226,6 +239,9 @@ export interface OrgCollections {
 		typeof v2TerminalPresetSchema,
 		z.input<typeof v2TerminalPresetSchema>
 	>;
+	// #517 "Управление" panel — org-scoped Electric collection (goals/tasks/
+	// missions), synced through the electric-proxy + governance tRPC router.
+	v2WorkspaceGovernance: Collection<SelectWorkspaceGovernanceItem>;
 	v2UserPreferences: Collection<
 		V2UserPreferencesRow,
 		string,
@@ -239,6 +255,15 @@ export interface OrgCollections {
 		LocalStorageCollectionUtils,
 		typeof failedWorkspaceCreateSchema,
 		z.input<typeof failedWorkspaceCreateSchema>
+	>;
+	// Local-only cross-link model (task↔PR/issue) for the Tasks power-user layer.
+	// Indexed by taskId + targetNumber so the cross-chips live-query both ways.
+	taskLinks: Collection<
+		TaskLinkRow,
+		string,
+		LocalStorageCollectionUtils,
+		typeof taskLinkSchema,
+		z.input<typeof taskLinkSchema>
 	>;
 }
 
@@ -744,6 +769,22 @@ function createOrgCollections(
 				onError: handleElectricSyncError,
 			},
 			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				// Pin/favorite (F19): the only client-driven update to a chat session
+				// is toggling `pinned`. Mirror the delete path — call the org-scoped
+				// `chat.setPinned` mutation and match its txid so the optimistic
+				// reorder is confirmed once Electric syncs the write back down.
+				const mutation = transaction.mutations[0];
+				const result = await apiClient.chat.setPinned.mutate({
+					sessionId: mutation.modified.id,
+					organizationId,
+					pinned: mutation.modified.pinned,
+				});
+				if (!result.updated) {
+					throw new Error("Chat session pin was not updated");
+				}
+				return electricTxidMatch(result.txid);
+			},
 			onDelete: async ({ transaction }) => {
 				const item = transaction.mutations[0].original;
 				const result = await apiClient.chat.deleteSession.mutate({
@@ -857,7 +898,22 @@ function createOrgCollections(
 					lastTxid = result.txid;
 				}
 
-				const handledFields = new Set(["status", "category"]);
+				if (changes.body !== undefined) {
+					const result = await apiClient.memory.update.mutate({
+						id: original.id,
+						body: changes.body,
+					});
+					lastTxid = result.txid;
+				}
+
+				// `updatedAt` is set optimistically client-side for instant UI, but the
+				// server stamps its own via $onUpdate — no separate sync needed.
+				const handledFields = new Set([
+					"status",
+					"category",
+					"body",
+					"updatedAt",
+				]);
 				const unsupportedFields = Object.keys(changes).filter(
 					(field) => !handledFields.has(field),
 				);
@@ -1016,6 +1072,61 @@ function createOrgCollections(
 	accessGrants.createIndex((grant) => grant.resourceId, basicIndexConfig);
 	accessGrants.createIndex((grant) => grant.granteeId, basicIndexConfig);
 
+	// F46 cross-device prefs. The per-user prefs document syncs via Electric
+	// (user+org-scoped shape, mirrors journal/memory). The renderer mutates the
+	// row's `values` doc; the onUpdate maps the changed value fields to a partial
+	// patch and forwards it to the shared `prefs.update` mutation, which applies
+	// per-field LWW on the server (so an offline edit reconciles, never blanks).
+	const userPreferencesCollection = createPersistedElectricCollection(
+		electricCollectionOptions<SelectUserPreferences>({
+			id: `user_preferences-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "user_preferences", organizationId, userId },
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				const { changes } = transaction.mutations[0];
+				const patch = pickUserPreferencesPatch(changes.values);
+				if (Object.keys(patch).length === 0) return undefined;
+				const result = await apiClient.prefs.update.mutate({
+					patch,
+					updatedAt: Date.now(),
+				});
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
+	// org_settings is org-shared (every member reads the same defaults); writes
+	// are owner/admin-gated server-side.
+	const orgSettingsCollection = createPersistedElectricCollection(
+		electricCollectionOptions<SelectOrgSettings>({
+			id: `org_settings-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "org_settings", organizationId },
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				const { changes } = transaction.mutations[0];
+				const patch = pickOrgSettingsPatch(changes.values);
+				if (Object.keys(patch).length === 0) return undefined;
+				const result = await apiClient.prefs.updateOrg.mutate({
+					patch,
+					updatedAt: Date.now(),
+				});
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
 	const v2SidebarProjects = createIndexedCollection(
 		localStorageCollectionOptions({
 			id: `v2_sidebar_projects-${organizationId}`,
@@ -1083,6 +1194,61 @@ function createOrgCollections(
 		}),
 	);
 
+	// #517 "Управление" panel — org-scoped Electric collection. Keyed by item
+	// id, indexed by v2WorkspaceId so the section live-queries only its
+	// workspace's goals/tasks/missions. Writes round-trip through the
+	// `governance` tRPC router, which fills organization_id + created_by; the
+	// client supplies the create-input fields and the synced row replaces the
+	// optimistic one.
+	const v2WorkspaceGovernance = createPersistedElectricCollection(
+		electricCollectionOptions<SelectWorkspaceGovernanceItem>({
+			id: `workspace_governance_items-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "workspace_governance_items",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onInsert: async ({ transaction }) => {
+				const item = transaction.mutations[0].modified;
+				const result = await apiClient.governance.create.mutate({
+					id: item.id,
+					workspaceId: item.v2WorkspaceId,
+					kind: item.kind,
+					text: item.text,
+					order: item.order,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onUpdate: async ({ transaction }) => {
+				const { original, changes } = transaction.mutations[0];
+				const result = await apiClient.governance.update.mutate({
+					id: original.id,
+					text: changes.text,
+					order: changes.order,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onDelete: async ({ transaction }) => {
+				const item = transaction.mutations[0].original;
+				const result = await apiClient.governance.delete.mutate({
+					id: item.id,
+				});
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+	v2WorkspaceGovernance.createIndex(
+		(item) => item.v2WorkspaceId,
+		basicIndexConfig,
+	);
+	v2WorkspaceGovernance.createIndex((item) => item.kind, basicIndexConfig);
+
 	const v2UserPreferences = createCollection(
 		localStorageCollectionOptions(
 			withReadHeal(
@@ -1110,6 +1276,17 @@ function createOrgCollections(
 		}),
 	);
 
+	const taskLinks = createIndexedCollection(
+		localStorageCollectionOptions({
+			id: `task_links-${organizationId}`,
+			storageKey: `task-links-${organizationId}`,
+			schema: taskLinkSchema,
+			getKey: (item) => item.id,
+		}),
+	);
+	taskLinks.createIndex((link) => link.taskId, basicIndexConfig);
+	taskLinks.createIndex((link) => link.targetNumber, basicIndexConfig);
+
 	return {
 		tasks,
 		taskStatuses,
@@ -1132,6 +1309,8 @@ function createOrgCollections(
 		chatSessions,
 		journalEntries,
 		journalEvents,
+		userPreferences: userPreferencesCollection,
+		orgSettings: orgSettingsCollection,
 		memoryItems,
 		memoryImportJobs,
 		artifacts,
@@ -1144,8 +1323,10 @@ function createOrgCollections(
 		v2WorkspaceLocalState,
 		v2SidebarSections,
 		v2TerminalPresets,
+		v2WorkspaceGovernance,
 		v2UserPreferences,
 		failedWorkspaceCreates,
+		taskLinks,
 	};
 }
 

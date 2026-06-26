@@ -20,13 +20,13 @@
 - `bunx biome check apps/desktop/src/renderer/stores/onboarding-tour/store.ts apps/desktop/src/renderer/stores/onboarding-tour/index.ts apps/desktop/src/renderer/stores/onboarding-tour/store.test.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/OnboardingTourProvider.tsx apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/index.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingOverlay/OnboardingOverlay.tsx apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingOverlay/index.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingResumeButton/OnboardingResumeButton.tsx apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingResumeButton/index.ts apps/desktop/src/renderer/routes/_authenticated/layout.tsx`
   - Result: pass, no fixes needed after scoped `--write` formatting pass.
 - `bun run typecheck --filter=@rox/desktop`
-  - Result: pass, `@rox/desktop:typecheck` completed successfully.
+  - Integrated result: blocked by non-onboarding files outside this PR diff; see `receipts/integration.md`.
 
 ## Unresolved risks
 
 - Full surface tour registry and dashboard anchors are owned by the tours lane and were not present in this worktree. This lane intentionally includes only a minimal fallback list with expected anchor ids so the shell provider compiles and degrades safely.
 - Server-backed progress/state APIs are owned by the state/API lane. This provider uses local persisted pause/resume UI state only and does not mark durable step or tour completion.
-- No browser smoke was run in this lane; the verification proof is store behavior, formatting/lint shape, and desktop typecheck.
+- No browser smoke was run in this lane; the verification proof is store behavior, formatting/lint shape, and integrated checks in `receipts/integration.md`.
 
 ## Integration notes
 

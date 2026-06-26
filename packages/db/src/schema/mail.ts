@@ -38,7 +38,7 @@
  * `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
  */
 
-import { sql } from "drizzle-orm";
+import { type AnyColumn, sql } from "drizzle-orm";
 import {
 	boolean,
 	index,
@@ -51,11 +51,13 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { entitySearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 import {
 	mailAddressKindValues,
 	mailAddressStatusValues,
 	mailDirectionValues,
+	mailFolderValues,
 	mailProviderValues,
 	mailStatusValues,
 } from "./enums";
@@ -79,6 +81,7 @@ export const mailAddressStatus = pgEnum(
 export const mailDirection = pgEnum("mail_direction", mailDirectionValues);
 export const mailStatus = pgEnum("mail_status", mailStatusValues);
 export const mailProvider = pgEnum("mail_provider", mailProviderValues);
+export const mailFolder = pgEnum("mail_folder", mailFolderValues);
 
 // ---------------------------------------------------------------------------
 // shared jsonb shapes
@@ -162,6 +165,15 @@ export const mailThreads = pgTable(
 			.defaultNow(),
 		messageCount: integer("message_count").notNull().default(0),
 
+		// FN-135 (#697): server-backed left-rail placement. A new thread lands in
+		// `inbox`; the user files it into archive/spam/trash via `mail.setFolder`.
+		// `sent`/`drafts` are NOT placements — they derive from direction / the
+		// mail_drafts table — so the enum only carries real filing targets.
+		folder: mailFolder().notNull().default("inbox"),
+		// FN-135 (#697): the ⭐ flag. A starred thread surfaces in the Помеченные
+		// smart filter regardless of folder. Toggled via `mail.setFlag`.
+		isFlagged: boolean("is_flagged").notNull().default(false),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
@@ -170,6 +182,13 @@ export const mailThreads = pgTable(
 		// Inbox feed: a user's threads newest-first.
 		index("mail_threads_owner_last_idx").on(t.ownerUserId, t.lastMessageAt),
 		index("mail_threads_org_idx").on(t.organizationId),
+		// FN-135 (#697): the rail filters by (owner, folder) newest-first; a covering
+		// index keeps the per-folder feed off a sequential scan.
+		index("mail_threads_owner_folder_idx").on(
+			t.ownerUserId,
+			t.folder,
+			t.lastMessageAt,
+		),
 	],
 );
 
@@ -250,8 +269,47 @@ export const mailMessages = pgTable(
 		// M4: the Resend delivery/bounce/complaint webhook resolves the outbound
 		// message by its provider email_id (`provider_event_id`).
 		index("mail_messages_provider_evt_idx").on(t.providerEventId),
+		// FN-138 (#698): server-side full-text search. A GIN index over the
+		// `to_tsvector('simple', subject || snippet || from_addr)` document powers
+		// `mail.search`, replacing the client-side substring filter. The expression
+		// is the SAME `mailSearchVectorSql(...)` the runtime query uses, so the index
+		// is actually consulted (a drift would silently force a sequential scan). The
+		// snippet is the first ~200 chars of plaintext we already persist (bodies
+		// live in R2, so we cannot index the full body without a fetch — subject +
+		// snippet + sender is the indexable envelope text).
+		index("mail_messages_fts_idx").using(
+			"gin",
+			mailSearchVectorSql({
+				subjectCol: t.subject,
+				snippetCol: t.snippet,
+				fromAddrCol: t.fromAddr,
+				fromNameCol: t.fromName,
+			}),
+		),
 	],
 );
+
+/**
+ * The canonical `to_tsvector('simple', subject || snippet || from_addr || from_name)`
+ * search document for a mail message (FN-138 / #698). SINGLE SOURCE OF TRUTH for
+ * the FTS expression: BOTH the GIN index above and the `mail.search` runtime query
+ * call this helper, so the indexed expression and the query expression can never
+ * drift (a drift makes Postgres fall back to a sequential scan). Mirrors the
+ * notebooks / F16 cross-entity FTS convention (`entitySearchVectorSql`).
+ */
+export function mailSearchVectorSql(cols: {
+	subjectCol: AnyColumn;
+	snippetCol: AnyColumn;
+	fromAddrCol: AnyColumn;
+	fromNameCol: AnyColumn;
+}) {
+	return entitySearchVectorSql([
+		cols.subjectCol,
+		cols.snippetCol,
+		cols.fromAddrCol,
+		cols.fromNameCol,
+	]);
+}
 
 export type InsertMailMessage = typeof mailMessages.$inferInsert;
 export type SelectMailMessage = typeof mailMessages.$inferSelect;
@@ -362,3 +420,81 @@ export const mailNonces = pgTable(
 
 export type InsertMailNonce = typeof mailNonces.$inferInsert;
 export type SelectMailNonce = typeof mailNonces.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// mail_drafts — server-backed composer drafts (FN-139 / #699)
+// ---------------------------------------------------------------------------
+
+/**
+ * A persisted, server-backed compose draft (FN-139 / #699). Replaces the
+ * desktop EmailView's localStorage-only draft state so a draft survives reload
+ * and the "Черновики" folder is real + cross-device (web/desktop/mobile via
+ * Electric). Owner-scoped to the mailbox owner; `organization_id` is carried per
+ * the repo's Electric shape-filtering convention (DQ3 — the mailbox is global per
+ * user, org is the shape filter not a silo).
+ *
+ * The draft is plain envelope text (recipients + subject + body) — small enough
+ * to store inline, unlike delivered bodies which live in R2. `thread_id` links a
+ * reply draft back to its parent thread so re-opening restores context;
+ * `attachments` is a JSONB array of {filename,size,key?} so staged uploads (#701)
+ * can be remembered before send. Additive, owner-scoped, Electric-replicated.
+ */
+export const mailDrafts = pgTable(
+	"mail_drafts",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		ownerUserId: uuid("owner_user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		// Reply context: the thread this draft replies to (null for a new message).
+		threadId: uuid("thread_id").references(() => mailThreads.id, {
+			onDelete: "set null",
+		}),
+
+		// Envelope fields, stored as the comma-joined raw strings the composer edits
+		// (parsed into addresses only at send time) so a half-typed recipient survives.
+		toAddrs: text("to_addrs").notNull().default(""),
+		ccAddrs: text("cc_addrs").notNull().default(""),
+		bccAddrs: text("bcc_addrs").notNull().default(""),
+		subject: text().notNull().default(""),
+		body: text().notNull().default(""),
+
+		// Staged attachment metadata (filename/size + optional R2 key once uploaded,
+		// #701). Free-form so the composer can remember a pending file pre-send.
+		attachments: jsonb()
+			.$type<MailDraftAttachment[]>()
+			.notNull()
+			.default(sql`'[]'::jsonb`),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [
+		// Drafts list: a user's drafts newest-edited-first.
+		index("mail_drafts_owner_updated_idx").on(t.ownerUserId, t.updatedAt),
+		index("mail_drafts_org_idx").on(t.organizationId),
+		index("mail_drafts_thread_idx").on(t.threadId),
+	],
+);
+
+/** One staged attachment remembered on a draft (FN-139/#701). */
+export interface MailDraftAttachment {
+	/** Original client filename. */
+	filename: string;
+	/** Size in bytes (for the chip + the send-time size guard). */
+	sizeBytes: number;
+	/** MIME type, when known. */
+	contentType?: string;
+	/** R2 object key once the staged file has been uploaded (#701); absent until then. */
+	blobKey?: string;
+}
+
+export type InsertMailDraft = typeof mailDrafts.$inferInsert;
+export type SelectMailDraft = typeof mailDrafts.$inferSelect;

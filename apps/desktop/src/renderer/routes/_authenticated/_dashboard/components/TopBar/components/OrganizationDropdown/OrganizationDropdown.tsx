@@ -3,22 +3,23 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuSub,
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import {
+	WorkspaceSwitcher,
+	WorkspaceSwitcherIcons,
+} from "@rox/ui/workspace-switcher";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
 import { FiUsers } from "react-icons/fi";
 import {
-	HiCheck,
 	HiChevronUpDown,
 	HiOutlineArrowRightOnRectangle,
 	HiOutlineCog6Tooth,
-	HiOutlinePlus,
 } from "react-icons/hi2";
 import { HotkeyMenuShortcut } from "renderer/components/HotkeyMenuShortcut";
 import { useSignOut } from "renderer/hooks/useSignOut";
@@ -45,8 +46,6 @@ export function OrganizationDropdown({
 	const activeOrganization = organizations?.find(
 		(o) => o.id === activeOrganizationId,
 	);
-
-	const userEmail = session?.user?.email;
 
 	async function handleSignOut(): Promise<void> {
 		await signOut();
@@ -136,39 +135,32 @@ export function OrganizationDropdown({
 						<DropdownMenuSubTrigger className="gap-2">
 							<span>Сменить организацию</span>
 						</DropdownMenuSubTrigger>
-						<DropdownMenuSubContent>
-							{userEmail && (
-								<DropdownMenuLabel className="font-normal text-muted-foreground text-xs">
-									{userEmail}
-								</DropdownMenuLabel>
-							)}
-							{organizations.map((organization) => (
-								<DropdownMenuItem
-									key={organization.id}
-									onSelect={() =>
-										collections.switchOrganization(organization.id)
-									}
-									className="gap-2"
-								>
-									<Avatar
-										size="xs"
-										fullName={organization.name}
-										image={organization.logo}
-										className="rounded-md"
-									/>
-									<span className="flex-1 truncate">{organization.name}</span>
-									{organization.id === activeOrganization?.id && (
-										<HiCheck className="h-4 w-4 text-primary" />
-									)}
-								</DropdownMenuItem>
-							))}
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onSelect={() => navigate({ to: "/create-organization" })}
-							>
-								<HiOutlinePlus className="h-4 w-4" />
-								<span>Создать организацию</span>
-							</DropdownMenuItem>
+						<DropdownMenuSubContent className="p-0">
+							<WorkspaceSwitcher
+								className="w-64"
+								activeId={activeOrganizationId}
+								options={organizations.map((organization) => ({
+									id: organization.id,
+									name: organization.name,
+									path: organization.slug,
+									logo: organization.logo,
+								}))}
+								onSelect={(id) => collections.switchOrganization(id)}
+								footerActions={[
+									{
+										id: "new-worktree",
+										label: "Создать организацию",
+										icon: WorkspaceSwitcherIcons.newWorktree,
+										onSelect: () => navigate({ to: "/create-organization" }),
+									},
+									{
+										id: "manage",
+										label: "Управление",
+										icon: WorkspaceSwitcherIcons.manage,
+										onSelect: () => navigate({ to: "/settings/organization" }),
+									},
+								]}
+							/>
 						</DropdownMenuSubContent>
 					</DropdownMenuSub>
 				)}

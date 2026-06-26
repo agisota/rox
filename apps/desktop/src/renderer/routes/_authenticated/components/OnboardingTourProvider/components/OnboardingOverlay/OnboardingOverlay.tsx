@@ -1,6 +1,13 @@
 import { Button } from "@rox/ui/button";
 import { Card } from "@rox/ui/card";
-import { useEffect, useMemo, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 
 export interface OnboardingOverlayStep {
 	id: string;
@@ -84,23 +91,105 @@ export function OnboardingOverlay({
 	onTargetAvailabilityChange,
 }: OnboardingOverlayProps) {
 	const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
+	const dialogRef = useRef<HTMLDivElement>(null);
+	const titleId = useId();
+	const bodyId = useId();
+	const hasTargetRect = targetRect !== null;
+
+	const updateTargetRect = useCallback(() => {
+		const nextRect = getTargetRect(step.anchor);
+		setTargetRect(nextRect);
+		onTargetAvailabilityChange?.(nextRect !== null);
+	}, [onTargetAvailabilityChange, step.anchor]);
 
 	useEffect(() => {
-		function updateTargetRect() {
-			const nextRect = getTargetRect(step.anchor);
-			setTargetRect(nextRect);
-			onTargetAvailabilityChange?.(nextRect !== null);
-		}
-
 		updateTargetRect();
+		const observer = new MutationObserver(() => updateTargetRect());
+		observer.observe(document.body, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: [
+				"aria-hidden",
+				"class",
+				"data-onboarding-anchor",
+				"hidden",
+				"style",
+			],
+		});
 		window.addEventListener("resize", updateTargetRect);
 		window.addEventListener("scroll", updateTargetRect, true);
 
 		return () => {
+			observer.disconnect();
 			window.removeEventListener("resize", updateTargetRect);
 			window.removeEventListener("scroll", updateTargetRect, true);
 		};
-	}, [onTargetAvailabilityChange, step.anchor]);
+	}, [updateTargetRect]);
+
+	useEffect(() => {
+		if (!hasTargetRect) {
+			return;
+		}
+
+		const previousActiveElement = document.activeElement;
+		dialogRef.current?.focus();
+
+		function getFocusableElements() {
+			const root = dialogRef.current;
+			if (!root) return [];
+			return Array.from(
+				root.querySelectorAll<HTMLElement>(
+					'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+				),
+			).filter(
+				(element) =>
+					!element.hasAttribute("disabled") &&
+					element.getAttribute("aria-hidden") !== "true",
+			);
+		}
+
+		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Escape") {
+				event.preventDefault();
+				onPause();
+				return;
+			}
+
+			if (event.key !== "Tab") {
+				return;
+			}
+
+			const focusable = getFocusableElements();
+			if (focusable.length === 0) {
+				event.preventDefault();
+				dialogRef.current?.focus();
+				return;
+			}
+
+			const first = focusable[0];
+			const last = focusable.at(-1);
+			if (!first || !last) {
+				return;
+			}
+
+			if (event.shiftKey && document.activeElement === first) {
+				event.preventDefault();
+				last.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first.focus();
+			}
+		}
+
+		document.addEventListener("keydown", handleKeyDown);
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+			if (previousActiveElement instanceof HTMLElement) {
+				previousActiveElement.focus();
+			}
+		};
+	}, [hasTargetRect, onPause]);
 
 	const cardPosition = useMemo(() => {
 		if (!targetRect) {
@@ -131,7 +220,15 @@ export function OnboardingOverlay({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50">
+		<div
+			ref={dialogRef}
+			className="fixed inset-0 z-50"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby={titleId}
+			aria-describedby={bodyId}
+			tabIndex={-1}
+		>
 			<div className="absolute inset-0 bg-black/60" />
 			<div
 				className="pointer-events-none absolute rounded-lg ring-2 ring-primary ring-offset-2 ring-offset-background"
@@ -155,10 +252,12 @@ export function OnboardingOverlay({
 					<div className="text-xs font-medium text-muted-foreground">
 						Шаг {stepIndex + 1} из {totalSteps}
 					</div>
-					<div className="text-base font-semibold leading-tight">
+					<div id={titleId} className="text-base font-semibold leading-tight">
 						{step.title}
 					</div>
-					<p className="text-sm leading-5 text-muted-foreground">{step.body}</p>
+					<p id={bodyId} className="text-sm leading-5 text-muted-foreground">
+						{step.body}
+					</p>
 					<div className="rounded-md bg-muted px-3 py-2 text-sm">
 						{step.action}
 					</div>

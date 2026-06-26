@@ -8,7 +8,7 @@ import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
 import { calendarRouter } from "./router/calendar";
-import { chatRouter } from "./router/chat";
+import { chatLabelsRouter, chatRouter } from "./router/chat";
 import { collabRouter } from "./router/collab";
 import { commsRouter } from "./router/comms";
 import { dashboardRouter } from "./router/dashboard";
@@ -16,6 +16,7 @@ import { deviceRouter } from "./router/device";
 import { driveRouter } from "./router/drive";
 import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
+import { governanceRouter } from "./router/governance";
 import { graphRouter } from "./router/graph";
 import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
@@ -33,14 +34,22 @@ import {
 	pipelineRouter,
 	triggerRouter,
 } from "./router/pipeline";
-import { identityRouter, profileRouter } from "./router/profile";
+import { prefsRouter } from "./router/prefs";
+import {
+	identityRouter,
+	personasRouter,
+	profileRouter,
+} from "./router/profile";
+import { profileCapabilitiesRouter } from "./router/profile-capabilities";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
 import { rtcRouter } from "./router/rtc";
 import { runtimeRouter } from "./router/runtime";
+import { searchRouter } from "./router/search";
 import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
 import { skillLibraryRouter } from "./router/skill-library";
+import { suggestionsRouter } from "./router/suggestions";
 import { supportRouter } from "./router/support/support";
 import { taskRouter } from "./router/task";
 import { teamRouter } from "./router/team";
@@ -67,6 +76,7 @@ export const appRouter = createTRPCRouter({
 	automation: automationRouter,
 	calendar: calendarRouter,
 	chat: chatRouter,
+	chatLabels: chatLabelsRouter,
 	collab: collabRouter,
 	comms: commsRouter,
 	device: deviceRouter,
@@ -76,6 +86,7 @@ export const appRouter = createTRPCRouter({
 	dashboard: dashboardRouter,
 	mcpAdmin: mcpAdminRouter,
 	executionCircuit: executionCircuitRouter,
+	governance: governanceRouter,
 	graph: graphRouter,
 	host: hostRouter,
 	identity: identityRouter,
@@ -91,15 +102,20 @@ export const appRouter = createTRPCRouter({
 	notes: notebooksRouter,
 	profileNotes: notesRouter,
 	organization: organizationRouter,
+	personas: personasRouter,
 	pipeline: pipelineRouter,
 	pipelineTrigger: triggerRouter,
+	prefs: prefsRouter,
 	profile: profileRouter,
+	profileCapabilities: profileCapabilitiesRouter,
 	project: projectRouter,
 	ranking: rankingRouter,
 	rtc: rtcRouter,
 	runtime: runtimeRouter,
+	search: searchRouter,
 	share: shareRouter,
 	skill: skillRouter,
+	suggestions: suggestionsRouter,
 	support: supportRouter,
 	task: taskRouter,
 	team: teamRouter,

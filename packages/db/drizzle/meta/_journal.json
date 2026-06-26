@@ -733,8 +733,71 @@
     {
       "idx": 104,
       "version": "7",
-      "when": 1782425287302,
-      "tag": "0104_add_onboarding_progress",
+      "when": 1782336153423,
+      "tag": "0104_chat_labels",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1782355785328,
+      "tag": "0105_f46_user_preferences_org_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1782358030881,
+      "tag": "0106_agent_personas",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1782358904201,
+      "tag": "0107_tense_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1782373938315,
+      "tag": "0108_f47_profile_capabilities",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1782375841917,
+      "tag": "0109_f16_cross_entity_search_fts_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1782386492689,
+      "tag": "0110_517_workspace_governance_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1782397607154,
+      "tag": "0111_fn087_durable_sessions_terminals",
+      "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1782402578800,
+      "tag": "0112_wave2_mail_folders_flag_unread_fts_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 113,
+      "version": "7",
+      "when": 1782438578113,
+      "tag": "0113_add_onboarding_progress",
       "breakpoints": true
     }
   ]

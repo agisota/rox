@@ -45,7 +45,6 @@ function OnboardingProjectPage() {
 	const finalizeSetup = useFinalizeProjectSetup();
 
 	const finish = async (projectId: string) => {
-		track("onboarding_project_selected", { outcome: "completed" });
 		try {
 			await completeActivationStep("project", { projectId });
 		} catch (error) {
@@ -53,6 +52,7 @@ function OnboardingProjectPage() {
 			toast.error("Не удалось сохранить проект. Попробуйте ещё раз.");
 			return;
 		}
+		track("onboarding_project_selected", { outcome: "completed" });
 		await navigate({ to: "/onboarding/workspace", replace: true });
 	};
 

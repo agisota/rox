@@ -32,6 +32,15 @@ export {
 	type DeepgramLiveStream,
 } from "./deepgram";
 export {
+	type DispatcherHandle,
+	isVoiceRoom,
+	livekitHttpHost,
+	type ReconcilePlan,
+	reconcileRooms,
+	runDispatcher,
+	VOICE_ROOM_PATTERN,
+} from "./dispatch";
+export {
 	type DeepgramTranscriptResult,
 	deepgramCapturedAt,
 	mapDeepgramResultToWire,
@@ -95,12 +104,31 @@ if (
 	process.argv[1] &&
 	import.meta.url === `file://${process.argv[1]}`
 ) {
-	const roomName = process.argv[2];
-	if (!roomName) {
+	const arg = process.argv[2];
+	if (!arg) {
 		console.error(
-			"usage: transcribe-worker <roomName>  (e.g. org:<org>:voice:<channelId>)",
+			"usage: transcribe-worker <roomName>  (e.g. org:<org>:voice:<channelId>)\n" +
+				"   or: transcribe-worker dispatch  (per-room supervisor; prefer `tsx src/dispatch.ts`)",
 		);
 		process.exit(1);
 	}
-	main(roomName);
+	if (arg === "dispatch") {
+		// Convenience: `tsx src/index.ts dispatch` boots the supervisor. The canonical
+		// entry is the `dispatch` package.json script (`tsx src/dispatch.ts`).
+		// Imported lazily so the single-room path never constructs a RoomServiceClient.
+		import("./dispatch")
+			.then(({ runDispatcher }) => {
+				runDispatcher();
+			})
+			.catch((err) => {
+				console.error(
+					`transcribe-worker: failed to start dispatcher: ${
+						err instanceof Error ? err.message : String(err)
+					}`,
+				);
+				process.exit(1);
+			});
+	} else {
+		main(arg);
+	}
 }

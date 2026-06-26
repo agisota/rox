@@ -4,6 +4,13 @@
  * Themes control UI colors, terminal colors, and editor/diff colors.
  */
 
+// The UI-color axis is the shared cross-platform skin model (F08), lifted to
+// `@rox/ui/theme`. Imported for use in `Theme` below and re-exported so the
+// desktop `shared/themes` import surface stays stable.
+import type { UIColors } from "@rox/ui/theme";
+
+export type { UIColors };
+
 /**
  * Default xterm.js terminal colors for dark mode
  */
@@ -82,81 +89,6 @@ export function getDefaultTerminalColors(
  */
 export function getTerminalColors(theme: Theme): TerminalColors {
 	return theme.terminal ?? getDefaultTerminalColors(theme.type);
-}
-
-/**
- * UI color definitions for the application chrome
- * Color values should be valid CSS color strings (hex, rgb, oklch, etc.)
- */
-export interface UIColors {
-	// Core backgrounds
-	background: string;
-	foreground: string;
-
-	// Card/Panel backgrounds
-	card: string;
-	cardForeground: string;
-
-	// Popover/Dropdown
-	popover: string;
-	popoverForeground: string;
-
-	// Primary actions (buttons, links)
-	primary: string;
-	primaryForeground: string;
-
-	// Secondary elements
-	secondary: string;
-	secondaryForeground: string;
-
-	// Muted/subtle elements
-	muted: string;
-	mutedForeground: string;
-
-	// Accent highlights
-	accent: string;
-	accentForeground: string;
-
-	// Tertiary (panel toolbars)
-	tertiary: string;
-	tertiaryActive: string;
-
-	// Destructive actions
-	destructive: string;
-	destructiveForeground: string;
-
-	// Borders and inputs
-	border: string;
-	input: string;
-	ring: string;
-
-	// Sidebar specific
-	sidebar: string;
-	sidebarForeground: string;
-	sidebarPrimary: string;
-	sidebarPrimaryForeground: string;
-	sidebarAccent: string;
-	sidebarAccentForeground: string;
-	sidebarBorder: string;
-	sidebarRing: string;
-
-	// Chart/data visualization colors
-	chart1: string;
-	chart2: string;
-	chart3: string;
-	chart4: string;
-	chart5: string;
-
-	// Search highlight colors (CSS Custom Highlight API)
-	highlightMatch: string;
-	highlightActive: string;
-
-	// Brand highlight (e.g. PRO badge). Theme-defining color used for accents
-	// that should pop against muted UI chrome. Optional so existing stored
-	// themes without this token still typecheck — globals.css supplies a
-	// fallback value.
-	highlight?: string;
-	highlightForeground?: string;
 }
 
 /**

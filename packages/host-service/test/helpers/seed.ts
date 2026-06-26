@@ -28,6 +28,10 @@ export interface SeedProjectOptions {
 	repoUrl?: string;
 	repoProvider?: string;
 	remoteName?: string;
+	// Local-first sync fields (#537). Default to today's synchronous-cloud shape
+	// (`synced`, no explicit cloud link) so existing seeds are unaffected.
+	cloudId?: string | null;
+	syncState?: "pending" | "synced" | "error";
 }
 
 export function seedProject(
@@ -45,6 +49,10 @@ export function seedProject(
 			repoUrl: options.repoUrl,
 			repoProvider: options.repoProvider,
 			remoteName: options.remoteName,
+			...(options.cloudId !== undefined ? { cloudId: options.cloudId } : {}),
+			...(options.syncState !== undefined
+				? { syncState: options.syncState }
+				: {}),
 		})
 		.run();
 	return { id };

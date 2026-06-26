@@ -16,6 +16,7 @@ import { ArrowUpIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
 import { MAX_FILE_SIZE, MAX_FILES } from "../../constants";
 import { PlusMenu } from "../PlusMenu";
+import { WebSlashCommandMenu } from "./WebSlashCommandMenu";
 
 type PreviewPromptComposerProps = {
 	placeholder: string;
@@ -35,8 +36,19 @@ type PreviewPromptComposerProps = {
 	onSubmit?: (message: PromptInputMessage) => void;
 	/** Extra footer controls rendered left of submit (e.g. a mic button). */
 	footerExtras?: ReactNode;
+	/**
+	 * Context-usage ring rendered in the left tools cluster, after `footerTools`
+	 * (F42). A `ReactNode` so the caller owns the live token inputs.
+	 */
+	contextRing?: ReactNode;
 	/** Submit busy/disabled state for the interactive mode. */
 	submitDisabled?: boolean;
+	/**
+	 * Enable the shared `/`-triggered slash-command menu (F45) in interactive
+	 * mode. Lists the same built-in commands the desktop shows, with source
+	 * badges and locale-aware labels, over the shared matcher.
+	 */
+	enableSlashCommands?: boolean;
 };
 
 export function PreviewPromptComposer({
@@ -51,7 +63,9 @@ export function PreviewPromptComposer({
 	messageClassName,
 	onSubmit,
 	footerExtras,
+	contextRing,
 	submitDisabled,
+	enableSlashCommands,
 }: PreviewPromptComposerProps) {
 	const interactive = typeof onSubmit === "function";
 	const noop = useCallback(() => {}, []);
@@ -74,9 +88,11 @@ export function PreviewPromptComposer({
 					placeholder={placeholder}
 					className="min-h-10"
 				/>
+				{interactive && enableSlashCommands ? <WebSlashCommandMenu /> : null}
 				<PromptInputFooter>
 					<PromptInputTools className={cn(footerToolsClassName)}>
 						{footerTools}
+						{contextRing}
 					</PromptInputTools>
 					<div className="flex items-center gap-2">
 						<PlusMenu disabled={!interactive} />

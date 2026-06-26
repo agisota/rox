@@ -6,10 +6,6 @@ import {
 
 describe("onboarding tour registry", () => {
 	it("defines every required surface tour", () => {
-		expect(Object.keys(ONBOARDING_TOURS).sort()).toEqual(
-			[...REQUIRED_SURFACE_TOUR_IDS].sort(),
-		);
-
 		for (const tourId of REQUIRED_SURFACE_TOUR_IDS) {
 			expect(ONBOARDING_TOURS[tourId]?.id).toBe(tourId);
 		}

@@ -12,4 +12,11 @@ describe("orgCollectionId", () => {
 		expect(orgCollectionId("tasks", "abc")).toBe("tasks-abc");
 		expect(orgCollectionId("projects", "abc")).toBe("projects-abc");
 	});
+
+	test("workspace surface collections are namespaced per org (FN-087)", () => {
+		expect(orgCollectionId("durable_sessions", "org-7")).toBe(
+			"durable_sessions-org-7",
+		);
+		expect(orgCollectionId("terminals", "org-7")).toBe("terminals-org-7");
+	});
 });

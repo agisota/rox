@@ -1,5 +1,11 @@
 "use client";
 
+import {
+	type ContactCardViewModel,
+	type ContactListItemInput,
+	mapContactCards,
+	mapContactLinks,
+} from "@rox/shared/crm-contacts";
 import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import { Badge } from "@rox/ui/badge";
 import { Skeleton } from "@rox/ui/skeleton";
@@ -8,12 +14,6 @@ import { Mail, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useTRPC } from "@/trpc/react";
-import {
-	type ContactCardViewModel,
-	type ContactListItemInput,
-	mapContactCards,
-	mapContactLinks,
-} from "./crmContacts";
 
 /** Relations that connect a contact to the objects around it (depth-1 neighbors). */
 const CONTACT_LINK_RELATIONS = [

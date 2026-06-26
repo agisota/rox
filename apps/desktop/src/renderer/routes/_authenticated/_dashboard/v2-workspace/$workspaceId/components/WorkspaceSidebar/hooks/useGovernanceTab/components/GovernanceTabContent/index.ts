@@ -1,0 +1,1 @@
+export { GovernanceTabContent } from "./GovernanceTabContent";

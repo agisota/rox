@@ -1,4 +1,5 @@
 import type { ExternalApp } from "@rox/local-db";
+import type { Command as SharedCommand } from "@rox/shared/command-palette";
 import type { ElementType } from "react";
 import type { HotkeyId } from "renderer/hotkeys/registry";
 import type { HostServiceAvailabilityStatus } from "renderer/lib/host-service-unavailable";
@@ -46,18 +47,20 @@ export interface CommandContext {
 	experimentalAgentSourceMarketplace?: boolean;
 }
 
-export interface Command {
-	id: string;
-	title: string;
+/**
+ * Desktop's concrete command shape: the platform-neutral shared {@link
+ * SharedCommand} (F44 lifted core) bound to the desktop {@link CommandContext},
+ * with the renderer-specific fields (`icon`, `hotkeyId`, `section`,
+ * `renderFrame`) narrowed to desktop's React/hotkey types.
+ */
+export interface Command
+	extends Omit<
+		SharedCommand<CommandContext>,
+		"icon" | "section" | "hotkeyId" | "children" | "renderFrame"
+	> {
 	section: SectionId;
 	icon?: ElementType<{ className?: string }>;
-	iconUrl?: string;
-	keywords?: string[];
 	hotkeyId?: HotkeyId;
-	disabled?: boolean;
-	disabledReason?: string;
-	when?: (context: CommandContext) => boolean;
-	run?: (context: CommandContext) => void | Promise<void>;
 	children?: Command[] | ((context: CommandContext) => Command[]);
 	renderFrame?: () => React.ReactNode;
 }

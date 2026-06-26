@@ -43,7 +43,7 @@ export function UserMessageAttachments({
 						>
 							<img
 								src={legacySrc}
-								alt="Attached"
+								alt="Вложение"
 								className="max-h-48 rounded-lg object-contain"
 							/>
 						</ImageHoverPreview>

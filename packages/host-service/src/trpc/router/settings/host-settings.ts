@@ -1,3 +1,11 @@
+import {
+	type OrchestrationStepKind,
+	parseRoleModelMapping,
+	type RoleModelMapping,
+	type RoleModelSelection,
+	selectModelForStep,
+	serializeRoleModelMapping,
+} from "@rox/shared/agent-roles";
 import type { BranchPrefixMode } from "@rox/shared/workspace-launch";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../../db";
@@ -28,6 +36,18 @@ function resolveLegacyWorktreeBaseDir(): string | null {
 		return null;
 	}
 }
+
+// Local-first create defaults OFF. This is the SAFE default for a
+// HIGH-blast-radius core-path change: a fresh `host_settings` row keeps
+// production on today's proven synchronous-cloud-with-rollback create until the
+// maintainer flips it (via `settings.localFirstCreate.set` or by seeding the
+// row). A null column also reads as OFF (see `getHostLocalFirstCreate`).
+export const DEFAULT_LOCAL_FIRST_CREATE = false;
+
+// Auto-init git defaults ON: the empty/template/import-in-place create
+// primitives already `git init` unconditionally, so a null column reads as true
+// (today's behavior). Only an explicit `false` opts out.
+export const DEFAULT_AUTO_INIT_GIT = true;
 
 /**
  * Read the single-row `host_settings` (`id = 1`), creating it with first-run
@@ -62,4 +82,108 @@ export function ensureHostSettingsRow(db: HostDb): HostSettingsRow {
 		throw new Error("Failed to read back seeded host_settings row");
 	}
 	return row;
+}
+
+/**
+ * Whether the instant local-first create path is enabled. Reads the host
+ * setting (seeding the row on first read); a null column → OFF
+ * (`DEFAULT_LOCAL_FIRST_CREATE`). Host-service reads this synchronously on the
+ * create call — no renderer round-trip — which is exactly why the flag lives in
+ * `host_settings` and not in the user-facing `experimental-features` registry.
+ */
+export function getHostLocalFirstCreate(db: HostDb): boolean {
+	return (
+		ensureHostSettingsRow(db).localFirstCreate ?? DEFAULT_LOCAL_FIRST_CREATE
+	);
+}
+
+/**
+ * One-time startup seed that flips real desktop builds onto the instant
+ * local-first create path WITHOUT changing the schema/getter default (which
+ * stays OFF so the regression baseline + existing tests remain valid).
+ *
+ * The `local_first_create` column is a NULLABLE boolean, so it distinguishes
+ * three states the getter collapses to two:
+ *   - `null`  → never chosen by the user (fresh row / upgrader who never touched
+ *               the toggle). The getter resolves this to OFF.
+ *   - `true`  → user (or this seed) explicitly enabled it.
+ *   - `false` → user explicitly DISABLED it (the kill-switch via
+ *               `settings.localFirstCreate.set false`).
+ *
+ * This seed writes `true` ONLY when the column is `null`. That makes it:
+ *   - idempotent: once seeded to `true` the column is non-null, so a later
+ *     startup is a no-op (the `?? null` guard short-circuits);
+ *   - kill-switch-safe: an explicit `false` is a real, non-null value, so the
+ *     seed never re-enables it — the user's OFF survives every restart;
+ *   - explicit-ON-safe: an explicit `true` is left untouched.
+ *
+ * Returns whether it actually wrote (true on the first launch only), purely for
+ * logging/testing visibility.
+ */
+export function seedLocalFirstCreateDefault(db: HostDb): boolean {
+	// Seeds the row if absent; `.localFirstCreate` is then null on a fresh row.
+	const current = ensureHostSettingsRow(db).localFirstCreate;
+	if (current !== null) {
+		// User (or a prior seed) already made an explicit choice — never override.
+		return false;
+	}
+	db.update(hostSettings)
+		.set({ localFirstCreate: true })
+		.where(eq(hostSettings.id, HOST_SETTINGS_ID))
+		.run();
+	return true;
+}
+
+/**
+ * Whether create auto-runs `git init` for a not-yet-a-repo folder. Null → true
+ * (`DEFAULT_AUTO_INIT_GIT`, today's behavior).
+ */
+export function getHostAutoInitGit(db: HostDb): boolean {
+	return ensureHostSettingsRow(db).autoInitGit ?? DEFAULT_AUTO_INIT_GIT;
+}
+
+/**
+ * Root dir new projects are created under, or null to fall back to the default
+ * `~/rox` at the call site (mirrors `getHostWorktreeBaseDir`).
+ */
+export function getHostProjectsBaseDir(db: HostDb): string | null {
+	return ensureHostSettingsRow(db).projectsBaseDir ?? null;
+}
+
+/**
+ * Role→model routing (Ф3, #508). Reads the `role_model_mapping_json` column
+ * (seeding the row on first read) and normalizes it into a complete
+ * {@link RoleModelMapping}; a null/invalid column resolves to all-ROX/ROX, so a
+ * zero-config install routes every role to the house agent + house model.
+ */
+export function getHostRoleModelMapping(db: HostDb): RoleModelMapping {
+	return parseRoleModelMapping(ensureHostSettingsRow(db).roleModelMappingJson);
+}
+
+/** Persist a full role→model mapping; returns the re-read, normalized mapping. */
+export function setHostRoleModelMapping(
+	db: HostDb,
+	mapping: RoleModelMapping,
+): RoleModelMapping {
+	const roleModelMappingJson = serializeRoleModelMapping(mapping);
+	db.insert(hostSettings)
+		.values({ id: HOST_SETTINGS_ID, roleModelMappingJson })
+		.onConflictDoUpdate({
+			target: hostSettings.id,
+			set: { roleModelMappingJson },
+		})
+		.run();
+	return getHostRoleModelMapping(db);
+}
+
+/**
+ * Runtime routing entrypoint the orchestrator consumes at the agent-run
+ * boundary: given a dispatched step kind, resolve the role it belongs to and
+ * return that role's configured agent+model (ROX/ROX when unconfigured).
+ */
+export function resolveRoleModelForStep(
+	db: HostDb,
+	stepKind: OrchestrationStepKind,
+): RoleModelSelection {
+	return selectModelForStep(stepKind, getHostRoleModelMapping(db));
 }

@@ -10,6 +10,7 @@ import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import { TaskDetailCrossLinks } from "../components/shared/CrossLinkChips";
 import { Route as TasksLayoutRoute } from "../layout";
 import { tasksSearchFromFilters } from "../stores/tasks-filter-state";
 import { ActivitySection } from "./components/ActivitySection";
@@ -159,6 +160,13 @@ function TaskDetailPage() {
 				<ScrollArea className="flex-1 min-h-0">
 					<div className="px-6 py-6 max-w-4xl">
 						<EditableTitle value={task.title} onSave={handleSaveTitle} />
+
+						<div className="mt-3">
+							<TaskDetailCrossLinks
+								taskId={task.id}
+								projectId={project ?? null}
+							/>
+						</div>
 
 						<MarkdownEditor
 							content={task.description ?? ""}

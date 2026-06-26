@@ -6,15 +6,29 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import {
+	groupSessionsByAge,
+	isGroupCollapsed,
+	type SessionAgeGroup,
+	type SessionAgeGroupKey,
+} from "@rox/ui/session-row";
 import { useEffect, useMemo, useState } from "react";
-import { HiMiniChevronDown, HiMiniPlus } from "react-icons/hi2";
+import {
+	HiMiniChevronDown,
+	HiMiniChevronRight,
+	HiMiniPlus,
+} from "react-icons/hi2";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";
+import { useChatPreferencesStore } from "renderer/stores/chat-preferences/store";
 import { SessionSelectorItem } from "./components/SessionSelectorItem";
+import { selectPinnedSessions } from "./utils/selectPinnedSessions/selectPinnedSessions";
 
 interface SessionItem {
 	sessionId: string;
 	title: string;
 	updatedAt: Date;
+	pinned: boolean;
+	pinnedAt: Date | null;
 }
 
 interface SessionSelectorProps {
@@ -24,51 +38,31 @@ interface SessionSelectorProps {
 	onSelectSession: (sessionId: string) => void;
 	onNewChat: () => Promise<void>;
 	onDeleteSession: (sessionId: string) => Promise<void>;
-}
-
-interface SessionGroup {
-	label: string;
-	sessions: SessionItem[];
+	onSetPinned: (sessionId: string, pinned: boolean) => Promise<void>;
 }
 
 const SESSION_PAGE_SIZE = 20;
+// Sticky-top pinned group is capped so a runaway pin list can't crowd out the
+// time-grouped history. Excess pinned sessions still appear in their time group.
+const PINNED_GROUP_CAP = 10;
+const PINNED_GROUP_LABEL = "★ Закреплённые";
+const NEW_CHAT_LABEL = "Новый чат";
 
-function toSessionGroupLabel(updatedAt: Date): string {
-	const startOfToday = new Date();
-	startOfToday.setHours(0, 0, 0, 0);
+// Localized headers for the shared `groupSessionsByAge` keys (F18). The `older`
+// bucket renders a relative label from its `olderAt` so far-back history reads
+// naturally instead of a flat "Older".
+const GROUP_LABELS: Record<Exclude<SessionAgeGroupKey, "older">, string> = {
+	today: "Сегодня",
+	yesterday: "Вчера",
+	last7Days: "Последние 7 дней",
+	last30Days: "Последние 30 дней",
+};
 
-	const startOfYesterday = new Date(startOfToday);
-	startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-
-	const startOfLastWeek = new Date(startOfToday);
-	startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
-
-	const startOfLastMonth = new Date(startOfToday);
-	startOfLastMonth.setDate(startOfLastMonth.getDate() - 30);
-
-	if (updatedAt >= startOfToday) return "Today";
-	if (updatedAt >= startOfYesterday) return "Yesterday";
-	if (updatedAt >= startOfLastWeek) return "Last 7 days";
-	if (updatedAt >= startOfLastMonth) return "Last 30 days";
-	return getRelativeTime(updatedAt.getTime());
-}
-
-function groupSessionsByAge(sessions: SessionItem[]): SessionGroup[] {
-	const groups: SessionGroup[] = [];
-
-	for (const session of sessions) {
-		const label = toSessionGroupLabel(session.updatedAt);
-		const lastGroup = groups[groups.length - 1];
-
-		if (lastGroup?.label === label) {
-			lastGroup.sessions.push(session);
-			continue;
-		}
-
-		groups.push({ label, sessions: [session] });
+function sessionGroupLabel(group: SessionAgeGroup<SessionItem>): string {
+	if (group.key === "older") {
+		return group.olderAt !== null ? getRelativeTime(group.olderAt) : "Ранее";
 	}
-
-	return groups;
+	return GROUP_LABELS[group.key];
 }
 
 export function SessionSelector({
@@ -78,19 +72,36 @@ export function SessionSelector({
 	onSelectSession,
 	onNewChat,
 	onDeleteSession,
+	onSetPinned,
 }: SessionSelectorProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [visibleCount, setVisibleCount] = useState(SESSION_PAGE_SIZE);
 
+	const collapsedGroups = useChatPreferencesStore(
+		(state) => state.collapsedSessionGroups,
+	);
+	const toggleGroupCollapsed = useChatPreferencesStore(
+		(state) => state.toggleSessionGroupCollapsed,
+	);
+
+	// Sticky-top pinned group (capped) ahead of the time-grouped list; `rest`
+	// excludes whatever's shown in the pinned group so no chat renders twice.
+	const { pinned: pinnedSessions, rest: unpinnedSessions } = useMemo(
+		() => selectPinnedSessions(sessions, PINNED_GROUP_CAP),
+		[sessions],
+	);
+
 	const visibleSessions = useMemo(
-		() => sessions.slice(0, visibleCount),
-		[sessions, visibleCount],
+		() => unpinnedSessions.slice(0, visibleCount),
+		[unpinnedSessions, visibleCount],
 	);
 	const groupedSessions = useMemo(
-		() => groupSessionsByAge(visibleSessions),
+		// Wall-clock `now` for the shared core; a server-time hook can be threaded
+		// here later without touching the grouping logic.
+		() => groupSessionsByAge(visibleSessions, new Date()),
 		[visibleSessions],
 	);
-	const hasMoreSessions = sessions.length > visibleCount;
+	const hasMoreSessions = unpinnedSessions.length > visibleCount;
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -106,9 +117,15 @@ export function SessionSelector({
 	const current = sessions.find(
 		(session) => session.sessionId === currentSessionId,
 	);
-	const resolvedFallbackTitle =
-		fallbackTitle && fallbackTitle !== "New Chat" ? fallbackTitle : null;
-	const currentTitle = current?.title || resolvedFallbackTitle || "New Chat";
+	// Treat the legacy "New Chat" sentinel (still passed by ChatPaneTitle) and
+	// its RU equivalent as "no real title yet" so the placeholder shows instead.
+	const isPlaceholderFallback =
+		!fallbackTitle ||
+		fallbackTitle === "New Chat" ||
+		fallbackTitle === NEW_CHAT_LABEL;
+	const resolvedFallbackTitle = isPlaceholderFallback ? null : fallbackTitle;
+	const currentTitle =
+		current?.title || resolvedFallbackTitle || NEW_CHAT_LABEL;
 
 	return (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -125,36 +142,78 @@ export function SessionSelector({
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-80">
-				<DropdownMenuLabel className="text-xs">Sessions</DropdownMenuLabel>
+				<DropdownMenuLabel className="text-xs">Сессии</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<div className="max-h-80 overflow-y-auto">
 					{sessions.length > 0 ? (
 						<>
-							{groupedSessions.map((group, index) => (
-								<div
-									key={`${group.label}-${group.sessions[0]?.sessionId ?? index}`}
-									className={
-										index > 0 ? "mt-1 border-t border-border/50 pt-1" : ""
-									}
-								>
+							{pinnedSessions.length > 0 && (
+								<div>
 									<div className="px-2 py-1 text-xs text-muted-foreground">
-										{group.label}
+										{PINNED_GROUP_LABEL}
 									</div>
-									{group.sessions.map((session) => (
+									{pinnedSessions.map((session) => (
 										<SessionSelectorItem
 											key={session.sessionId}
 											sessionId={session.sessionId}
 											title={session.title}
 											isCurrent={session.sessionId === currentSessionId}
+											pinned={session.pinned}
 											onSelectSession={(sessionId) => {
 												onSelectSession(sessionId);
 												setIsOpen(false);
 											}}
 											onDeleteSession={onDeleteSession}
+											onSetPinned={onSetPinned}
 										/>
 									))}
 								</div>
-							))}
+							)}
+							{groupedSessions.map((group, index) => {
+								const collapsed = isGroupCollapsed(collapsedGroups, group.key);
+								return (
+									<div
+										key={`${group.key}-${group.sessions[0]?.sessionId ?? index}`}
+										className={
+											index > 0 || pinnedSessions.length > 0
+												? "mt-1 border-t border-border/50 pt-1"
+												: ""
+										}
+									>
+										<button
+											type="button"
+											aria-expanded={!collapsed}
+											className="flex w-full items-center gap-1 px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+											onClick={() => toggleGroupCollapsed(group.key)}
+										>
+											{collapsed ? (
+												<HiMiniChevronRight className="size-3 shrink-0" />
+											) : (
+												<HiMiniChevronDown className="size-3 shrink-0" />
+											)}
+											<span className="truncate">
+												{sessionGroupLabel(group)}
+											</span>
+										</button>
+										{!collapsed &&
+											group.sessions.map((session) => (
+												<SessionSelectorItem
+													key={session.sessionId}
+													sessionId={session.sessionId}
+													title={session.title}
+													isCurrent={session.sessionId === currentSessionId}
+													pinned={session.pinned}
+													onSelectSession={(sessionId) => {
+														onSelectSession(sessionId);
+														setIsOpen(false);
+													}}
+													onDeleteSession={onDeleteSession}
+													onSetPinned={onSetPinned}
+												/>
+											))}
+									</div>
+								);
+							})}
 							{hasMoreSessions && (
 								<div className="px-2 py-1.5">
 									<button
@@ -162,14 +221,14 @@ export function SessionSelector({
 										className="w-full rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 										onClick={loadMoreSessions}
 									>
-										Show more sessions
+										Показать ещё
 									</button>
 								</div>
 							)}
 						</>
 					) : (
 						<div className="px-2 py-1.5 text-xs text-muted-foreground">
-							No sessions yet
+							Пока нет сессий
 						</div>
 					)}
 				</div>
@@ -182,7 +241,7 @@ export function SessionSelector({
 					}}
 				>
 					<HiMiniPlus className="mr-1.5 size-3.5" />
-					<span className="text-xs">New Chat</span>
+					<span className="text-xs">{NEW_CHAT_LABEL}</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

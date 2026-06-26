@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas } from "@rox/ui/ai-elements/canvas";
+import { Connection as TemporaryConnectionLine } from "@rox/ui/ai-elements/connection";
 import { Controls } from "@rox/ui/ai-elements/controls";
 import {
 	addEdge,
@@ -10,31 +11,63 @@ import {
 	type Edge,
 	type EdgeChange,
 	MarkerType,
+	MiniMap,
 	type Node,
 	type NodeChange,
 	type OnConnect,
 	useEdgesState,
 	useNodesState,
+	useReactFlow,
 } from "@rox/ui/ai-elements/flow";
 import { Panel } from "@rox/ui/ai-elements/panel";
 import { Button } from "@rox/ui/button";
-import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import type {
-	PipelineFlowEdge,
-	PipelineFlowNode,
-	PipelineNodeKind,
-} from "../graph-adapter";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Textarea } from "@rox/ui/textarea";
+import type { RoxWorkflowState } from "@rox/workflow-core";
+import {
+	BookmarkPlus,
+	LayoutTemplate,
+	Plus,
+	Sparkles,
+	Wand2,
+} from "lucide-react";
+import {
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import type { PipelineTemplate } from "../../templates";
+import { canConnect } from "../connection-rules";
+import type { PipelineFlowEdge, PipelineFlowNode } from "../graph-adapter";
+import { NodePalette, PALETTE_DND_MIME } from "../NodePalette";
 import { PIPELINE_EDGE_TYPES, PIPELINE_NODE_TYPES } from "../nodes";
+import { TemplateGallery } from "../TemplateGallery";
+import { miniMapColorForType } from "./miniMapColor";
 
-const ANIMATED_EDGE_DEFAULTS = {
-	type: "animated",
+/** New edges are branch-coloured + arrow-tipped (default `out` branch). */
+const NEW_EDGE_DEFAULTS = {
+	type: "branch",
+	data: { branch: "out" },
 	markerEnd: { type: MarkerType.ArrowClosed },
 } as const;
 
+/** Imperative handle the editor uses to fit/centre after an auto-layout. */
 export type PipelineCanvasHandle = {
-	getNodes: () => PipelineFlowNode[];
-	getEdges: () => PipelineFlowEdge[];
+	fitView: () => void;
+	/** Flow coordinates of the current viewport centre (palette pick target). */
+	getViewportCenter: () => { x: number; y: number };
 };
 
 type PipelineCanvasProps = {
@@ -44,53 +77,138 @@ type PipelineCanvasProps = {
 	edges: PipelineFlowEdge[];
 	/** Currently-selected node id (for panel sync). */
 	selectedNodeId: string | null;
+	/** Project scope for the palette's role list. */
+	v2ProjectId?: string;
 	onSelectNode: (nodeId: string | null) => void;
 	/** Called (debounced by the parent) whenever nodes/edges change. */
 	onGraphChange: (nodes: PipelineFlowNode[], edges: PipelineFlowEdge[]) => void;
-	/** Add a node of the given kind at a default position. */
-	onAddNode: (kind: PipelineNodeKind) => void;
+	/** Add a node of the given registry type at a default position (palette click). */
+	onAddNode: (
+		type: string,
+		opts?: { roleSlug?: string; label?: string },
+	) => void;
+	/** Drop a node at a precise flow position (drag-from-palette). */
+	onDropNode: (
+		type: string,
+		position: { x: number; y: number },
+		roleSlug?: string,
+		label?: string,
+	) => void;
+	/** Open the cmdk add-node command palette. */
+	onOpenPalette: () => void;
+	/** Run the dagre auto-layout. */
+	onAutoLayout: () => void;
+	/** Apply a gallery template (replace empty canvas / insert into non-empty). */
+	onApplyTemplate: (next: RoxWorkflowState) => void;
+	/** Session-local "Save as template" results, shown first in the gallery. */
+	savedTemplates: readonly PipelineTemplate[];
+	/** Serialise the current graph into a session-local template. */
+	onSaveAsTemplate: (meta: { name: string; description: string }) => void;
+	/** Imperative handle (fitView / viewport centre). */
+	handleRef: React.Ref<PipelineCanvasHandle>;
+	/** Whether the canvas is empty apart from the start node (show hint overlay). */
+	showEmptyHint: boolean;
+	/**
+	 * Monotonic counter the editor bumps to force a full canvas re-seed from
+	 * `initialNodes`/`initialEdges` even when the structural signature is
+	 * unchanged — used after an auto-layout (positions move but ids/edges don't),
+	 * which must NOT be folded into the position-independent signature (that would
+	 * clobber in-progress drags). Undo/redo also bumps this.
+	 */
+	reseedKey: number;
 };
 
 /**
- * The interactive pipeline canvas: draggable agent-role/loop/approval nodes,
- * connectable edges, selection, and live graph-change notifications. Wires the
- * unused `@rox/ui/ai-elements` xyflow primitives (Canvas / Controls / Panel /
- * Node / Edge) to the Agent Pipelines graph model.
+ * The interactive pipeline canvas. A left dock palette (categorized, searchable,
+ * drag-n-drop) adds nodes; the canvas renders registry-driven nodes with typed
+ * ports and branch-coloured edges; a MiniMap (tinted by registry category) and
+ * zoom controls aid navigation; a templates gallery seeds whole graphs. A
+ * top-left panel exposes the cmdk add-node palette, the dagre auto-layout, and
+ * the templates gallery (desktop parity). Connections are guarded by
+ * `isValidConnection` (no self-loop / into-start / duplicate).
  *
  * Node/edge state is owned here via xyflow's controlled hooks; the parent passes
  * derived nodes/edges and receives change callbacks to persist back to
- * `RoxWorkflowState`.
+ * `RoxWorkflowState`. Cache-first (AGENTS.md #9): existing nodes always render;
+ * an incoming external graph re-syncs only when its structural signature changes,
+ * or when `reseedKey` is bumped (auto-layout / undo/redo move positions only).
  */
 export function PipelineCanvas({
 	nodes: initialNodes,
 	edges: initialEdges,
 	selectedNodeId,
+	v2ProjectId,
 	onSelectNode,
 	onGraphChange,
 	onAddNode,
+	onDropNode,
+	onOpenPalette,
+	onAutoLayout,
+	onApplyTemplate,
+	savedTemplates,
+	onSaveAsTemplate,
+	handleRef,
+	showEmptyHint,
+	reseedKey,
 }: PipelineCanvasProps) {
 	const [nodes, setNodes] = useNodesState<PipelineFlowNode>(initialNodes);
 	const [edges, setEdges] = useEdgesState<PipelineFlowEdge>(initialEdges);
+	const [galleryOpen, setGalleryOpen] = useState(false);
+	const [saveOpen, setSaveOpen] = useState(false);
+	const flow = useReactFlow();
+	const wrapperRef = useRef<HTMLDivElement>(null);
 
 	// Keep a ref to the latest graph so the parent can read it on demand (save).
 	const latest = useRef({ nodes, edges });
 	latest.current = { nodes, edges };
 
+	useImperativeHandle(
+		handleRef,
+		() => ({
+			fitView: () => flow.fitView({ duration: 300, padding: 0.2 }),
+			getViewportCenter: () => {
+				const el = wrapperRef.current;
+				const rect = el?.getBoundingClientRect();
+				if (!rect) return { x: 0, y: 0 };
+				return flow.screenToFlowPosition({
+					x: rect.left + rect.width / 2,
+					y: rect.top + rect.height / 2,
+				});
+			},
+		}),
+		[flow],
+	);
+
 	// Re-sync when the persisted graph identity changes (e.g. template applied,
-	// pipeline switched). We compare by a structural signature so local drags
-	// don't clobber in-progress edits.
+	// pipeline switched). We compare by a structural signature that is
+	// position-INDEPENDENT so a local node drag never re-seeds mid-gesture (the
+	// drag is already reflected via handleNodesChange). Position-moving operations
+	// that must re-seed without a structural change (auto-layout, undo/redo) are
+	// driven explicitly by `reseedKey` below.
 	const incomingSignature = useMemo(
 		() => signatureOf(initialNodes, initialEdges),
 		[initialNodes, initialEdges],
 	);
 	const appliedSignature = useRef(incomingSignature);
+	const appliedReseedKey = useRef(reseedKey);
 	useEffect(() => {
-		if (incomingSignature !== appliedSignature.current) {
+		if (
+			incomingSignature !== appliedSignature.current ||
+			reseedKey !== appliedReseedKey.current
+		) {
 			appliedSignature.current = incomingSignature;
+			appliedReseedKey.current = reseedKey;
 			setNodes(initialNodes);
 			setEdges(initialEdges);
 		}
-	}, [incomingSignature, initialNodes, initialEdges, setNodes, setEdges]);
+	}, [
+		incomingSignature,
+		reseedKey,
+		initialNodes,
+		initialEdges,
+		setNodes,
+		setEdges,
+	]);
 
 	// Mark selection on the nodes so custom renderers can show the ring.
 	const decoratedNodes = useMemo(
@@ -104,8 +222,10 @@ export function PipelineCanvas({
 
 	const handleConnect = useCallback<OnConnect>(
 		(connection: Connection) => {
+			// Carry the source branch handle so the edge colours/labels correctly.
+			const branch = connection.sourceHandle ?? "out";
 			const next = addEdge(
-				{ ...connection, ...ANIMATED_EDGE_DEFAULTS },
+				{ ...connection, ...NEW_EDGE_DEFAULTS, data: { branch } },
 				latest.current.edges,
 			) as PipelineFlowEdge[];
 			latest.current = { nodes: latest.current.nodes, edges: next };
@@ -113,6 +233,17 @@ export function PipelineCanvas({
 			onGraphChange(latest.current.nodes, next);
 		},
 		[setEdges, onGraphChange],
+	);
+
+	// Typed-port guard: reject self-loops, edges into start, and duplicates.
+	const isValidConnection = useCallback(
+		(connection: Connection | Edge) =>
+			canConnect(
+				connection as Connection,
+				latest.current.nodes,
+				latest.current.edges,
+			),
+		[],
 	);
 
 	const handleNodesChange = useCallback(
@@ -158,49 +289,249 @@ export function PipelineCanvas({
 		onSelectNode(null);
 	}, [onSelectNode]);
 
+	// --- Drag-from-palette (native HTML DnD) -----------------------------------
+	const handleDragOver = useCallback((event: React.DragEvent) => {
+		if (!event.dataTransfer.types.includes(PALETTE_DND_MIME)) return;
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "copy";
+	}, []);
+
+	const handleDrop = useCallback(
+		(event: React.DragEvent) => {
+			const raw = event.dataTransfer.getData(PALETTE_DND_MIME);
+			if (!raw) return;
+			event.preventDefault();
+			let payload: { type?: string; roleSlug?: string; label?: string };
+			try {
+				payload = JSON.parse(raw);
+			} catch {
+				return;
+			}
+			if (!payload.type) return;
+			const position = flow.screenToFlowPosition({
+				x: event.clientX,
+				y: event.clientY,
+			});
+			onDropNode(payload.type, position, payload.roleSlug, payload.label);
+		},
+		[flow, onDropNode],
+	);
+
 	return (
-		<Canvas
-			nodes={decoratedNodes as Node[]}
-			edges={edges as Edge[]}
-			nodeTypes={PIPELINE_NODE_TYPES}
-			edgeTypes={PIPELINE_EDGE_TYPES}
-			// The canvas primitive defaults its node/edge generics to the base xyflow
-			// types; our change handlers are typed against the concrete pipeline node
-			// (a structural subtype), so we cast at the prop boundary.
-			onNodesChange={handleNodesChange as (changes: NodeChange<Node>[]) => void}
-			onEdgesChange={handleEdgesChange as (changes: EdgeChange<Edge>[]) => void}
-			onConnect={handleConnect}
-			onNodeClick={handleNodeClick}
-			onPaneClick={handlePaneClick}
-		>
-			<Controls showInteractive={false} />
-			<Panel position="top-left" className="flex gap-1">
-				<Button
-					size="sm"
-					variant="ghost"
-					onClick={() => onAddNode("agent_run")}
+		<div className="flex h-full">
+			<NodePalette v2ProjectId={v2ProjectId} onAddNode={onAddNode} />
+			{/* The canvas drop surface — the interactive widget is the xyflow
+			    <Canvas> inside; this wrapper relays palette drag-n-drop to add a
+			    node at the cursor (role=application so it's not a "static" element). */}
+			<div
+				ref={wrapperRef}
+				className="relative min-w-0 flex-1"
+				role="application"
+				aria-label="Холст пайплайна"
+				onDragOver={handleDragOver}
+				onDrop={handleDrop}
+			>
+				<Canvas
+					nodes={decoratedNodes as Node[]}
+					edges={edges as Edge[]}
+					nodeTypes={PIPELINE_NODE_TYPES}
+					edgeTypes={PIPELINE_EDGE_TYPES}
+					connectionLineComponent={TemporaryConnectionLine}
+					isValidConnection={isValidConnection}
+					// The canvas primitive defaults its node/edge generics to the base
+					// xyflow types; our change handlers are typed against the concrete
+					// pipeline node (a structural subtype), so we cast at the prop boundary.
+					onNodesChange={
+						handleNodesChange as (changes: NodeChange<Node>[]) => void
+					}
+					onEdgesChange={
+						handleEdgesChange as (changes: EdgeChange<Edge>[]) => void
+					}
+					onConnect={handleConnect}
+					onNodeClick={handleNodeClick}
+					onPaneClick={handlePaneClick}
 				>
-					<Plus className="size-3.5" /> Агент
-				</Button>
-				<Button size="sm" variant="ghost" onClick={() => onAddNode("loop")}>
-					<Plus className="size-3.5" /> Цикл
-				</Button>
-				<Button
-					size="sm"
-					variant="ghost"
-					onClick={() => onAddNode("human_approval")}
-				>
-					<Plus className="size-3.5" /> Подтверждение
-				</Button>
-				<Button size="sm" variant="ghost" onClick={() => onAddNode("response")}>
-					<Plus className="size-3.5" /> Финал
-				</Button>
-			</Panel>
-		</Canvas>
+					<Controls showInteractive={false} />
+					<MiniMap
+						pannable
+						zoomable
+						className="!bottom-3 !right-3 rounded-md border bg-card/80 backdrop-blur"
+						nodeColor={(node) =>
+							miniMapColorForType(
+								(node.data as { blockType?: string })?.blockType,
+							)
+						}
+						nodeStrokeWidth={2}
+						maskColor="color-mix(in oklab, var(--sidebar) 70%, transparent)"
+					/>
+					<Panel
+						position="top-left"
+						className="flex max-w-[min(42rem,calc(100vw-24rem))] flex-wrap items-center gap-1"
+					>
+						<Button
+							size="sm"
+							variant="default"
+							aria-label="Добавить узел"
+							onClick={onOpenPalette}
+						>
+							<Plus className="size-3.5" /> Добавить узел
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Авто-раскладка графа"
+							onClick={onAutoLayout}
+						>
+							<Wand2 className="size-3.5" /> Авто-раскладка
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Шаблоны пайплайнов"
+							onClick={() => setGalleryOpen(true)}
+						>
+							<LayoutTemplate className="size-3.5" /> Шаблоны
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Сохранить как шаблон"
+							onClick={() => setSaveOpen(true)}
+						>
+							<BookmarkPlus className="size-3.5" /> Сохранить как шаблон
+						</Button>
+					</Panel>
+				</Canvas>
+
+				{/* Empty-graph hint overlay (start only) — non-interactive. */}
+				{showEmptyHint && (
+					<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+						<div className="flex items-center gap-2 rounded-md border bg-card/80 px-4 py-2 text-xs text-muted-foreground backdrop-blur">
+							<Sparkles className="size-3.5 text-primary" />
+							Перетащите узел из палитры слева или выберите шаблон
+						</div>
+					</div>
+				)}
+
+				<TemplateGallery
+					open={galleryOpen}
+					onOpenChange={setGalleryOpen}
+					extraTemplates={savedTemplates}
+					onInsert={(state) => {
+						onApplyTemplate(state);
+						setGalleryOpen(false);
+					}}
+				/>
+
+				<SaveTemplateDialog
+					open={saveOpen}
+					onOpenChange={setSaveOpen}
+					onSave={(meta) => {
+						onSaveAsTemplate(meta);
+						setSaveOpen(false);
+					}}
+				/>
+			</div>
+		</div>
 	);
 }
 
-/** Structural signature used to detect when an externally-provided graph changes. */
+/**
+ * "Save as template" dialog: a name + optional description, then serialise the
+ * current graph into a session-local template (the parent's `onSaveAsTemplate`
+ * runs the builder). Name is required; the description defaults to a short hint.
+ */
+function SaveTemplateDialog({
+	open,
+	onOpenChange,
+	onSave,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onSave: (meta: { name: string; description: string }) => void;
+}) {
+	const [name, setName] = useState("");
+	const [description, setDescription] = useState("");
+
+	// Reset the fields whenever the dialog re-opens.
+	useEffect(() => {
+		if (open) {
+			setName("");
+			setDescription("");
+		}
+	}, [open]);
+
+	const trimmed = name.trim();
+	const submit = () => {
+		if (trimmed.length === 0) return;
+		onSave({
+			name: trimmed,
+			description:
+				description.trim() || "Сохранено из текущего графа редактора.",
+		});
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="sm:max-w-md">
+				<DialogHeader>
+					<DialogTitle>Сохранить как шаблон</DialogTitle>
+					<DialogDescription>
+						Текущий граф станет шаблоном, доступным в галерее для вставки.
+					</DialogDescription>
+				</DialogHeader>
+				<div className="space-y-3">
+					<div className="space-y-1.5">
+						<Label htmlFor="template-name">Название</Label>
+						<Input
+							id="template-name"
+							autoFocus
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") submit();
+							}}
+							placeholder="Например: Мой RAG-бот"
+						/>
+					</div>
+					<div className="space-y-1.5">
+						<Label htmlFor="template-description">Описание</Label>
+						<Textarea
+							id="template-description"
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							placeholder="Короткое описание шаблона (необязательно)."
+							rows={3}
+						/>
+					</div>
+				</div>
+				<DialogFooter>
+					<Button
+						variant="ghost"
+						onClick={() => onOpenChange(false)}
+						type="button"
+					>
+						Отмена
+					</Button>
+					<Button
+						onClick={submit}
+						disabled={trimmed.length === 0}
+						type="button"
+					>
+						Сохранить
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+/**
+ * Structural signature used to detect when an externally-provided graph changes.
+ * Position-INDEPENDENT on purpose: a node drag must not trigger a re-seed (that
+ * would clobber the in-progress gesture). Includes the source branch handle so a
+ * branch rewire still re-seeds. Position-only operations re-seed via `reseedKey`.
+ */
 function signatureOf(
 	nodes: PipelineFlowNode[],
 	edges: PipelineFlowEdge[],
@@ -210,7 +541,7 @@ function signatureOf(
 		.sort()
 		.join("|");
 	const edgePart = edges
-		.map((e) => `${e.source}->${e.target}`)
+		.map((e) => `${e.source}->${e.target}:${e.sourceHandle ?? ""}`)
 		.sort()
 		.join("|");
 	return `${nodePart}##${edgePart}`;
