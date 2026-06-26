@@ -23,6 +23,7 @@ import { ensureBalance } from "../economy/economy.service";
 
 const activationStepSchema = z.enum(ACTIVATION_STEPS);
 const surfaceTourIdSchema = z.enum(REQUIRED_SURFACE_TOURS);
+const POSTGRES_UNDEFINED_COLUMN = "42703";
 
 const onboardingProgressPatchSchema = z.object({
 	activation: z
@@ -113,6 +114,83 @@ function mergeOnboardingStatus(
 			},
 		},
 	});
+}
+
+function getErrorCode(error: unknown): string | undefined {
+	if (typeof error !== "object" || error === null || !("code" in error)) {
+		return undefined;
+	}
+
+	const code = (error as { code?: unknown }).code;
+	return typeof code === "string" ? code : undefined;
+}
+
+function isOnboardingProgressColumnMissing(error: unknown) {
+	const message = error instanceof Error ? error.message : "";
+	return (
+		getErrorCode(error) === POSTGRES_UNDEFINED_COLUMN &&
+		message.includes("onboarding_progress")
+	);
+}
+
+function normalizeOnboardingStatusFromUser(
+	user:
+		| { onboardedAt: Date | null; onboardingProgress?: OnboardingStatus | null }
+		| null
+		| undefined,
+) {
+	const progress = normalizeOnboardingStatus(user?.onboardingProgress);
+
+	if (user?.onboardedAt && !progress.activation.completedAt) {
+		progress.activation.completedAt = user.onboardedAt.toISOString();
+		progress.activation.currentStep = "first_agent_action";
+	}
+
+	return progress;
+}
+
+async function findUserOnboardedAt(userId: string) {
+	const [user] = await db
+		.select({ onboardedAt: users.onboardedAt })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+
+	if (!user) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "User not found",
+		});
+	}
+
+	return user;
+}
+
+async function updateOnboardedAtOnly(userId: string, completedAt: Date) {
+	const [updatedUser] = await db
+		.update(users)
+		.set({ onboardedAt: completedAt })
+		.where(eq(users.id, userId))
+		.returning({
+			id: users.id,
+			name: users.name,
+			email: users.email,
+			emailVerified: users.emailVerified,
+			image: users.image,
+			organizationIds: users.organizationIds,
+			onboardedAt: users.onboardedAt,
+			createdAt: users.createdAt,
+			updatedAt: users.updatedAt,
+		});
+
+	if (!updatedUser) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "User not found",
+		});
+	}
+
+	return updatedUser;
 }
 
 export const userRouter = {
@@ -228,50 +306,65 @@ export const userRouter = {
 		}),
 
 	onboardingProgress: protectedProcedure.query(async ({ ctx }) => {
-		const user = await db.query.users.findFirst({
-			where: eq(users.id, ctx.session.user.id),
-			columns: {
-				onboardedAt: true,
-				onboardingProgress: true,
-			},
-		});
-		const progress = normalizeOnboardingStatus(user?.onboardingProgress);
+		try {
+			const user = await db.query.users.findFirst({
+				where: eq(users.id, ctx.session.user.id),
+				columns: {
+					onboardedAt: true,
+					onboardingProgress: true,
+				},
+			});
 
-		if (user?.onboardedAt && !progress.activation.completedAt) {
-			progress.activation.completedAt = user.onboardedAt.toISOString();
-			progress.activation.currentStep = "first_agent_action";
+			return normalizeOnboardingStatusFromUser(user);
+		} catch (error) {
+			if (!isOnboardingProgressColumnMissing(error)) {
+				throw error;
+			}
+
+			return normalizeOnboardingStatusFromUser(
+				await findUserOnboardedAt(ctx.session.user.id),
+			);
 		}
-
-		return progress;
 	}),
 
 	updateOnboardingProgress: protectedProcedure
 		.input(onboardingProgressPatchSchema)
 		.mutation(async ({ ctx, input }) => {
-			return dbWs.transaction(async (tx) => {
-				const [user] = await tx
-					.select({ onboardingProgress: users.onboardingProgress })
-					.from(users)
-					.where(eq(users.id, ctx.session.user.id))
-					.for("update")
-					.limit(1);
+			try {
+				return await dbWs.transaction(async (tx) => {
+					const [user] = await tx
+						.select({ onboardingProgress: users.onboardingProgress })
+						.from(users)
+						.where(eq(users.id, ctx.session.user.id))
+						.for("update")
+						.limit(1);
 
-				if (!user) {
-					throw new TRPCError({
-						code: "NOT_FOUND",
-						message: "User not found",
-					});
+					if (!user) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "User not found",
+						});
+					}
+
+					const next = mergeOnboardingStatus(user.onboardingProgress, input);
+
+					await tx
+						.update(users)
+						.set({ onboardingProgress: next })
+						.where(eq(users.id, ctx.session.user.id));
+
+					return next;
+				});
+			} catch (error) {
+				if (!isOnboardingProgressColumnMissing(error)) {
+					throw error;
 				}
 
-				const next = mergeOnboardingStatus(user.onboardingProgress, input);
-
-				await tx
-					.update(users)
-					.set({ onboardingProgress: next })
-					.where(eq(users.id, ctx.session.user.id));
-
-				return next;
-			});
+				const current = normalizeOnboardingStatusFromUser(
+					await findUserOnboardedAt(ctx.session.user.id),
+				);
+				return mergeOnboardingStatus(current, input);
+			}
 		}),
 
 	completeActivation: protectedProcedure
@@ -285,7 +378,56 @@ export const userRouter = {
 		.mutation(async ({ ctx, input }) => {
 			const completedAt = new Date();
 			const completedAtIso = completedAt.toISOString();
-			return dbWs.transaction(async (tx) => {
+			try {
+				return await dbWs.transaction(async (tx) => {
+					const [user] = await tx
+						.select({ onboardingProgress: users.onboardingProgress })
+						.from(users)
+						.where(eq(users.id, ctx.session.user.id))
+						.for("update")
+						.limit(1);
+
+					if (!user) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "User not found",
+						});
+					}
+
+					const next = mergeOnboardingStatus(user.onboardingProgress, {
+						activation: {
+							completedAt: completedAtIso,
+							currentStep: "first_agent_action",
+							completedSteps: {
+								first_agent_action: completedAtIso,
+							},
+							projectId: input.projectId ?? null,
+							workspaceId: input.workspaceId ?? null,
+						},
+					});
+
+					const [updatedUser] = await tx
+						.update(users)
+						.set({ onboardedAt: completedAt, onboardingProgress: next })
+						.where(eq(users.id, ctx.session.user.id))
+						.returning();
+
+					return updatedUser;
+				});
+			} catch (error) {
+				if (!isOnboardingProgressColumnMissing(error)) {
+					throw error;
+				}
+
+				return updateOnboardedAtOnly(ctx.session.user.id, completedAt);
+			}
+		}),
+
+	completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+		const completedAt = new Date();
+		const completedAtIso = completedAt.toISOString();
+		try {
+			return await dbWs.transaction(async (tx) => {
 				const [user] = await tx
 					.select({ onboardingProgress: users.onboardingProgress })
 					.from(users)
@@ -307,8 +449,6 @@ export const userRouter = {
 						completedSteps: {
 							first_agent_action: completedAtIso,
 						},
-						projectId: input.projectId ?? null,
-						workspaceId: input.workspaceId ?? null,
 					},
 				});
 
@@ -317,46 +457,15 @@ export const userRouter = {
 					.set({ onboardedAt: completedAt, onboardingProgress: next })
 					.where(eq(users.id, ctx.session.user.id))
 					.returning();
-
 				return updatedUser;
 			});
-		}),
-
-	completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
-		const completedAt = new Date();
-		const completedAtIso = completedAt.toISOString();
-		return dbWs.transaction(async (tx) => {
-			const [user] = await tx
-				.select({ onboardingProgress: users.onboardingProgress })
-				.from(users)
-				.where(eq(users.id, ctx.session.user.id))
-				.for("update")
-				.limit(1);
-
-			if (!user) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "User not found",
-				});
+		} catch (error) {
+			if (!isOnboardingProgressColumnMissing(error)) {
+				throw error;
 			}
 
-			const next = mergeOnboardingStatus(user.onboardingProgress, {
-				activation: {
-					completedAt: completedAtIso,
-					currentStep: "first_agent_action",
-					completedSteps: {
-						first_agent_action: completedAtIso,
-					},
-				},
-			});
-
-			const [updatedUser] = await tx
-				.update(users)
-				.set({ onboardedAt: completedAt, onboardingProgress: next })
-				.where(eq(users.id, ctx.session.user.id))
-				.returning();
-			return updatedUser;
-		});
+			return updateOnboardedAtOnly(ctx.session.user.id, completedAt);
+		}
 	}),
 
 	uploadAvatar: protectedProcedure

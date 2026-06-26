@@ -13,6 +13,9 @@ receipt.
   release migration path.
 - Verify `auth.users.onboarding_progress` exists before enabling persisted
   onboarding progress in production.
+- The release branch keeps a compatibility fallback: if production has not been
+  migrated yet, activation still completes through `auth.users.onboarded_at`,
+  while detailed progress persistence degrades until the migration is applied.
 
 ## First Agent Completion Signal
 
