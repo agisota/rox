@@ -33,9 +33,7 @@ Integration notes:
 - `users.onboarded_at` remains the activation gate for compatibility; full surface-tour completion is stored in `onboarding_progress.tours`.
 - Surface-tour runtime starts a visible current-route step when possible, falls back to the next incomplete step, and keeps the bottom-left resume affordance visible while required tours remain incomplete.
 - Current `origin/main` no longer ships `/quick-chat`, so `quick_chat` is not included in `REQUIRED_SURFACE_TOURS`.
-- Production database migration was not applied; this worktree only generated the migration artifact.
+- Release follow-ups that are intentionally outside this PR are tracked in `plans/rox-hybrid-onboarding/follow-ups.md`.
 
 Risks / gaps:
 - No Electron visual smoke or screenshot was captured in this lane; verification is route generation, focused behavior tests, TypeScript, lint, and migration diff proof.
-- The first-agent activation step still uses an explicit confirmation fallback rather than a real agent-run completion signal.
-- Workspace activation records completion from the onboarding page flow, but the workspace creation modal still lacks a callback to attach the exact new workspace id.

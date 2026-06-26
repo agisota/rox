@@ -237,6 +237,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Сохранённые промпты"
 							onClick={handleSavedPromptsClick}
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -255,6 +256,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label={`Новое рабочее пространство (${shortcutText})`}
 							onClick={() => openModal()}
 							className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
 						>
