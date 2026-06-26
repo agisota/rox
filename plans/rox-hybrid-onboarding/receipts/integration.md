@@ -15,6 +15,7 @@ Changed:
 - `apps/desktop/src/renderer/stores/onboarding-tour/store.test.ts`: updated tests to use canonical surface tour ids.
 - `apps/desktop/src/renderer/lib/persistent-hash-history/persistent-hash-history.ts`: added the new static onboarding routes to the restorable route allowlist.
 - `apps/desktop/src/renderer/lib/streamdown-mermaid.ts` and mermaid renderer call sites: centralized the `@streamdown/mermaid` plugin adapter so desktop typecheck is stable under Bun's isolated linker.
+- `packages/analytics/src/user-path.ts`: mapped the new onboarding activation and tour events into activation coverage so analytics CI still proves there are no orphaned catalog events.
 
 Verified:
 - `bunx drizzle-kit generate --config drizzle.config.ts --name add_onboarding_progress` in `packages/db`: PASS, created `drizzle/0113_add_onboarding_progress.sql`.
@@ -22,6 +23,7 @@ Verified:
 - `git diff origin/main -- packages/db/drizzle/meta/_journal.json` and `rg -n 'onboarding_progress|0113_add_onboarding_progress' packages/db/drizzle/meta/0113_snapshot.json packages/db/drizzle/meta/_journal.json`: PASS, journal registers `0113_add_onboarding_progress` and the snapshot includes `auth.users.onboarding_progress`.
 - `bun run --cwd apps/desktop generate:routes`: PASS, `tsr generate` completed.
 - `bun test apps/desktop/src/renderer/lib/persistent-hash-history/persistent-hash-history.test.ts packages/shared/src/onboarding/types.test.ts apps/desktop/src/renderer/stores/onboarding-tour/store.test.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/onboardingTourRegistry.test.ts`: PASS, 45 tests / 195 assertions.
+- `bun test packages/analytics/src`: PASS, 26 tests / 135 assertions.
 - `bun run typecheck --filter=@rox/desktop --filter=@rox/shared --filter=@rox/analytics --filter=@rox/db --filter=@rox/trpc`: PASS, 5 packages successful.
 - `bun run lint < /dev/null`: PASS, checked 7694 files, no fixes applied.
 - `git diff --cached --check origin/main`: PASS, no whitespace errors.
