@@ -148,7 +148,7 @@ export async function MainWindow() {
 		y: initialBounds.y,
 		minWidth: 400,
 		minHeight: 400,
-		show: !isDev,
+		show: isDev,
 		...glassOptions,
 		center: initialBounds.center,
 		movable: true,

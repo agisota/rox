@@ -287,7 +287,7 @@ export function OnboardingTourProvider({
 		const targetIsVisible = isTargetVisible(nextStep.anchor);
 		const targetRoute = targetIsVisible
 			? location.pathname
-			: getStepNavigationRoute(nextStep);
+			: getStepNavigationRoute(nextStep, location.pathname);
 		setHasAvailableTarget(true);
 		resume();
 		setActiveStep(nextStep.tourId, nextStep.id, targetRoute);

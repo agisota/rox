@@ -44,8 +44,17 @@ export function isStepRouteMatch(
 
 export function getStepNavigationRoute(
 	step: Pick<TourStepWithContext, "route">,
+	pathname?: string,
 ) {
-	return ROUTE_ALIASES[step.route]?.[0] ?? step.route;
+	const targetRoute = ROUTE_ALIASES[step.route]?.[0] ?? step.route;
+	if (!pathname) return targetRoute;
+
+	const matchedRoute = [step.route, ...(ROUTE_ALIASES[step.route] ?? [])].find(
+		(route) => isRouteMatch(pathname, route),
+	);
+	if (!matchedRoute) return targetRoute;
+
+	return `${targetRoute}${pathname.slice(matchedRoute.length)}`;
 }
 
 export function findStep(tourId: SurfaceTourId | null, stepId: string | null) {
@@ -131,6 +140,13 @@ export function selectResumableTourStep({
 
 	if (activeStepIsIncomplete && isTargetVisible(activeStep.anchor)) {
 		return activeStep;
+	}
+
+	const visibleRouteStep = incompleteSteps.find(
+		(step) => isStepRouteMatch(pathname, step) && isTargetVisible(step.anchor),
+	);
+	if (visibleRouteStep) {
+		return visibleRouteStep;
 	}
 
 	const visibleStep = incompleteSteps.find((step) =>

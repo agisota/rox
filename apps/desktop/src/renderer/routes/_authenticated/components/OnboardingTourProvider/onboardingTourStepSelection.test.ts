@@ -37,6 +37,21 @@ describe("onboarding tour step selection", () => {
 		expect(getStepNavigationRoute(workspacesStep)).toBe("/workspaces");
 	});
 
+	it("preserves nested path suffixes when navigating through route aliases", () => {
+		const workspaceStep = findStep("workspace", "workspace-chat");
+
+		if (!workspaceStep) {
+			throw new Error("workspace-chat step must exist");
+		}
+
+		expect(getStepNavigationRoute(workspaceStep, "/v2-workspace/abc")).toBe(
+			"/workspace/abc",
+		);
+		expect(getStepNavigationRoute(workspaceStep, "/workspace/abc")).toBe(
+			"/workspace/abc",
+		);
+	});
+
 	it("prefers a visible incomplete step on resume instead of a hidden active step", () => {
 		const status = normalizeOnboardingStatus({
 			activation: {
@@ -65,6 +80,37 @@ describe("onboarding tour step selection", () => {
 
 		expect(selected?.tourId).toBe("workspaces");
 		expect(selected?.id).toBe("open-workspaces");
+	});
+
+	it("prefers a visible current-route step over a visible sidebar step on resume", () => {
+		const status = normalizeOnboardingStatus({
+			activation: {
+				...DEFAULT_ONBOARDING_STATUS.activation,
+				completedAt,
+			},
+			tours: {
+				...DEFAULT_ONBOARDING_STATUS.tours,
+				activeTourId: "workspace",
+				activeStepId: "workspace-chat",
+				pausedAt: completedAt,
+				completedTours: {
+					workspaces: completedAt,
+					workspace: completedAt,
+				},
+			},
+		});
+		const hiddenActiveStep = findStep("workspace", "workspace-chat");
+
+		const selected = selectResumableTourStep({
+			status,
+			activeStep: hiddenActiveStep,
+			pathname: "/tasks",
+			isTargetVisible: (anchor) =>
+				anchor === "nav-settings" || anchor === "tasks-create",
+		});
+
+		expect(selected?.tourId).toBe("tasks_pr");
+		expect(selected?.id).toBe("tasks-create");
 	});
 
 	it("falls back to the active incomplete step when no incomplete target is visible", () => {
