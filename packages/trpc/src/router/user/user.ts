@@ -25,6 +25,18 @@ const activationStepSchema = z.enum(ACTIVATION_STEPS);
 const surfaceTourIdSchema = z.enum(REQUIRED_SURFACE_TOURS);
 const POSTGRES_UNDEFINED_COLUMN = "42703";
 
+const productionSafeUserReturning = {
+	id: users.id,
+	name: users.name,
+	email: users.email,
+	emailVerified: users.emailVerified,
+	image: users.image,
+	organizationIds: users.organizationIds,
+	onboardedAt: users.onboardedAt,
+	createdAt: users.createdAt,
+	updatedAt: users.updatedAt,
+};
+
 const onboardingProgressPatchSchema = z.object({
 	activation: z
 		.object({
@@ -125,12 +137,25 @@ function getErrorCode(error: unknown): string | undefined {
 	return typeof code === "string" ? code : undefined;
 }
 
-function isOnboardingProgressColumnMissing(error: unknown) {
+function getErrorCause(error: unknown): unknown {
+	if (typeof error !== "object" || error === null || !("cause" in error)) {
+		return undefined;
+	}
+
+	return (error as { cause?: unknown }).cause;
+}
+
+function isOnboardingProgressColumnMissing(error: unknown): boolean {
 	const message = error instanceof Error ? error.message : "";
-	return (
+	if (
 		getErrorCode(error) === POSTGRES_UNDEFINED_COLUMN &&
 		message.includes("onboarding_progress")
-	);
+	) {
+		return true;
+	}
+
+	const cause = getErrorCause(error);
+	return cause !== undefined && isOnboardingProgressColumnMissing(cause);
 }
 
 function normalizeOnboardingStatusFromUser(
@@ -171,17 +196,7 @@ async function updateOnboardedAtOnly(userId: string, completedAt: Date) {
 		.update(users)
 		.set({ onboardedAt: completedAt })
 		.where(eq(users.id, userId))
-		.returning({
-			id: users.id,
-			name: users.name,
-			email: users.email,
-			emailVerified: users.emailVerified,
-			image: users.image,
-			organizationIds: users.organizationIds,
-			onboardedAt: users.onboardedAt,
-			createdAt: users.createdAt,
-			updatedAt: users.updatedAt,
-		});
+		.returning(productionSafeUserReturning);
 
 	if (!updatedUser) {
 		throw new TRPCError({
@@ -301,7 +316,7 @@ export const userRouter = {
 				.update(users)
 				.set({ name: input.name })
 				.where(eq(users.id, ctx.session.user.id))
-				.returning();
+				.returning(productionSafeUserReturning);
 			return updatedUser;
 		}),
 
@@ -481,6 +496,9 @@ export const userRouter = {
 
 			const user = await db.query.users.findFirst({
 				where: eq(users.id, userId),
+				columns: {
+					image: true,
+				},
 			});
 
 			if (!user) {
@@ -507,7 +525,7 @@ export const userRouter = {
 					.update(users)
 					.set({ image: url })
 					.where(eq(users.id, userId))
-					.returning();
+					.returning(productionSafeUserReturning);
 
 				return { success: true, url, user: updatedUser };
 			} catch (error) {

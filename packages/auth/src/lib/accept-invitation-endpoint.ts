@@ -11,6 +11,18 @@ import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { classifyVerificationScope } from "./verification-scope";
 
+const productionSafeUserReturning = {
+	id: users.id,
+	name: users.name,
+	email: users.email,
+	emailVerified: users.emailVerified,
+	image: users.image,
+	organizationIds: users.organizationIds,
+	onboardedAt: users.onboardedAt,
+	createdAt: users.createdAt,
+	updatedAt: users.updatedAt,
+};
+
 function getInvitationAcceptError(error: unknown) {
 	if (!(error instanceof Error)) {
 		return {
@@ -148,6 +160,17 @@ export const acceptInvitationEndpoint = {
 				// 3. Create or get user
 				let user = await db.query.users.findFirst({
 					where: eq(users.email, invitation.email),
+					columns: {
+						id: true,
+						name: true,
+						email: true,
+						emailVerified: true,
+						image: true,
+						organizationIds: true,
+						onboardedAt: true,
+						createdAt: true,
+						updatedAt: true,
+					},
 				});
 
 				if (!user) {
@@ -159,7 +182,7 @@ export const acceptInvitationEndpoint = {
 							name: userName,
 							emailVerified: true,
 						})
-						.returning();
+						.returning(productionSafeUserReturning);
 
 					if (!newUser) {
 						throw new Error("Failed to create user");

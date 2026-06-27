@@ -10,6 +10,18 @@ const apiUrl = env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
 
 const TRUSTED_API_CLIENTS = new Set(["rox-cli"]);
 
+const productionSafeUserColumns = {
+	id: true,
+	name: true,
+	email: true,
+	emailVerified: true,
+	image: true,
+	organizationIds: true,
+	onboardedAt: true,
+	createdAt: true,
+	updatedAt: true,
+} as const;
+
 function looksLikeJwt(token: string): boolean {
 	const parts = token.split(".");
 	return parts.length === 3 && parts.every(Boolean);
@@ -47,6 +59,7 @@ async function sessionFromOAuthBearer(
 
 	const user = await db.query.users.findFirst({
 		where: eq(authSchema.users.id, userId),
+		columns: productionSafeUserColumns,
 	});
 	if (!user) return null;
 
