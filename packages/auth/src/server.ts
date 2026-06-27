@@ -27,7 +27,18 @@ import {
 	organization,
 } from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
-import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	inArray,
+	ne,
+	sql,
+} from "drizzle-orm";
+import { boolean, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { captureAuthEvent } from "./analytics";
 import { env } from "./env";
 import { acceptInvitationEndpoint } from "./lib/accept-invitation-endpoint";
@@ -57,6 +68,60 @@ const userOptions = {
 	},
 } as const;
 
+// Better Auth selects every column from the user table in adapter reads. Keep
+// the adapter's user shape limited to columns that are guaranteed to exist in
+// production so additive app-only columns cannot break OAuth callbacks while a
+// production migration is still pending.
+const authAdapterUsers = authSchema.authSchema.table("users", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(),
+	email: text("email").notNull().unique(),
+	emailVerified: boolean("email_verified").default(false).notNull(),
+	image: text("image"),
+	organizationIds: uuid("organization_ids").array().default([]).notNull(),
+	onboardedAt: timestamp("onboarded_at"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+	updatedAt: timestamp("updated_at")
+		.defaultNow()
+		.$onUpdate(() => new Date())
+		.notNull(),
+});
+
+const authAdapterSchema = {
+	...authSchema,
+	users: authAdapterUsers,
+};
+
+const authAdapterUserColumnOmissions = new Set(["onboarding_progress"]);
+
+function getSortedDatabaseColumnNames(
+	table: Parameters<typeof getTableColumns>[0],
+): string[] {
+	return Object.values(getTableColumns(table))
+		.map((column) => column.name)
+		.sort();
+}
+
+function assertAuthAdapterUsersMatchCanonicalSchema(): void {
+	const canonicalColumnNames = getSortedDatabaseColumnNames(
+		authSchema.users,
+	).filter((columnName) => !authAdapterUserColumnOmissions.has(columnName));
+	const adapterColumnNames = getSortedDatabaseColumnNames(authAdapterUsers);
+	const hasDrift =
+		canonicalColumnNames.length !== adapterColumnNames.length ||
+		canonicalColumnNames.some(
+			(columnName, index) => adapterColumnNames[index] !== columnName,
+		);
+
+	if (hasDrift) {
+		throw new Error(
+			"Better Auth adapter users schema drifted from canonical auth.users schema",
+		);
+	}
+}
+
+assertAuthAdapterUsersMatchCanonicalSchema();
+
 const desktopDevPort = process.env.DESKTOP_VITE_PORT || "5173";
 const desktopDevOrigins =
 	process.env.NODE_ENV === "development"
@@ -85,7 +150,7 @@ export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: "pg",
 		usePlural: true,
-		schema: authSchema,
+		schema: authAdapterSchema,
 	}),
 	trustedOrigins: async (request) => [
 		env.NEXT_PUBLIC_WEB_URL,
