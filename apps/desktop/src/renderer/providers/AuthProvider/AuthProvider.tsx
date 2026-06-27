@@ -45,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 function RealAuthProvider({ children }: { children: ReactNode }) {
 	const [isHydrated, setIsHydrated] = useState(false);
 	const { refetch: refetchSession } = authClient.useSession();
+	const { mutateAsync: clearStoredAuthToken } =
+		electronTrpc.auth.signOut.useMutation();
 
 	const { data: storedToken, isSuccess } =
 		electronTrpc.auth.getStoredToken.useQuery(undefined, {
@@ -58,12 +60,41 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
 		let cancelled = false;
 
 		async function hydrate() {
+			const clearStoredDesktopAuth = async (reason: string) => {
+				logger.warn(`[AuthProvider] clearing stored auth token: ${reason}`);
+				setAuthToken(null);
+				setJwt(null);
+				try {
+					await clearStoredAuthToken();
+				} catch (err) {
+					logger.warn("[AuthProvider] failed to clear stored auth token", err);
+				}
+			};
+
 			if (storedToken?.token && storedToken?.expiresAt) {
 				const isExpired = new Date(storedToken.expiresAt) < new Date();
-				if (!isExpired) {
+				if (isExpired) {
+					await clearStoredDesktopAuth("stored token is expired");
+				} else {
 					setAuthToken(storedToken.token);
 					try {
-						await refetchSession();
+						const sessionResult = await authClient.getSession();
+						if (sessionResult.error) {
+							logger.warn(
+								"[AuthProvider] session refetch failed during hydration",
+								sessionResult.error,
+							);
+						} else if (!sessionResult.data?.user) {
+							await clearStoredDesktopAuth(
+								"stored token no longer maps to a server session",
+							);
+							if (!cancelled) {
+								setIsHydrated(true);
+							}
+							return;
+						} else {
+							await refetchSession();
+						}
 					} catch (err) {
 						logger.warn(
 							"[AuthProvider] session refetch failed during hydration",
@@ -92,7 +123,13 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [storedToken, isSuccess, isHydrated, refetchSession]);
+	}, [
+		storedToken,
+		isSuccess,
+		isHydrated,
+		refetchSession,
+		clearStoredAuthToken,
+	]);
 
 	electronTrpc.auth.onTokenChanged.useSubscription(undefined, {
 		onData: async (data) => {
