@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 function RealAuthProvider({ children }: { children: ReactNode }) {
 	const [isHydrated, setIsHydrated] = useState(false);
 	const { refetch: refetchSession } = authClient.useSession();
-	const clearStoredTokenMutation = electronTrpc.auth.signOut.useMutation();
+	const { mutateAsync: clearStoredAuthToken } =
+		electronTrpc.auth.signOut.useMutation();
 
 	const { data: storedToken, isSuccess } =
 		electronTrpc.auth.getStoredToken.useQuery(undefined, {
@@ -64,7 +65,7 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
 				setAuthToken(null);
 				setJwt(null);
 				try {
-					await clearStoredTokenMutation.mutateAsync();
+					await clearStoredAuthToken();
 				} catch (err) {
 					logger.warn("[AuthProvider] failed to clear stored auth token", err);
 				}
@@ -127,7 +128,7 @@ function RealAuthProvider({ children }: { children: ReactNode }) {
 		isSuccess,
 		isHydrated,
 		refetchSession,
-		clearStoredTokenMutation,
+		clearStoredAuthToken,
 	]);
 
 	electronTrpc.auth.onTokenChanged.useSubscription(undefined, {
