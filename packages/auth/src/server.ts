@@ -520,6 +520,7 @@ export const auth = betterAuth({
 
 				const existingUser = await db.query.users.findFirst({
 					where: eq(authSchema.users.email, data.email),
+					columns: { name: true },
 				});
 
 				await resend.emails.send({
