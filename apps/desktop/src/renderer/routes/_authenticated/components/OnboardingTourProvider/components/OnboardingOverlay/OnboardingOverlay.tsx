@@ -216,13 +216,58 @@ export function OnboardingOverlay({
 	}, [targetRect]);
 
 	if (!targetRect || !cardPosition) {
-		return null;
+		return (
+			<div
+				ref={dialogRef}
+				className="no-drag pointer-events-auto fixed inset-0 z-50"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={titleId}
+				aria-describedby={bodyId}
+				tabIndex={-1}
+			>
+				<div className="absolute inset-0 bg-black/60" />
+				<Card className="no-drag pointer-events-auto absolute left-1/2 top-1/2 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border-border/70 bg-popover p-4 text-popover-foreground shadow-2xl">
+					<div className="space-y-2">
+						<div className="text-xs font-medium text-muted-foreground">
+							Шаг {stepIndex + 1} из {totalSteps}
+						</div>
+						<div id={titleId} className="text-base font-semibold leading-tight">
+							Готовим этот шаг
+						</div>
+						<p id={bodyId} className="text-sm leading-5 text-muted-foreground">
+							{step.title}
+						</p>
+						<div className="rounded-md bg-muted px-3 py-2 text-sm">
+							{step.action}
+						</div>
+					</div>
+					<div className="flex items-center justify-end gap-2">
+						<Button
+							className="no-drag pointer-events-auto"
+							variant="ghost"
+							size="sm"
+							onClick={onPause}
+						>
+							Отложить
+						</Button>
+						<Button
+							className="no-drag pointer-events-auto"
+							size="sm"
+							onClick={onNext}
+						>
+							Дальше
+						</Button>
+					</div>
+				</Card>
+			</div>
+		);
 	}
 
 	return (
 		<div
 			ref={dialogRef}
-			className="fixed inset-0 z-50"
+			className="no-drag pointer-events-auto fixed inset-0 z-50"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={titleId}
@@ -241,7 +286,7 @@ export function OnboardingOverlay({
 				}}
 			/>
 			<Card
-				className="absolute gap-4 rounded-lg border-border/70 bg-popover p-4 text-popover-foreground shadow-2xl"
+				className="no-drag pointer-events-auto absolute gap-4 rounded-lg border-border/70 bg-popover p-4 text-popover-foreground shadow-2xl"
 				style={{
 					top: cardPosition.top,
 					left: cardPosition.left,
@@ -263,10 +308,19 @@ export function OnboardingOverlay({
 					</div>
 				</div>
 				<div className="flex items-center justify-end gap-2">
-					<Button variant="ghost" size="sm" onClick={onPause}>
+					<Button
+						className="no-drag pointer-events-auto"
+						variant="ghost"
+						size="sm"
+						onClick={onPause}
+					>
 						Отложить
 					</Button>
-					<Button size="sm" onClick={onNext}>
+					<Button
+						className="no-drag pointer-events-auto"
+						size="sm"
+						onClick={onNext}
+					>
 						Дальше
 					</Button>
 				</div>

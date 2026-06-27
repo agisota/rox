@@ -119,7 +119,7 @@ export function OnboardingTourProvider({
 	const resume = useOnboardingTourStore((state) => state.resume);
 	const clear = useOnboardingTourStore((state) => state.clear);
 	const [status, setStatus] = useState<OnboardingStatus | null>(null);
-	const [hasAvailableTarget, setHasAvailableTarget] = useState(true);
+	const [, setHasAvailableTarget] = useState(true);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -187,8 +187,7 @@ export function OnboardingTourProvider({
 				isTourCompleted(status, activeStep.tourId)
 			: false;
 	const shouldShowResumeButton =
-		hasRemaining &&
-		(activeStep === null || pausedAt !== null || !hasAvailableTarget);
+		hasRemaining && (activeStep === null || pausedAt !== null);
 	const shouldShowOverlay =
 		activeStep !== null && pausedAt === null && !isActiveStepCompleted;
 
