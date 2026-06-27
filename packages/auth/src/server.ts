@@ -27,7 +27,17 @@ import {
 	organization,
 } from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
-import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	inArray,
+	ne,
+	sql,
+} from "drizzle-orm";
 import { boolean, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { captureAuthEvent } from "./analytics";
 import { env } from "./env";
@@ -81,6 +91,36 @@ const authAdapterSchema = {
 	...authSchema,
 	users: authAdapterUsers,
 };
+
+const authAdapterUserColumnOmissions = new Set(["onboarding_progress"]);
+
+function getSortedDatabaseColumnNames(
+	table: Parameters<typeof getTableColumns>[0],
+): string[] {
+	return Object.values(getTableColumns(table))
+		.map((column) => column.name)
+		.sort();
+}
+
+function assertAuthAdapterUsersMatchCanonicalSchema(): void {
+	const canonicalColumnNames = getSortedDatabaseColumnNames(
+		authSchema.users,
+	).filter((columnName) => !authAdapterUserColumnOmissions.has(columnName));
+	const adapterColumnNames = getSortedDatabaseColumnNames(authAdapterUsers);
+	const hasDrift =
+		canonicalColumnNames.length !== adapterColumnNames.length ||
+		canonicalColumnNames.some(
+			(columnName, index) => adapterColumnNames[index] !== columnName,
+		);
+
+	if (hasDrift) {
+		throw new Error(
+			"Better Auth adapter users schema drifted from canonical auth.users schema",
+		);
+	}
+}
+
+assertAuthAdapterUsersMatchCanonicalSchema();
 
 const desktopDevPort = process.env.DESKTOP_VITE_PORT || "5173";
 const desktopDevOrigins =
