@@ -92,6 +92,33 @@ export function getStepIndex(step: TourStepWithContext | null) {
 	);
 }
 
+export function getFirstIncompleteStepInOrder(status: OnboardingStatus) {
+	return (
+		TOUR_STEPS.find(
+			(step) =>
+				!isStepCompleted(status, step) && !isTourCompleted(status, step.tourId),
+		) ?? null
+	);
+}
+
+export function getNextIncompleteStepAfter(
+	status: OnboardingStatus,
+	step: TourStepWithContext,
+) {
+	const activeStepIndex = getStepIndex(step);
+	if (activeStepIndex < 0) {
+		return getFirstIncompleteStepInOrder(status);
+	}
+
+	return (
+		TOUR_STEPS.slice(activeStepIndex + 1).find(
+			(candidate) =>
+				!isStepCompleted(status, candidate) &&
+				!isTourCompleted(status, candidate.tourId),
+		) ?? null
+	);
+}
+
 interface FirstIncompleteStepOptions {
 	preferVisibleTarget: boolean;
 	isTargetVisible?: IsTargetVisible;
@@ -132,11 +159,20 @@ export function selectResumableTourStep({
 		(step) =>
 			!isStepCompleted(status, step) && !isTourCompleted(status, step.tourId),
 	);
+	const firstIncompleteStep = incompleteSteps[0] ?? null;
 	const activeStepIsIncomplete =
 		activeStep !== null &&
 		incompleteSteps.some(
 			(step) => step.tourId === activeStep.tourId && step.id === activeStep.id,
 		);
+	const activeStepIsStale =
+		activeStepIsIncomplete &&
+		firstIncompleteStep !== null &&
+		getStepIndex(firstIncompleteStep) < getStepIndex(activeStep);
+
+	if (activeStepIsStale) {
+		return firstIncompleteStep;
+	}
 
 	if (activeStepIsIncomplete && isTargetVisible(activeStep.anchor)) {
 		return activeStep;

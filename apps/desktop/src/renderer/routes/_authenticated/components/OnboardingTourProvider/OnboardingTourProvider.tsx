@@ -18,6 +18,8 @@ import { ONBOARDING_TOURS } from "./onboardingTourRegistry";
 import {
 	findStep,
 	getFirstIncompleteStep,
+	getFirstIncompleteStepInOrder,
+	getNextIncompleteStepAfter,
 	getStepIndex,
 	getStepNavigationRoute,
 	hasRemainingTours,
@@ -178,29 +180,36 @@ export function OnboardingTourProvider({
 		() => findStep(activeTourId, activeStepId),
 		[activeStepId, activeTourId],
 	);
-	const activeStepIndex = getStepIndex(activeStep);
+	const firstIncompleteStep = status
+		? getFirstIncompleteStepInOrder(status)
+		: null;
+	const currentStep =
+		status &&
+		activeStep &&
+		firstIncompleteStep &&
+		getStepIndex(firstIncompleteStep) < getStepIndex(activeStep)
+			? firstIncompleteStep
+			: activeStep;
+	const currentStepIndex = getStepIndex(currentStep);
 	const hasRemaining = status ? hasRemainingTours(status) : false;
 	const percent = status ? getOnboardingPercentComplete(status) : 0;
 	const isActiveStepCompleted =
-		status && activeStep
-			? isStepCompleted(status, activeStep) ||
-				isTourCompleted(status, activeStep.tourId)
+		status && currentStep
+			? isStepCompleted(status, currentStep) ||
+				isTourCompleted(status, currentStep.tourId)
 			: false;
 	const shouldShowResumeButton =
-		hasRemaining && (activeStep === null || pausedAt !== null);
+		hasRemaining && (currentStep === null || pausedAt !== null);
 	const shouldShowOverlay =
-		activeStep !== null && pausedAt === null && !isActiveStepCompleted;
+		currentStep !== null && pausedAt === null && !isActiveStepCompleted;
 
 	useEffect(() => {
-		if (!status || !activeStep || !isActiveStepCompleted) {
+		if (!status || !currentStep || !isActiveStepCompleted) {
 			return;
 		}
 
 		const nextStep =
-			getFirstIncompleteStep(status, location.pathname, {
-				preferVisibleTarget: true,
-				isTargetVisible,
-			}) ??
+			getNextIncompleteStepAfter(status, currentStep) ??
 			getFirstIncompleteStep(status, location.pathname, {
 				preferVisibleTarget: false,
 			});
@@ -209,13 +218,20 @@ export function OnboardingTourProvider({
 			return;
 		}
 
+		const targetRoute = isTargetVisible(nextStep.anchor)
+			? location.pathname
+			: getStepNavigationRoute(nextStep, location.pathname);
 		setHasAvailableTarget(true);
-		setActiveStep(nextStep.tourId, nextStep.id, location.pathname);
+		setActiveStep(nextStep.tourId, nextStep.id, targetRoute);
+		if (targetRoute !== location.pathname) {
+			void navigate({ to: targetRoute });
+		}
 	}, [
-		activeStep,
 		clear,
+		currentStep,
 		isActiveStepCompleted,
 		location.pathname,
+		navigate,
 		setActiveStep,
 		status,
 	]);
@@ -236,7 +252,7 @@ export function OnboardingTourProvider({
 	);
 
 	const handlePause = useCallback(() => {
-		if (!activeStep) return;
+		if (!currentStep) return;
 		const pausedAtIso = new Date().toISOString();
 		pause(location.pathname);
 		setStatus((current) =>
@@ -245,8 +261,8 @@ export function OnboardingTourProvider({
 						...current,
 						tours: {
 							...current.tours,
-							activeTourId: activeStep.tourId,
-							activeStepId: activeStep.id,
+							activeTourId: currentStep.tourId,
+							activeStepId: currentStep.id,
 							pausedAt: pausedAtIso,
 							lastRoute: location.pathname,
 						},
@@ -255,28 +271,28 @@ export function OnboardingTourProvider({
 		);
 		void patchServerTours({
 			tours: {
-				activeTourId: activeStep.tourId,
-				activeStepId: activeStep.id,
+				activeTourId: currentStep.tourId,
+				activeStepId: currentStep.id,
 				pausedAt: pausedAtIso,
 				lastRoute: location.pathname,
 			},
 		});
 		trackEvent(ANALYTICS_EVENTS.ONBOARDING_TOUR_PAUSED, {
-			surface: activeStep.tourId,
-			step_id: activeStep.id,
+			surface: currentStep.tourId,
+			step_id: currentStep.id,
 			route: location.pathname,
 		});
-	}, [activeStep, location.pathname, patchServerTours, pause]);
+	}, [currentStep, location.pathname, patchServerTours, pause]);
 
 	const handleResume = useCallback(() => {
 		const nextStep = status
 			? selectResumableTourStep({
 					status,
-					activeStep,
+					activeStep: currentStep,
 					pathname: location.pathname,
 					isTargetVisible,
 				})
-			: activeStep;
+			: currentStep;
 
 		if (!nextStep) {
 			clear();
@@ -307,8 +323,8 @@ export function OnboardingTourProvider({
 			route: targetRoute,
 		});
 	}, [
-		activeStep,
 		clear,
+		currentStep,
 		location.pathname,
 		navigate,
 		patchServerTours,
@@ -318,23 +334,23 @@ export function OnboardingTourProvider({
 	]);
 
 	const handleNext = useCallback(() => {
-		if (!activeStep || !status) {
+		if (!currentStep || !status) {
 			clear();
 			return;
 		}
 
 		const completedAt = new Date().toISOString();
-		const nextStatus = updateLocalStatus(status, activeStep, completedAt);
+		const nextStatus = updateLocalStatus(status, currentStep, completedAt);
 		setStatus(nextStatus);
 		trackEvent(ANALYTICS_EVENTS.ONBOARDING_TOUR_STEP_COMPLETED, {
-			surface: activeStep.tourId,
-			step_id: activeStep.id,
+			surface: currentStep.tourId,
+			step_id: currentStep.id,
 			route: location.pathname,
 		});
 
-		if (nextStatus.tours.completedTours[activeStep.tourId]) {
+		if (nextStatus.tours.completedTours[currentStep.tourId]) {
 			trackEvent(ANALYTICS_EVENTS.ONBOARDING_TOUR_COMPLETED, {
-				surface: activeStep.tourId,
+				surface: currentStep.tourId,
 				route: location.pathname,
 				completion_source: "overlay_next",
 			});
@@ -353,8 +369,8 @@ export function OnboardingTourProvider({
 				activeStepId: null,
 				pausedAt: null,
 				completedSteps: {
-					[activeStep.tourId]: {
-						...(nextStatus.tours.completedSteps[activeStep.tourId] ?? {}),
+					[currentStep.tourId]: {
+						...(nextStatus.tours.completedSteps[currentStep.tourId] ?? {}),
 					},
 				},
 				completedTours: nextStatus.tours.completedTours,
@@ -363,25 +379,27 @@ export function OnboardingTourProvider({
 		});
 
 		const nextStep =
-			getFirstIncompleteStep(nextStatus, location.pathname, {
-				preferVisibleTarget: true,
-				isTargetVisible,
-			}) ??
-			getFirstIncompleteStep(nextStatus, location.pathname, {
-				preferVisibleTarget: false,
-			});
+			getNextIncompleteStepAfter(nextStatus, currentStep) ??
+			getFirstIncompleteStepInOrder(nextStatus);
 
 		if (!nextStep) {
 			clear();
 			return;
 		}
 
+		const targetRoute = isTargetVisible(nextStep.anchor)
+			? location.pathname
+			: getStepNavigationRoute(nextStep, location.pathname);
 		setHasAvailableTarget(true);
-		setActiveStep(nextStep.tourId, nextStep.id, location.pathname);
+		setActiveStep(nextStep.tourId, nextStep.id, targetRoute);
+		if (targetRoute !== location.pathname) {
+			void navigate({ to: targetRoute });
+		}
 	}, [
-		activeStep,
 		clear,
+		currentStep,
 		location.pathname,
+		navigate,
 		patchServerTours,
 		setActiveStep,
 		status,
@@ -390,10 +408,10 @@ export function OnboardingTourProvider({
 	return (
 		<>
 			{children}
-			{shouldShowOverlay && activeStep ? (
+			{shouldShowOverlay && currentStep ? (
 				<OnboardingOverlay
-					step={activeStep}
-					stepIndex={Math.max(activeStepIndex, 0)}
+					step={currentStep}
+					stepIndex={Math.max(currentStepIndex, 0)}
 					totalSteps={TOUR_STEPS.length}
 					onPause={handlePause}
 					onNext={handleNext}

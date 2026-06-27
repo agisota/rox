@@ -94,7 +94,6 @@ export function OnboardingOverlay({
 	const dialogRef = useRef<HTMLDivElement>(null);
 	const titleId = useId();
 	const bodyId = useId();
-	const hasTargetRect = targetRect !== null;
 
 	const updateTargetRect = useCallback(() => {
 		const nextRect = getTargetRect(step.anchor);
@@ -128,10 +127,6 @@ export function OnboardingOverlay({
 	}, [updateTargetRect]);
 
 	useEffect(() => {
-		if (!hasTargetRect) {
-			return;
-		}
-
 		const previousActiveElement = document.activeElement;
 		dialogRef.current?.focus();
 
@@ -189,7 +184,7 @@ export function OnboardingOverlay({
 				previousActiveElement.focus();
 			}
 		};
-	}, [hasTargetRect, onPause]);
+	}, [onPause]);
 
 	const cardPosition = useMemo(() => {
 		if (!targetRect) {

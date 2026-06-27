@@ -387,7 +387,13 @@ export async function MainWindow() {
 	});
 
 	if (!isDev) {
-		setTimeout(() => showInitialWindow("production-startup-guard"), 500);
+		setTimeout(() => {
+			if (window.isDestroyed() || window.webContents.isLoading()) return;
+			if (persistedZoomLevel !== undefined) {
+				window.webContents.setZoomLevel(persistedZoomLevel);
+			}
+			showInitialWindow("production-startup-guard");
+		}, 500);
 	}
 
 	initialShowTimeout = setTimeout(() => {

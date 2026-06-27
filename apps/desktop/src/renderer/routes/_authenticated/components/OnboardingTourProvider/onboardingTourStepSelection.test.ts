@@ -6,6 +6,8 @@ import {
 import {
 	findStep,
 	getFirstIncompleteStep,
+	getFirstIncompleteStepInOrder,
+	getNextIncompleteStepAfter,
 	getStepNavigationRoute,
 	isStepRouteMatch,
 	selectResumableTourStep,
@@ -76,6 +78,37 @@ describe("onboarding tour step selection", () => {
 			activeStep: hiddenActiveStep,
 			pathname: "/workspace",
 			isTargetVisible: (anchor) => anchor === "nav-workspaces",
+		});
+
+		expect(selected?.tourId).toBe("workspaces");
+		expect(selected?.id).toBe("open-workspaces");
+	});
+
+	it("does not resume a stale later active step when an earlier step is still incomplete", () => {
+		const status = normalizeOnboardingStatus({
+			activation: {
+				...DEFAULT_ONBOARDING_STATUS.activation,
+				completedAt,
+			},
+			tours: {
+				...DEFAULT_ONBOARDING_STATUS.tours,
+				activeTourId: "workspace",
+				activeStepId: "workspace-chat",
+				pausedAt: completedAt,
+			},
+		});
+		const staleActiveStep = findStep("workspace", "workspace-chat");
+
+		if (!staleActiveStep) {
+			throw new Error("workspace-chat step must exist");
+		}
+
+		const selected = selectResumableTourStep({
+			status,
+			activeStep: staleActiveStep,
+			pathname: "/workspace",
+			isTargetVisible: (anchor) =>
+				anchor === "workspace-chat" || anchor === "nav-workspaces",
 		});
 
 		expect(selected?.tourId).toBe("workspaces");
@@ -196,5 +229,65 @@ describe("onboarding tour step selection", () => {
 		});
 
 		expect(selected?.tourId).toBe("settings");
+	});
+
+	it("chooses the next incomplete step by registry order after the active step", () => {
+		const status = normalizeOnboardingStatus({
+			activation: {
+				...DEFAULT_ONBOARDING_STATUS.activation,
+				completedAt,
+			},
+			tours: {
+				...DEFAULT_ONBOARDING_STATUS.tours,
+				completedTours: {
+					workspace: completedAt,
+				},
+				completedSteps: {
+					workspace: {
+						"workspace-chat": completedAt,
+					},
+				},
+			},
+		});
+		const activeStep = findStep("workspace", "workspace-chat");
+
+		if (!activeStep) {
+			throw new Error("workspace-chat step must exist");
+		}
+
+		const selected = getNextIncompleteStepAfter(status, activeStep);
+
+		expect(selected?.tourId).toBe("tasks_pr");
+		expect(selected?.id).toBe("tasks-create");
+	});
+
+	it("does not wrap next-step selection after the final tour step", () => {
+		const status = normalizeOnboardingStatus({
+			activation: {
+				...DEFAULT_ONBOARDING_STATUS.activation,
+				completedAt,
+			},
+			tours: {
+				...DEFAULT_ONBOARDING_STATUS.tours,
+				completedTours: {
+					workspaces: completedAt,
+					workspace: completedAt,
+					tasks_pr: completedAt,
+					automations: completedAt,
+					pipelines: completedAt,
+					skills_library: completedAt,
+					memory: completedAt,
+					settings: completedAt,
+				},
+			},
+		});
+		const finalStep = findStep("settings", "settings-models");
+
+		if (!finalStep) {
+			throw new Error("settings-models step must exist");
+		}
+
+		expect(getNextIncompleteStepAfter(status, finalStep)).toBeNull();
+		expect(getFirstIncompleteStepInOrder(status)).toBeNull();
 	});
 });
