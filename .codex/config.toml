@@ -29,3 +29,27 @@ url = "https://mcp.sentry.dev/mcp"
 # (see docs/codebase-memory-mcp.md) or uncomment here without committing.
 # [mcp_servers.codebase-memory]
 # command = "codebase-memory-mcp"
+
+# >>> rox default mcp servers >>>
+[mcp_servers.filesystem]
+command = "bunx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "/Users/marklindgreen/rox/worktrees/bf28c40c-933d-47b0-8e10-bc470dd1d63f/rox/complete-creature"]
+
+[mcp_servers.sequential-thinking]
+command = "bunx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+[mcp_servers.exa]
+command = "bunx"
+args = ["-y", "exa-mcp-server"]
+env = { "EXA_API_KEY" = "${EXA_API_KEY}" }
+
+[mcp_servers.context7]
+command = "bunx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[mcp_servers.telegram]
+command = "bunx"
+args = ["-y", "@chaindead/telegram-mcp"]
+env = { "TELEGRAM_BOT_TOKEN" = "${TELEGRAM_BOT_TOKEN}" }
+# <<< rox default mcp servers <<<

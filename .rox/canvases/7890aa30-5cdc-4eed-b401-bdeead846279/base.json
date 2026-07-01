@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "id": "7890aa30-5cdc-4eed-b401-bdeead846279",
+  "workspaceId": "faf63cd0-bba1-497a-a05a-46c528f9ec85",
+  "projectId": "bf28c40c-933d-47b0-8e10-bc470dd1d63f",
+  "title": "Production Canvas Workspace",
+  "description": "Rox workspace canvas backed by CanvasDocument storage.",
+  "nodes": [],
+  "edges": [],
+  "groups": [],
+  "tags": [],
+  "createdAt": "2026-06-22T07:27:25.065Z",
+  "updatedAt": "2026-06-22T07:27:25.065Z",
+  "metadata": {}
+}

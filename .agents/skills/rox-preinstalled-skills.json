@@ -1,0 +1,33 @@
+{
+  "managedBy": "rox",
+  "preinstalled": true,
+  "skills": [
+    {
+      "name": "dev-skills",
+      "repo": "github.com/plannotator/dev-skills",
+      "description": "Набор инженерных навыков для повседневной разработки.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "effective-html",
+      "repo": "github.com/plannotator/effective-html",
+      "description": "Навык для чистой, доступной и эффективной HTML-разметки.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "markdown-editor",
+      "repo": "github.com/plannotator/markdown-editor",
+      "description": "Навык редактирования и форматирования Markdown.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    }
+  ]
+}
