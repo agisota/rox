@@ -1,0 +1,195 @@
+{
+  "managedBy": "rox",
+  "preinstalled": true,
+  "skills": [
+    {
+      "name": "superpowers",
+      "repo": "github.com/obra/superpowers",
+      "description": "Фреймворк агентных навыков и методология разработки ПО: планирование, TDD, отладка, ревью, git-воркфлоу.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "taste-skill",
+      "repo": "github.com/Leonxlnx/taste-skill",
+      "description": "Скиллы «хорошего вкуса» для AI: блокируют генерацию скучного шаблонного фронтенда (gpt-taste и др.).",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "claude-autonomy-kit",
+      "repo": "github.com/lukeselr/claude-autonomy-kit",
+      "description": "4 скилла Claude Code: стресс-тест плана через допрос (grill/drill) и автономный цикл сборки до цели.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "claudesidian",
+      "repo": "github.com/heyitsnoah/claudesidian",
+      "description": "Obsidian-центричный набор; включает thinking-partner — партнёра по мышлению, ведущего через вопросы.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "oh-my-claudecode",
+      "repo": "github.com/Yeachan-Heo/oh-my-claudecode",
+      "description": "Мульти-агентная оркестрация для Claude Code: автопилот, ralph, команды, планирование, ревью и QA (~39 скиллов).",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "oh-my-codex",
+      "repo": "github.com/scalarian/oh-my-codex",
+      "description": "Слой оркестрации для OpenAI Codex CLI: план/исполнение/проверка, ревью, команды агентов, состояние и память.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "open-dynamic-workflows",
+      "repo": "github.com/xz1220/open-dynamic-workflows",
+      "description": "Рантайм odw: JS-скрипты раздают подзадачи внешним coding-agent CLI (Codex, Claude Code, Gemini, Qwen, Kimi).",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "understand-anything",
+      "repo": "github.com/Egonex-AI/Understand-Anything",
+      "description": "Пак анализа кодовой базы через интерактивный граф знаний: архитектура, домен, диффы, онбординг.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "graphify",
+      "repo": "github.com/safishamsi/graphify",
+      "description": "Превращает любую папку (код, схемы, доки, медиа) в запрашиваемый навигируемый граф знаний.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "improve",
+      "repo": "github.com/shadcn/improve",
+      "description": "Аудит репозитория дорогой моделью и генерация самодостаточных планов для дешёвых агентов (read-only).",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "agent-skills-vercel",
+      "repo": "github.com/vercel-labs/agent-skills",
+      "description": "Официальные agent-скиллы Vercel: React/Next.js, React Native, дизайн, деплой и оптимизация на Vercel.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "gstack",
+      "repo": "github.com/garrytan/gstack",
+      "description": "Набор инструментов Гарри Тана: роли CEO/дизайнера/eng-менеджера, release/doc-инженера, QA и iOS (~56 скиллов).",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "mattpocock-skills",
+      "repo": "github.com/mattpocock/skills",
+      "description": "Инженерный набор Matt Pocock: проектирование модулей, TDD, диагностика багов, PRD/issues, code-review.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "agent-skills-addyosmani",
+      "repo": "github.com/addyosmani/agent-skills",
+      "description": "Production-grade инженерные навыки для AI-агентов: дизайн API, тестирование, ревью, отладка, спеки, безопасность.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "garden-skills",
+      "repo": "github.com/ConardLi/garden-skills",
+      "description": "Скиллы ConardLi: веб-дизайн, генерация изображений, поиск по базе знаний, оформление статей и видео-презентаций.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "reverse-skill",
+      "repo": "github.com/zhaoxuya520/reverse-skill",
+      "description": "Узкоспециализированный пак реверс-инжиниринга, авторизованного пентеста и CTF (~62 скилла) — нужен ручной отбор.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "last30days-skill",
+      "repo": "github.com/mvanhorn/last30days-skill",
+      "description": "Исследование того, что реально говорят о теме за 30 дней (Reddit, X, YouTube, TikTok, HN, Polymarket, GitHub, веб).",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "pm-skills",
+      "repo": "github.com/phuryn/pm-skills",
+      "description": "Маркетплейс из 67 PM-скиллов: дискавери, исследование рынка, стратегия, исполнение, запуск и рост.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "obsidian-skills",
+      "repo": "github.com/kepano/obsidian-skills",
+      "description": "Навыки для Obsidian: извлечение веб-контента, JSON Canvas, Bases, CLI и Obsidian-разметка.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "claude-skills",
+      "repo": "github.com/alirezarezvani/claude-skills",
+      "description": "Мультидоменный агрегатор на 420 скиллов (инженерия, маркетинг, продукт, C-level, исследования) — точечный импорт.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    },
+    {
+      "name": "ui-ux-pro-max-skill",
+      "repo": "github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "description": "Пак дизайн-интеллекта UI/UX: стили, палитры, шрифты, токены, брендинг, баннеры и слайды для web и mobile.",
+      "preinstalled": true,
+      "bundled": false,
+      "sourceType": "github",
+      "installState": "reference-only"
+    }
+  ]
+}
