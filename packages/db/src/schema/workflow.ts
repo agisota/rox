@@ -19,6 +19,8 @@
  */
 
 import type {
+	AccumulatedContext,
+	AgentRolePreset,
 	JsonSchema,
 	ObjectRef,
 	RoxWorkflowState,
@@ -329,6 +331,10 @@ export const skillVersions = pgTable(
 		simWorkflowExternalId: text("sim_workflow_external_id"),
 		externalToolRef:
 			jsonb("external_tool_ref").$type<Record<string, unknown>>(),
+		// Agent Pipelines: the role preset bundle for skills with kind="agent".
+		// Treated as the implementation ref for agent roles (service layer extends
+		// `assertExactlyOneImplementationRef`). Null for non-agent skills.
+		agentConfig: jsonb("agent_config").$type<AgentRolePreset>(),
 
 		documentationMd: text("documentation_md"),
 		examples: jsonb().$type<SkillExample[]>(),
@@ -478,6 +484,12 @@ export const workflowRuns = pgTable(
 		input: jsonb().$type<Record<string, unknown>>().notNull().default({}),
 		output: jsonb().$type<Record<string, unknown>>(),
 		error: jsonb().$type<WorkflowRunError>(),
+
+		// Agent Pipelines: the append-only seed message + transcript fed to each
+		// downstream agent_run node. Null for non-pipeline runs.
+		accumulatedContext: jsonb(
+			"accumulated_context",
+		).$type<AccumulatedContext>(),
 
 		contextPackId: uuid("context_pack_id").references(() => contextPacks.id, {
 			onDelete: "set null",

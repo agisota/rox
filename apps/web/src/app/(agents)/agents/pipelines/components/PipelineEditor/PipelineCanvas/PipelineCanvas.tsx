@@ -1,0 +1,207 @@
+"use client";
+
+import { Canvas } from "@rox/ui/ai-elements/canvas";
+import { Controls } from "@rox/ui/ai-elements/controls";
+import {
+	addEdge,
+	type Connection,
+	type Edge,
+	type EdgeChange,
+	MarkerType,
+	type Node,
+	type NodeChange,
+	type OnConnect,
+	useEdgesState,
+	useNodesState,
+} from "@rox/ui/ai-elements/flow";
+import { Panel } from "@rox/ui/ai-elements/panel";
+import { Button } from "@rox/ui/button";
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import type {
+	PipelineFlowEdge,
+	PipelineFlowNode,
+	PipelineNodeKind,
+} from "../graph-adapter";
+import { PIPELINE_EDGE_TYPES, PIPELINE_NODE_TYPES } from "../nodes";
+
+const ANIMATED_EDGE_DEFAULTS = {
+	type: "animated",
+	markerEnd: { type: MarkerType.ArrowClosed },
+} as const;
+
+export type PipelineCanvasHandle = {
+	getNodes: () => PipelineFlowNode[];
+	getEdges: () => PipelineFlowEdge[];
+};
+
+type PipelineCanvasProps = {
+	/** xyflow nodes derived from the persisted graph. */
+	nodes: PipelineFlowNode[];
+	/** xyflow edges derived from the persisted graph. */
+	edges: PipelineFlowEdge[];
+	/** Currently-selected node id (for panel sync). */
+	selectedNodeId: string | null;
+	onSelectNode: (nodeId: string | null) => void;
+	/** Called (debounced by the parent) whenever nodes/edges change. */
+	onGraphChange: (nodes: PipelineFlowNode[], edges: PipelineFlowEdge[]) => void;
+	/** Add a node of the given kind at a default position. */
+	onAddNode: (kind: PipelineNodeKind) => void;
+};
+
+/**
+ * The interactive pipeline canvas: draggable agent-role/loop/approval nodes,
+ * connectable edges, selection, and live graph-change notifications. Wires the
+ * unused `@rox/ui/ai-elements` xyflow primitives (Canvas / Controls / Panel /
+ * Node / Edge) to the Agent Pipelines graph model.
+ *
+ * Node/edge state is owned here via xyflow's controlled hooks; the parent passes
+ * derived nodes/edges and receives change callbacks to persist back to
+ * `RoxWorkflowState`.
+ */
+export function PipelineCanvas({
+	nodes: initialNodes,
+	edges: initialEdges,
+	selectedNodeId,
+	onSelectNode,
+	onGraphChange,
+	onAddNode,
+}: PipelineCanvasProps) {
+	const [nodes, setNodes, onNodesChange] =
+		useNodesState<PipelineFlowNode>(initialNodes);
+	const [edges, setEdges, onEdgesChange] =
+		useEdgesState<PipelineFlowEdge>(initialEdges);
+
+	// Keep a ref to the latest graph so the parent can read it on demand (save).
+	const latest = useRef({ nodes, edges });
+	latest.current = { nodes, edges };
+
+	// Re-sync when the persisted graph identity changes (e.g. template applied,
+	// pipeline switched). We compare by a structural signature so local drags
+	// don't clobber in-progress edits.
+	const incomingSignature = useMemo(
+		() => signatureOf(initialNodes, initialEdges),
+		[initialNodes, initialEdges],
+	);
+	const appliedSignature = useRef(incomingSignature);
+	useEffect(() => {
+		if (incomingSignature !== appliedSignature.current) {
+			appliedSignature.current = incomingSignature;
+			setNodes(initialNodes);
+			setEdges(initialEdges);
+		}
+	}, [incomingSignature, initialNodes, initialEdges, setNodes, setEdges]);
+
+	// Mark selection on the nodes so custom renderers can show the ring.
+	const decoratedNodes = useMemo(
+		() =>
+			nodes.map((node) => ({
+				...node,
+				selected: node.id === selectedNodeId,
+			})),
+		[nodes, selectedNodeId],
+	);
+
+	const handleConnect = useCallback<OnConnect>(
+		(connection: Connection) => {
+			setEdges((current) => {
+				const next = addEdge(
+					{ ...connection, ...ANIMATED_EDGE_DEFAULTS },
+					current,
+				) as PipelineFlowEdge[];
+				onGraphChange(latest.current.nodes, next);
+				return next;
+			});
+		},
+		[setEdges, onGraphChange],
+	);
+
+	const handleNodesChange = useCallback(
+		(changes: NodeChange<PipelineFlowNode>[]) => {
+			onNodesChange(changes);
+			// Defer read to next tick so xyflow has applied the change.
+			queueMicrotask(() =>
+				onGraphChange(latest.current.nodes, latest.current.edges),
+			);
+		},
+		[onNodesChange, onGraphChange],
+	);
+
+	const handleEdgesChange = useCallback(
+		(changes: EdgeChange<PipelineFlowEdge>[]) => {
+			onEdgesChange(changes);
+			queueMicrotask(() =>
+				onGraphChange(latest.current.nodes, latest.current.edges),
+			);
+		},
+		[onEdgesChange, onGraphChange],
+	);
+
+	const handleNodeClick = useCallback(
+		(_event: React.MouseEvent, node: Node) => {
+			onSelectNode(node.id);
+		},
+		[onSelectNode],
+	);
+
+	const handlePaneClick = useCallback(() => {
+		onSelectNode(null);
+	}, [onSelectNode]);
+
+	return (
+		<Canvas
+			nodes={decoratedNodes as Node[]}
+			edges={edges as Edge[]}
+			nodeTypes={PIPELINE_NODE_TYPES}
+			edgeTypes={PIPELINE_EDGE_TYPES}
+			// The canvas primitive defaults its node/edge generics to the base xyflow
+			// types; our change handlers are typed against the concrete pipeline node
+			// (a structural subtype), so we cast at the prop boundary.
+			onNodesChange={handleNodesChange as (changes: NodeChange<Node>[]) => void}
+			onEdgesChange={handleEdgesChange as (changes: EdgeChange<Edge>[]) => void}
+			onConnect={handleConnect}
+			onNodeClick={handleNodeClick}
+			onPaneClick={handlePaneClick}
+		>
+			<Controls showInteractive={false} />
+			<Panel position="top-left" className="flex gap-1">
+				<Button
+					size="sm"
+					variant="ghost"
+					onClick={() => onAddNode("agent_run")}
+				>
+					<Plus className="size-3.5" /> Агент
+				</Button>
+				<Button size="sm" variant="ghost" onClick={() => onAddNode("loop")}>
+					<Plus className="size-3.5" /> Цикл
+				</Button>
+				<Button
+					size="sm"
+					variant="ghost"
+					onClick={() => onAddNode("human_approval")}
+				>
+					<Plus className="size-3.5" /> Подтверждение
+				</Button>
+				<Button size="sm" variant="ghost" onClick={() => onAddNode("response")}>
+					<Plus className="size-3.5" /> Финал
+				</Button>
+			</Panel>
+		</Canvas>
+	);
+}
+
+/** Structural signature used to detect when an externally-provided graph changes. */
+function signatureOf(
+	nodes: PipelineFlowNode[],
+	edges: PipelineFlowEdge[],
+): string {
+	const nodePart = nodes
+		.map((n) => `${n.id}:${n.type}:${n.data.roleSlug ?? ""}`)
+		.sort()
+		.join("|");
+	const edgePart = edges
+		.map((e) => `${e.source}->${e.target}`)
+		.sort()
+		.join("|");
+	return `${nodePart}##${edgePart}`;
+}

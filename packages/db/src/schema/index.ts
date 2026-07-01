@@ -10,6 +10,7 @@ export * from "./ingest";
 export * from "./journal";
 export * from "./knowledge";
 export * from "./memory";
+export * from "./pipeline";
 export * from "./profiles";
 export * from "./relations";
 export * from "./schema";
