@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { TRPCError } from "@trpc/server";
 import { asc, eq } from "drizzle-orm";
@@ -5,6 +6,7 @@ import { z } from "zod";
 import type { HostDb } from "../../../db";
 import { hostAgentConfigs } from "../../../db/schema";
 import { logger } from "../../../lib/logger";
+import { getStrictShellEnvironment } from "../../../terminal/clean-shell-env";
 import { createTerminalSessionInternal } from "../../../terminal/terminal";
 import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
@@ -154,6 +156,65 @@ function buildAttachmentBlock(
 	return prompt + block;
 }
 
+export type AgentCommandAvailability =
+	| { available: true; resolvedPath: string }
+	| { available: false; reason: string };
+
+export async function checkAgentCommandAvailability(
+	command: string,
+	envOverlay?: Record<string, string>,
+	baseEnvOverride?: Record<string, string>,
+): Promise<AgentCommandAvailability> {
+	const normalized = command.trim();
+	if (!normalized) {
+		return { available: false, reason: "команда агента не задана" };
+	}
+
+	const baseEnv =
+		baseEnvOverride ??
+		((await getStrictShellEnvironment().catch(() => process.env)) as Record<
+			string,
+			string
+		>);
+	const checkEnv = { ...baseEnv, ...(envOverlay ?? {}) };
+
+	const executable = process.platform === "win32" ? "where" : "sh";
+	const args =
+		process.platform === "win32"
+			? [normalized]
+			: ["-lc", 'command -v -- "$1"', "rox-agent-preflight", normalized];
+
+	return new Promise((resolve) => {
+		const child = spawn(executable, args, {
+			env: checkEnv,
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		const stdout: Buffer[] = [];
+		const stderr: Buffer[] = [];
+
+		child.stdout?.on("data", (chunk: Buffer) => stdout.push(chunk));
+		child.stderr?.on("data", (chunk: Buffer) => stderr.push(chunk));
+		child.on("error", (error) => {
+			resolve({
+				available: false,
+				reason: `не удалось проверить PATH: ${error.message}`,
+			});
+		});
+		child.on("close", (code) => {
+			const out = Buffer.concat(stdout).toString("utf8").trim();
+			if (code === 0 && out.length > 0) {
+				resolve({ available: true, resolvedPath: out.split("\n")[0] });
+				return;
+			}
+			const err = Buffer.concat(stderr).toString("utf8").trim();
+			resolve({
+				available: false,
+				reason: err || `команда "${normalized}" не найдена в PATH host-сервиса`,
+			});
+		});
+	});
+}
+
 export interface AgentRunInput {
 	workspaceId: string;
 	agent: string;
@@ -274,6 +335,21 @@ async function runTerminalAgent(
 	const prompt = buildAttachmentBlock(input.prompt, resolvedAttachments);
 	const command = buildAgentCommandString(config, prompt);
 	const fullCommand = `${envOverlayPrefix(config.env)}${command}`;
+	const availability = await checkAgentCommandAvailability(
+		config.command,
+		config.env,
+	);
+	if (!availability.available) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: [
+				`Команда агента "${config.command}" для "${config.label}" не найдена или недоступна в PATH.`,
+				`Причина: ${availability.reason}.`,
+				"Откройте Настройки → Агенты и Настройки → Терминал, исправьте команду или PATH, затем повторите запуск.",
+				"Лог запуска: ~/Library/Logs/Rox/main.log.",
+			].join(" "),
+		});
+	}
 
 	const terminalId = crypto.randomUUID();
 	const result = await createTerminalSessionInternal({

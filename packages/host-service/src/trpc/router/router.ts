@@ -9,6 +9,7 @@ import { chatRouter } from "./chat";
 import { cloudRouter } from "./cloud";
 import { configRouter } from "./config";
 import { filesystemRouter } from "./filesystem";
+import { fusionRouter } from "./fusion";
 import { gitRouter } from "./git";
 import { githubRouter } from "./github";
 import { healthRouter } from "./health";
@@ -38,6 +39,7 @@ export const appRouter = router({
 	chat: chatRouter,
 	config: configRouter,
 	filesystem: filesystemRouter,
+	fusion: fusionRouter,
 	git: gitRouter,
 	github: githubRouter,
 	cloud: cloudRouter,
